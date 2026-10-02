@@ -215,14 +215,14 @@ tr.sel td{background:var(--primary-soft)}
     <p class="sub">Caso de uso novo dentro do registo de sessões do tracker. O jogador escolhe a sala Live e regista os torneios do dia a partir do catálogo da série. A gestão acompanha tudo numa página própria. Só equipa MTT. Fase 1: não depende do módulo de compras de ação.</p>
   </div>
   <div class="meta">
-    <span class="chip y">v10 · rascunho</span>
+    <span class="chip y">v11 · para o IT</span>
     <span class="chip">02/out/2026</span>
     <button type="button" class="btn sm" id="themeBtn" aria-label="Mudar tema">☀ Claro</button>
   </div>
 </header>
 
 <div class="card startcard" style="margin-bottom:14px">
-  <div><div class="lt">Simulação guiada · APT Taipei 2026</div><div class="ls">Cinco dias de um jogador de nível 6.5, com o catálogo real da série (99 eventos), e depois a mesma semana vista pela gestão. Cerca de 10 minutos. A v10 corrige os dois testes da v9: satélite com nome e dia, plano por flight, torneios à mão com o limite do dia e horas mais seguras. Só mostra as salas Live.</div></div>
+  <div><div class="lt">Simulação guiada · APT Taipei 2026</div><div class="ls">Cinco dias de um jogador de nível 6.5, com o catálogo real da série (99 eventos), e depois a mesma semana vista pela gestão. Cerca de 10 minutos. Versão final (v11) para o IT: fecha os dois últimos testes. Só mostra as salas Live.</div></div>
   <button type="button" class="btn p" data-act="tourStart">▶ Começar a simulação</button>
 </div>
 
@@ -306,7 +306,10 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 // Texto que não é número devolve NaN (para a validação distinguir "vazio" de "mal escrito").
 function num(v){if(v===null||v===undefined)return null;if(typeof v==='number')return v;const s=String(v).replace(/\s/g,'');if(s==='')return null;
   return /^-?\d+([.,]\d{1,2})?$/.test(s)?Number(s.replace(',','.')):NaN}
-const isInt=v=>{if(typeof v==='number')return Number.isInteger(v)&&v>=0;return /^\d+$/.test(String(v??'').replace(/\s/g,''))&&String(v??'').trim()!==''};
+const isInt=v=>{if(typeof v==='number')return Number.isInteger(v)&&v>=0;const t=String(v??'').trim();return /^\d+$/.test(t)||/^\d{1,3}( \d{3})+$/.test(t)};
+// Entradas: só algarismos (1 500 e 1.500 são recusados).
+const isEnt=v=>{if(typeof v==='number')return Number.isInteger(v)&&v>=0;return /^\d+$/.test(String(v??'').trim())};
+const ent0=v=>isEnt(v)?Number(String(v).trim()):0;
 const intOr0=v=>isInt(v)?Number(String(v).replace(/\s/g,'')):0;
 // Limpeza enquanto se escreve: o ponto passa a vírgula. Nada mais é mudado em silêncio.
 function cleanDec(v){return String(v).replace(/\./g,',')}
@@ -327,7 +330,6 @@ function cleanTime(v){const raw=String(v);const ap=(raw.match(/[ap]m?$/i)||[''])
 // Ao sair do campo: "21:" (de "21h") → 21:00 e "9:30" → 09:30. Algarismos soltos ("9", "21") ficam, e dão erro.
 function normTime(v){let s=String(v||'').trim();
   let m=s.match(/^(\d{1,2})(?::(\d{2}))?\s*(a|p)m?$/i);if(m){let h=+m[1];if(h>=1&&h<=12){if(m[3].toLowerCase()==='p'&&h<12)h+=12;if(m[3].toLowerCase()==='a'&&h===12)h=0;return String(h).padStart(2,'0')+':'+(m[2]||'00')}return s}
-  m=s.match(/^(\d)(\d):(\d)$/);if(m)return '0'+m[1]+':'+m[2]+m[3];
   m=s.match(/^(\d{1,2}):$/);if(m&&+m[1]<24)return m[1].padStart(2,'0')+':00';m=s.match(/^(\d{1,2}):(\d{2})$/);return m?m[1].padStart(2,'0')+':'+m[2]:s}
 const hm=v=>/^([01]\d|2[0-3]):[0-5]\d$/.test(String(v||'').trim());
 const toMin=t=>{const [h,m]=String(t).trim().split(':').map(Number);return h*60+m};
@@ -380,7 +382,7 @@ function autoDay(ev,date,kind,status){if(!ev)return '';if(!ev.sched||!ev.sched.l
   if(c.length)return c[0].label;if(ev.flights.length===1&&kind==='new')return ev.flights[0];return ''}
 function contDay(e,date){return contLast(e)?e.last.day:autoDay(e&&e.info,date,'cont',e&&e.status)}
 // Custo: só entradas válidas (inteiras) contam. Um torneio em falta ligado pela gestão mantém o buy-in que o jogador pagou.
-function lineCashCost(line,ev,method){if(!ev)return 0;const b=intOr0(line.bullets);const bi=line.paidBuyIn!=null&&num(line.paidBuyIn)>0?num(line.paidBuyIn):ev.buyIn;if(line.kind==='new'&&method!=='direto')return Math.max(0,b-1)*bi;return b*bi}
+function lineCashCost(line,ev,method){if(!ev)return 0;const b=ent0(line.bullets);const bi=line.paidBuyIn!=null&&num(line.paidBuyIn)>0?num(line.paidBuyIn):ev.buyIn;if(line.kind==='new'&&method!=='direto')return Math.max(0,b-1)*bi;return b*bi}
 function netPrize(line){const p=num(line.prize);return p>0?p:0}
 function flightsLeft(day,ev){if(!ev||day==='Único')return false;const i=ev.flights.indexOf(day);return i>=0&&i<ev.flights.length-1}
 function dayFlights(ev,date,played){if(!ev||!ev.sched)return [];return ev.sched.filter(s=>s.date===date&&ev.flights.includes(s.label)&&s.label!=='Único'&&!(played||[]).includes(s.label)).map(s=>s.label)}
@@ -394,7 +396,7 @@ function syncFlights(line,ev,date,status,played){
   labels.forEach(l=>{if(!line.fl[l])line.fl[l]={on:false,bul:'1',st:''}});
   const passed=labels.findIndex(l=>line.fl[l].on&&line.fl[l].st==='bagged');
   const sel=labels.filter((l,i)=>line.fl[l].on&&(passed<0||i<=passed));line._sel=sel;line._passed=passed>=0?labels[passed]:null;
-  line.bullets=String(sel.reduce((a,l)=>a+intOr0(line.fl[l].bul),0));
+  line.bullets=String(sel.reduce((a,l)=>a+ent0(line.fl[l].bul),0));
   line.day=sel.length?(passed>=0?labels[passed]:sel[sel.length-1]):'';
   line.endState=passed>=0?'bagged':(sel.length&&sel.every(l=>line.fl[l].st==='busted')?'busted':'');
   return true}
@@ -414,12 +416,15 @@ function levelRule(ev,day,level){
 // (torneios no plano ou sem plano desse dia); sem torneios nesse dia, conta o teto da série.
 // A partir de MANUAL_REVIEW, fica também marcado para a gestão confirmar.
 const MANUAL_REVIEW=2000;
+// O limite do dia nunca desce abaixo disto (num dia só com side events baratos).
+const MANUAL_FLOOR=1000;
 function manualPlan(line,date,level){if(!level)return null;const f=CATALOG.find(x=>x.id===line.manualFest);const bi=num(line.manualBuyIn);if(!f||!(bi>0))return null;
   const all=[];f.events.forEach(e=>(e.sched||[]).forEach(s=>{if(e.flights.includes(s.label)&&s.rules)all.push({e,s,t:s.rules[LEVELS.indexOf(level)]||''})}));if(!all.length)return null;
   const maxSeries=Math.max(0,...all.filter(r=>r.t).map(r=>r.e.buyIn));
   if(bi>maxSeries+1)return {out:true,manual:true,txt:'acima do maior buy-in do plano do nível '+level+' ('+money(maxSeries,f.currency)+')'};
   // limite do dia: o maior buy-in que o nível pode jogar nesse dia (torneios no plano ou sem plano)
   let maxDay=-1;f.events.forEach(e=>(e.sched||[]).forEach(s=>{if(s.date===date&&e.flights.includes(s.label)){const t=s.rules?s.rules[LEVELS.indexOf(level)]||'':'free';if(t)maxDay=Math.max(maxDay,e.buyIn)}}));
+  if(maxDay>=0)maxDay=Math.max(maxDay,MANUAL_FLOOR);
   if(maxDay>=0&&bi>maxDay+1)return {out:true,manual:true,txt:'acima do maior buy-in que o nível '+level+' pode jogar neste dia ('+money(maxDay,f.currency)+')'};return null}
 const STOP=new Set(['event','evento','events','championship','champion','tournament','torneio','series','poker','holdem','hold\'em','nlhe','flight','final','edition']);
 function suggestions(line,date){
@@ -441,11 +446,11 @@ function buildEntries(days){
     if(!e||!e.info)return;
     const ev=e.info;
     const multi=syncFlights(line,ev,f.date,line.kind==='cont'?e.status:null,line.kind==='cont'?e.days.map(x=>x.day):[]);
-    if(multi)line._sel.forEach(l=>{const x=line.fl[l];e.days.push({date:f.date,day:l,endState:x.st,chips:x.st==='bagged'?line.chips:'',left:x.st==='bagged'?line.left:'',inMoney:false,bullets:intOr0(x.bul)})});
-    else e.days.push({date:f.date,day:line.day,endState:line.endState,chips:line.chips,left:line.left,inMoney:line.inMoney,bullets:intOr0(line.bullets),pos:line.pos,entrants:line.entrants,prize:line.prize,receivedIn:line.receivedIn,wallet:line.wallet,planReason:line.planReason,endSource:f.endSource});
+    if(multi)line._sel.forEach(l=>{const x=line.fl[l];e.days.push({date:f.date,day:l,endState:x.st,chips:x.st==='bagged'?line.chips:'',left:x.st==='bagged'?line.left:'',inMoney:false,bullets:ent0(x.bul)})});
+    else e.days.push({date:f.date,day:line.day,endState:line.endState,chips:line.chips,left:line.left,inMoney:line.inMoney,bullets:ent0(line.bullets),pos:line.pos,entrants:line.entrants,prize:line.prize,receivedIn:line.receivedIn,wallet:line.wallet,planReason:line.planReason,endSource:f.endSource});
     if(line.planReason)e.planReason=line.planReason;
     if(line.kind==='cont'&&line.paidBuyIn!=null)e.paidMix=line.paidBuyIn;
-    e.bullets+=intOr0(line.bullets);e.cost+=lineCashCost(line,ev,e.method);e.status=statusFrom(line,ev);
+    e.bullets+=ent0(line.bullets);e.cost+=lineCashCost(line,ev,e.method);e.status=statusFrom(line,ev);
     e.last={date:f.date,day:line.day,endState:line.endState,chips:line.chips,left:line.left,inMoney:line.inMoney};
     if(line.endState==='itm'){e.prize=netPrize(line);e.pos=line.pos;e.entrants=line.entrants;e.receivedIn=line.receivedIn;e.wallet=line.wallet;e.proof=line.proof;e.proofFile=line.proofFile}
   })});
@@ -466,10 +471,13 @@ function reconcile(form,entries,level){
   if(!room.live&&form.lines.length)E(`Tens ${form.lines.length===1?'1 torneio live':form.lines.length+' torneios live'}: volta à sala Live ou ${form.lines.length===1?'remove-o':'remove-os'}.`,'#f-room');
   // data e horas
   if(!form.date)E('Escreve a data da sessão.','#f-date');else if(!/^\d{4}-\d\d-\d\d$/.test(form.date))E('A data da sessão não é válida.','#f-date');
-  const st=String(form.start||'').trim(),en=String(form.end||'').trim();const oneDigit=t=>/^\d:\d\d$/.test(t)?' Falta um algarismo na hora?':'';
+  const st=String(form.start||'').trim(),en=String(form.end||'').trim();
+  // "21:3" pode ser 21:30 ou 02:13: o tracker pergunta (como nos milhares)
+  const ask=(t,key,label,sel)=>{const m=t.match(/^(\d)(\d):(\d)$/);if(!m||+(m[1]+m[2])>23)return false;const a=m[1]+m[2]+':'+m[3]+'0',b='0'+m[1]+':'+m[2]+m[3];out.fix[key]=[a,b];E(`${label} "${t}": querias ${a} ou ${b}?`,sel);return true};
+  const askS=ask(st,'f|start','Hora de início','#f-start'),askE=ask(en,'f|end','Hora de fim','#f-end');const oneDigit=t=>/^\d:\d\d$/.test(t)?' Falta um algarismo na hora?':'';
   const badHour=t=>/^\d{2}/.test(t)&&+t.slice(0,2)>23?' A hora vai de 00 a 23.':'';
-  if(!st)E('Escreve a hora de início.','#f-start');else if(!hm(st))E('Hora de início mal escrita: usa hh:mm (ex.: 2130 → 21:30).'+badHour(st)+oneDigit(st),'#f-start');
-  if(!en)E('Escreve a hora de fim.','#f-end');else if(!hm(en))E('Hora de fim mal escrita: usa hh:mm (ex.: 0330 → 03:30).'+badHour(en)+oneDigit(en),'#f-end');
+  if(!st)E('Escreve a hora de início.','#f-start');else if(askS);else if(!hm(st))E('Hora de início mal escrita: usa hh:mm (ex.: 2130 → 21:30).'+badHour(st)+oneDigit(st),'#f-start');
+  if(!en)E('Escreve a hora de fim.','#f-end');else if(askE);else if(!hm(en))E('Hora de fim mal escrita: usa hh:mm (ex.: 0330 → 03:30).'+badHour(en)+oneDigit(en),'#f-end');
   if(hm(st)&&hm(en)){let d=toMin(en)-toMin(st);if(d===0)E('O início e o fim são iguais.','#f-end');else{if(d<0)d+=1440;if(d>16*60)out.timeWarns.push(`Sessão de ${Math.floor(d/60)} h${d%60?' '+(d%60)+' min':''}. Confirma as horas.`);else if(d<30)out.timeWarns.push(`Sessão de ${d} min. Confirma as horas.`)}
     if(toMin(st)<600&&form.date)out.timeWarns.push(`Começou antes das 10:00: conta como sessão do dia anterior. Se começaste de madrugada a ${fmtDate(form.date)}, a data certa é ${fmtDate(addDays(form.date,-1))}.`)}
   (room.live?form.lines:[]).forEach(line=>{
@@ -498,8 +506,8 @@ function reconcile(form,entries,level){
     if(ev&&ev.currency&&ev.currency!==cur)err(`Este torneio é em ${ev.currency}. Regista-o na sala Live ${ev.currency}.`);
     if(line.entryId&&seen.has(line.entryId))err('Este torneio já está neste registo.');seen.add(line.entryId||line.lid);
     const evKey=ev&&ev.eventId?ev.festId+'|'+ev.eventId:null;if(evKey&&seenEv.has(evKey))err('Este torneio já está neste registo. Junta os flights na linha que já existe.');if(evKey)seenEv.add(evKey);
-    const b=intOr0(line.bullets);if(ev&&curOk)out.events+=Math.max(1,b);
-    if(!multi){if(line.bullets!==''&&!isInt(line.bullets))err('As entradas são um número inteiro (0, 1, 2…).');
+    const b=ent0(line.bullets);if(ev&&curOk)out.events+=Math.max(1,b);
+    if(!multi){if(line.bullets!==''&&!isEnt(line.bullets))err('As entradas são um número inteiro (0, 1, 2…).');
       else if(line.kind==='new'&&!(b>=1))err('Um torneio novo tem pelo menos 1 entrada paga.')}
     if(ev&&b>4)warn(`${b} entradas num só torneio. Confirma.`);
     if(repeatLast&&b>0)err('Num dia que continua não se pagam entradas. Põe 0.');
@@ -508,14 +516,15 @@ function reconcile(form,entries,level){
     if(repeatLast){if(form.date&&form.date<=e.last.date)err(`O ${dayName(line.day)} começou a ${fmtDate(e.last.date)}: continua num dia depois.`);else if(form.date&&daysBetween(e.last.date,form.date)>2)warn(`O ${dayName(line.day)} foi a ${fmtDate(e.last.date)} e continua ${daysBetween(e.last.date,form.date)} dias depois. Confirma a data.`)}
     else{const sc=ev&&schedFor(ev,line.day);if(sc&&sc.date&&form.date&&sc.date!==form.date)err(`${theDay(line.day)} é a ${fmtDateY(sc.date,form.date)}, e a sessão é a ${fmtDateY(form.date,sc.date)}. Confirma a data.`)}
     if(multi){const labels=line._sel;if(!labels.length)err('Marca os flights que jogaste hoje.');
-      labels.forEach(l=>{const x=line.fl[l];if(!isInt(x.bul)||intOr0(x.bul)<1)err(`As entradas do ${dayName(l)} são um número inteiro, pelo menos 1.`);if(!x.st)err(`Diz como acabou o ${dayName(l)}.`)})}
+      labels.forEach(l=>{const x=line.fl[l];if(!isEnt(x.bul)||ent0(x.bul)<1)err(`As entradas do ${dayName(l)} são um número inteiro, pelo menos 1.`);if(!x.st)err(`Diz como acabou o ${dayName(l)}.`)})}
     else{if(ev&&!line.day)err('Escolhe o dia ou flight.');
       if(ev&&!line.endState)err('Diz como acabou o dia neste torneio.')}
     const prevLeft=line.kind==='cont'&&e&&e.last?num(e.last.left):null;
     if(line.kind==='cont'&&e&&e.last&&e.last.inMoney&&line.endState==='busted')err('No dia anterior já estavas nos prémios. Escolhe "Terminou nos prémios" e escreve o prémio.');
     if(line.endState==='bagged'&&ev&&curOk)out.bagged=true;
     if(line.endState==='bagged'){if(!(isInt(line.chips)&&intOr0(line.chips)>0))err('Escreve as fichas com que ensacaste (número inteiro).');
-      if(line.left!==''){if(!isInt(line.left))err('Os jogadores restantes são um número inteiro.');else if(intOr0(line.left)<1)err('Se passaste, resta pelo menos 1 jogador (tu).');else if(prevLeft&&intOr0(line.left)>prevLeft)warn(`Ontem restavam ${prevLeft} jogadores e hoje ${intOr0(line.left)}. Confirma.`)}}
+      if(line.left===''||line.left==null)err('Escreve quantos jogadores restam (número inteiro).');
+      else{if(!isInt(line.left))err('Os jogadores restantes são um número inteiro.');else if(intOr0(line.left)<1)err('Se passaste, resta pelo menos 1 jogador (tu).');else if(prevLeft&&intOr0(line.left)>prevLeft)warn(`Ontem restavam ${prevLeft} jogadores e hoje ${intOr0(line.left)}. Confirma.`)}}
     if(line.endState==='itm'){const p=num(line.prize);const pf=thouFix(line.prize);
       if(!(isInt(line.pos)&&intOr0(line.pos)>=1))err('Escreve a posição (número inteiro).');
       if(line.prize===''||line.prize==null)err('Escreve o prémio.');else if(pf){err(`Prémio "${esc(line.prize)}": os milhares escrevem-se sem ponto. Querias ${money(num(pf),cur)}?`);out.fix[line.lid+'|prize']=pf}else if(isNaN(p))err('O prémio está mal escrito. Usa só algarismos e uma vírgula para os cêntimos (ex.: 9200,50).');else if(!(p>0))err('O prémio tem de ser maior que 0.');
@@ -523,11 +532,12 @@ function reconcile(form,entries,level){
       if(line.entrants!==''){if(!isInt(line.entrants)||intOr0(line.entrants)<1)err('Os inscritos são um número inteiro, pelo menos 1.');else if(isInt(line.pos)&&intOr0(line.pos)>intOr0(line.entrants))err('A posição não pode ser maior que o nº de inscritos.')}
       if(prevLeft&&isInt(line.pos)&&intOr0(line.pos)>prevLeft)warn(`Ontem restavam ${prevLeft} jogadores e acabaste em ${intOr0(line.pos)}.º. Confirma.`);
       if(ev&&ev.buyIn&&p>0&&p>=30*ev.buyIn)warn(`O prémio é ${Math.round(p/ev.buyIn)}× o buy-in. Confirma que está em ${cur}.`);
+      else if(ev&&ev.buyIn&&p>=10*ev.buyIn&&intOr0(line.pos)>9)warn(`Prémio de ${Math.round(p/ev.buyIn)}× o buy-in em ${intOr0(line.pos)}.º lugar. Confirma o valor (um zero a mais?).`);
       if(p>0&&!proofOk(line.proof,line.proofFile))warn(isFileLink(line.proof)?'Isso parece um ficheiro: usa o botão Foto.':String(line.proof||'').trim()?'A prova tem de ser um link https:// ou uma foto (botão Foto).':'Junta a prova do prémio (foto do recibo ou link dos resultados).')}
     // plano: em vários flights, cada flight tem a sua regra
     let lr,over=false;const outFl=[];const total=(e?e.bullets:0)+b;const ent=n=>n+' '+(n===1?'entrada':'entradas');
     if(line.manual)lr=manualPlan(line,form.date,level);
-    else{const fls=multi?line._sel.map(l=>[l,intOr0(line.fl[l].bul)]):[[line.day,b]];
+    else{const fls=multi?line._sel.map(l=>[l,ent0(line.fl[l].bul)]):[[line.day,b]];
       fls.forEach(([l,n])=>{const r=levelRule(ev,l,level);if(!r)return;if(!lr||r.out)lr=r;
         if(r.out){if(multi)outFl.push(l)}
         else if(r.max&&r.per==='flight'&&n>r.max&&!over){over=true;warn(`O plano do teu nível é ${ent(r.max)} por flight, e no ${dayName(l)} pagaste ${n}.`)}
@@ -535,7 +545,7 @@ function reconcile(form,entries,level){
     const outAll=!!(lr&&lr.out&&(!multi||outFl.length));const needPlan=outAll||over;
     if(outAll)warn(lr.manual?`Pelo buy-in, este torneio fica fora do plano do teu nível (${level}): ${lr.txt}.`:multi&&outFl.length<line._sel.length?`O ${outFl.map(dayName).join(' e o ')} não ${outFl.length===1?'está':'estão'} no plano do teu nível (${level}).`:`Este torneio não está no plano do teu nível (${level}) para esta série.`);
     if(needPlan){if(!String(line.planReason||'').trim())err('Explica porque jogaste este torneio fora do plano do teu nível.');else if(!enough(line.planReason))err(whyShort(line.planReason,'do plano'))}
-    if(line.kind==='new'&&line.method!=='direto'){if((String(line.satName||'').match(/[A-Za-zÀ-ú]/g)||[]).length<3||!line.satDate)err('Diz qual foi o satélite ou ticket: nome e dia.');else if(form.date&&line.satDate>form.date)err('O satélite não pode ser depois deste torneio.');msgs.push(['info','A 1.ª entrada não sai do saldo. A gestão confirma o satélite.'])}
+    if(line.kind==='new'&&line.method!=='direto'){if((String(line.satName||'').match(/[A-Za-zÀ-ú]/g)||[]).length<3||!line.satDate)err('Diz qual foi o satélite ou ticket: nome e dia.');else if(form.date&&line.satDate>form.date)err('O satélite não pode ser depois deste torneio.');else{const fr=festRange(ev&&ev.festId);if(fr&&line.satDate<addDays(fr[0],-30))err(`O satélite tem de ser da série (a partir de ${fmtDate(addDays(fr[0],-30))}).`)}msgs.push(['info','A 1.ª entrada não sai do saldo. A gestão confirma o satélite.'])}
     const c=curOk?lineCashCost(line,ev,method):0;out.cost+=c;out.bullets+=ev&&curOk?b:0;
     if(line.endState==='itm'&&curOk){const np=netPrize(line);if(line.receivedIn==='live')out.prize+=np;else{out.walletPrize+=np;out.pending.push(`O prémio de ${money(np,cur)} (${ev?esc(ev.name):''}) entra já na ${esc(line.wallet)}. Não conta no saldo do Live.`)}}
     out.perLine[line.lid]={msgs,ev,cost:c,lr,needPlan,multi,repeatLast};msgs.forEach(m=>{(m[0]==='err'?out.errors:out.warns).push(m[1])});
@@ -612,24 +622,24 @@ SCEN.days.forEach(d=>{if(!d.empty)d.empty=d.form});
 const CASES=[
  {id:'A',title:'Um torneio em vários dias',story:'Estrellas Main Event: saco no Day 1A, um dia de folga, Day 2 já nos prémios, 38.º no Day 3.',
   proves:['A mesma inscrição em três sessões; o dia de folga não precisa de registo.','O Day 2 conta 1 no nº de torneios (dia jogado), sem entrada paga.'],
-  days:[{form:F({room:'live_eur',date:'2026-08-12',start:'11:45',end:'23:50',startBalance:6000,declaredEnd:'4900',lines:[L({lid:'a1',entryId:'A1',festId:'ept',eventId:'e1',day:'1A',bullets:'1',endState:'bagged',chips:'87500'})]})},
-   {gapBefore:'13/08 — dia de folga.',form:F({room:'live_eur',date:'2026-08-14',start:'11:50',end:'23:40',startBalance:4900,declaredEnd:'4900',lines:[L({lid:'a2',kind:'cont',entryId:'A1',day:'2',bullets:'0',endState:'bagged',chips:'245000',inMoney:true})]})},
+  days:[{form:F({room:'live_eur',date:'2026-08-12',start:'11:45',end:'23:50',startBalance:6000,declaredEnd:'4900',lines:[L({lid:'a1',entryId:'A1',festId:'ept',eventId:'e1',day:'1A',bullets:'1',endState:'bagged',chips:'87500',left:'620'})]})},
+   {gapBefore:'13/08 — dia de folga.',form:F({room:'live_eur',date:'2026-08-14',start:'11:50',end:'23:40',startBalance:4900,declaredEnd:'4900',lines:[L({lid:'a2',kind:'cont',entryId:'A1',day:'2',bullets:'0',endState:'bagged',chips:'245000',left:'180',inMoney:true})]})},
    {form:F({room:'live_eur',date:'2026-08-15',start:'11:50',end:'19:20',startBalance:4900,declaredEnd:'13350',lines:[L({lid:'a3',kind:'cont',entryId:'A1',day:'3',bullets:'0',endState:'itm',pos:'38',entrants:'1842',prize:'8450',proof:'https://results.example/ept-estrellas'})]})}]},
  {id:'B',title:'Três torneios no mesmo dia',story:'Deepstack (eliminado), Estrellas 2-Day no Day 1 (saco) e Turbo com re-entrada (eliminado). Menos 60 € do que as contas dão.',
   proves:['Três inscrições numa sessão.','Nº de torneios = 4.','Diferença avisa e pede explicação.'],
   days:[{form:F({room:'live_eur',date:'2026-08-16',start:'10:50',end:'23:55',startBalance:4000,declaredEnd:'1850',diffReason:'60 € de diferença no câmbio.',diffFor:-60,lines:[
     L({lid:'b1',entryId:'B1',festId:'ept',eventId:'e25',day:'Único',bullets:'1',endState:'busted'}),
-    L({lid:'b2',entryId:'B2',festId:'ept',eventId:'e27',day:'1',bullets:'1',endState:'bagged',chips:'64000'}),
+    L({lid:'b2',entryId:'B2',festId:'ept',eventId:'e27',day:'1',bullets:'1',endState:'bagged',chips:'64000',left:'210'}),
     L({lid:'b3',entryId:'B3',festId:'ept',eventId:'e20',day:'Único',bullets:'2',endState:'busted'})]})}]},
  {id:'C',title:'Re-entrada noutro flight e prémio por transferência',story:'EPT Main: eliminado no 1A (fica em aberto sozinho), re-entra no 1B, passa o Day 2, 9.º no Day 3, prémio pago por transferência.',
   proves:['Sem pergunta de re-entrada: o 1A deixa a inscrição em aberto.','O prémio por transferência entra na carteira (Luxon EUR) e não no saldo do Live: o Live fica em 1 400 € e o resultado da sessão é +64 300 €.'],
   days:[{form:F({room:'live_eur',date:'2026-08-20',start:'11:45',end:'17:30',startBalance:12000,declaredEnd:'6700',lines:[L({lid:'d1',entryId:'D1',festId:'ept',eventId:'e7',day:'1A',bullets:'1',endState:'busted'})]})},
-   {form:F({room:'live_eur',date:'2026-08-21',start:'11:45',end:'23:50',startBalance:6700,declaredEnd:'1400',lines:[L({lid:'d2',kind:'cont',entryId:'D1',day:'1B',bullets:'1',endState:'bagged',chips:'142000'})]})},
-   {form:F({room:'live_eur',date:'2026-08-22',start:'11:50',end:'23:30',startBalance:1400,declaredEnd:'1400',lines:[L({lid:'d3',kind:'cont',entryId:'D1',day:'2',bullets:'0',endState:'bagged',chips:'410000'})]})},
+   {form:F({room:'live_eur',date:'2026-08-21',start:'11:45',end:'23:50',startBalance:6700,declaredEnd:'1400',lines:[L({lid:'d2',kind:'cont',entryId:'D1',day:'1B',bullets:'1',endState:'bagged',chips:'142000',left:'450'})]})},
+   {form:F({room:'live_eur',date:'2026-08-22',start:'11:50',end:'23:30',startBalance:1400,declaredEnd:'1400',lines:[L({lid:'d3',kind:'cont',entryId:'D1',day:'2',bullets:'0',endState:'bagged',chips:'410000',left:'140'})]})},
    {form:F({room:'live_eur',date:'2026-08-23',start:'11:50',end:'22:10',startBalance:1400,declaredEnd:'1400',lines:[L({lid:'d4',kind:'cont',entryId:'D1',day:'3',bullets:'0',endState:'itm',pos:'9',entrants:'1120',prize:'64300',receivedIn:'transfer',wallet:'Luxon EUR',proof:'https://results.example/ept-main'})]})}]},
  {id:'D',title:'Último dia que continua no dia seguinte',story:'Estrellas 2-Day: saco no Day 1; o Day 2 (o último) não acaba e continua a 18/08, onde termina em 2.º.',
   proves:['No último dia o botão é "Continua amanhã".','No dia seguinte repete-se o mesmo Day 2 (continues_previous_day), sem erro de data nem de dia repetido.'],
-  days:[{form:F({room:'live_eur',date:'2026-08-16',start:'12:40',end:'23:50',startBalance:3000,declaredEnd:'1900',lines:[L({lid:'e1',entryId:'E1',festId:'ept',eventId:'e27',day:'1',bullets:'1',endState:'bagged',chips:'95000'})]})},
+  days:[{form:F({room:'live_eur',date:'2026-08-16',start:'12:40',end:'23:50',startBalance:3000,declaredEnd:'1900',lines:[L({lid:'e1',entryId:'E1',festId:'ept',eventId:'e27',day:'1',bullets:'1',endState:'bagged',chips:'95000',left:'160'})]})},
    {form:F({room:'live_eur',date:'2026-08-17',start:'12:50',end:'03:10',startBalance:1900,declaredEnd:'1900',lines:[L({lid:'e2',kind:'cont',entryId:'E1',day:'2',bullets:'0',endState:'bagged',chips:'1200000',left:'4',inMoney:true})]})},
    {form:F({room:'live_eur',date:'2026-08-18',start:'14:00',end:'18:30',startBalance:1900,declaredEnd:'22900',lines:[L({lid:'e3',kind:'cont',entryId:'E1',day:'2',bullets:'0',endState:'itm',pos:'2',entrants:'310',prize:'21000',proof:'https://results.example/ept-2day'})]})}]},
 ];
@@ -653,7 +663,7 @@ function afterLoad(){if(S.form.lines.some(l=>l.picking))openPickerDefaults(S.for
 /* ---------------- render jogador ---------------- */
 function renderLoader(){
   let h='<span class="ls" style="margin-right:4px">Dias da simulação:</span>';
-  SCEN.days.forEach((d,di)=>{const on=S.src==='scen'&&S.di===di;const dr=(on&&S.dirty)||Object.keys(S.drafts).some(k=>k.startsWith('scen|'+di+'|'));
+  SCEN.days.forEach((d,di)=>{const on=S.src==='scen'&&S.di===di;const dr=(on&&S.dirty)||!!S.drafts['scen|'+di];
     h+=`<button type="button" class="btn sm daybtn" data-act="loadScen" data-di="${di}" aria-pressed="${on}" title="${esc(d.title)}${dr?' · com alterações tuas':''}">${fmtDate(d.form.date)}${dr?' •':''}</button>`});
   const bd=(S.src==='blank'&&S.dirty)||!!S.drafts.blank;
   h+=`<span style="width:6px"></span><button type="button" class="btn sm daybtn" data-act="blank" aria-pressed="${S.src==='blank'}">Em branco${bd?' •':''}</button>`;
@@ -679,7 +689,7 @@ function renderForm(){
   h+=`</div>`;
   h+=`<div class="card stack" id="c-endcard"><div id="c-endbal"><label class="l" for="f-end-bal">Saldo final ${room.live?'do Live':'na sala'} <span class="req">*</span></label>
       <input class="i num" id="f-end-bal" value="${esc(f.declaredEnd)}" data-f="f.declaredEnd" data-kind="dec" inputmode="decimal" placeholder="Quanto tens agora?" autocomplete="off">
-      <div class="hint" id="expHint"></div><div id="endErr"></div><div id="roomUndo"></div><div id="matchBox"></div></div>
+      <div class="hint" id="expHint"></div><div id="matchBox"></div><div id="endErr"></div><div id="roomUndo"></div></div>
     <div id="diffBox" hidden><label class="l" for="f-diff">Porque não bate? <span class="req">*</span></label><textarea class="i" id="f-diff" rows="2" data-f="f.diffReason" placeholder="Ex.: diferença no câmbio">${esc(f.diffReason)}</textarea></div></div>`;
   h+=`<div class="card"><span class="l">Preparação</span><div class="row c2">
        <label class="btn" style="justify-content:flex-start"><input type="checkbox" id="f-wu" data-f="f.warmup" ${f.warmup?'checked':''}> Warm-up</label>
@@ -765,7 +775,7 @@ function renderLine(line,entries,cur,f){
         if(off)return `<div style="display:flex;gap:8px;align-items:center;border:1px dashed var(--border);border-radius:6px;padding:6px 8px;opacity:.6"><input type="checkbox" disabled aria-label="${dayName(l)} (não conta)"> <b>${dayName(l)}</b> <span class="ls">${sc?esc(sc.time):''} · não conta: passaste no ${dayName(labels[passed])}</span></div>`;
         return `<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:1px solid var(--border);border-radius:6px;padding:6px 8px;background:var(--card)">
           <label style="display:flex;gap:8px;align-items:center;min-width:150px;min-height:36px;cursor:pointer"><input type="checkbox" data-fl="${k}|${l}|on" ${x.on?'checked':''}> <b>${dayName(l)}</b> <span class="ls">${sc?esc(sc.time):''}</span></label>
-          ${x.on?`<span style="display:flex;gap:4px;align-items:center"><input class="i num" style="width:60px" data-fl="${k}|${l}|bul" value="${esc(x.bul)}" inputmode="numeric" aria-label="Entradas no ${dayName(l)}" autocomplete="off"><span class="ls">entradas</span></span>
+          ${x.on?`<span style="display:flex;gap:4px;align-items:center"><input class="i num" style="width:60px" data-fl="${k}|${l}|bul" data-kind="ent" value="${esc(x.bul)}" inputmode="numeric" aria-label="Entradas no ${dayName(l)}" autocomplete="off"><span class="ls">entradas</span></span>
           <div class="seg two" role="group" aria-label="Como acabou o ${dayName(l)}">${[['busted','Eliminado'],['bagged','Passou']].map(([v,t])=>`<button type="button" data-act="flst" data-lid="${k}" data-flab="${l}" data-v="${v}" aria-pressed="${x.st===v}">${t}</button>`).join('')}</div>`:''}</div>`}).join('')}</div>
         <div class="ls" id="fltot-${k}"></div></div>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">${satBox}${planChip}</div>`;
@@ -785,7 +795,7 @@ function renderLine(line,entries,cur,f){
     h+=satFields;
     h+=`<div id="plan-${k}" hidden><label class="l" for="${k}-plan">Porque jogaste fora do plano do teu nível? <span class="req">*</span></label><textarea class="i" id="${k}-plan" rows="2" data-f="l.${k}.planReason" placeholder="Ex.: autorizado pelo coach no grupo da série">${esc(line.planReason)}</textarea></div>`;
     if(line.endState==='bagged')h+=`<div class="row c3"><div><label class="l" for="${k}-ch">Fichas no saco <span class="req">*</span></label><input class="i num" id="${k}-ch" value="${esc(line.chips)}" data-f="l.${k}.chips" data-kind="int" inputmode="numeric" autocomplete="off"></div>
-        <div><label class="l" for="${k}-lf">Jogadores restantes</label><input class="i num" id="${k}-lf" value="${esc(line.left)}" data-f="l.${k}.left" data-kind="int" inputmode="numeric" autocomplete="off"></div>
+        <div><label class="l" for="${k}-lf">Jogadores restantes <span class="req">*</span></label><input class="i num" id="${k}-lf" value="${esc(line.left)}" data-f="l.${k}.left" data-kind="int" inputmode="numeric" autocomplete="off"></div>
         <div><span class="l">&nbsp;</span>${!isNew&&e&&e.last&&e.last.inMoney?`<label class="btn" style="justify-content:flex-start;width:100%"><input type="checkbox" checked disabled> Já nos prémios desde ${fmtDate(e.last.date)}</label>`:`<label class="btn" style="justify-content:flex-start;width:100%"><input type="checkbox" id="${k}-im" data-f="l.${k}.inMoney" ${line.inMoney?'checked':''}> Já nos prémios</label>`}</div></div>`;
     if(line.endState==='itm')h+=`<div class="row c3">
         <div><label class="l" for="${k}-pos">Posição <span class="req">*</span></label><input class="i num" id="${k}-pos" value="${esc(line.pos)}" data-f="l.${k}.pos" data-kind="int" inputmode="numeric" autocomplete="off"></div>
@@ -801,13 +811,14 @@ function renderLine(line,entries,cur,f){
 }
 const WALLETS={USD:['Luxon USD','Skrill USD'],EUR:['Luxon EUR','Skrill EUR']};
 function walletsFor(cur){return WALLETS[cur]||WALLETS.USD}
+function bagMsg(e,date){const nx=e.info.sched&&e.info.sched.find(x=>x.date>date&&e.info.days.includes(x.label));return `Tens saco no ${esc(e.info.name)} desde ${fmtDate(e.last.date)}. ${nx?`O ${dayName(nx.label)} é a ${fmtDate(nx.date)}: regista-o nesse dia.`:'Não há dia seguinte hoje.'}`}
 function renderSug(line,sug){
   const fest=CATALOG.find(x=>x.id===line.manualFest);const fc=fest?fest.currency:'USD';
   const ents=entriesNow();const osAll=openSug(line,ents,S.form.date);const os=osAll.filter(e=>!S.form.lines.some(o=>o.entryId===e.id));
   const inF=osAll.map(e=>[e,S.form.lines.find(o=>o!==line&&o.entryId===e.id)]).filter(x=>x[1]);
   if(inF.length)return `<div class="sug">${inF.map(([e,o])=>`<div class="openrow"><span>O <b>${esc(e.info.name)}</b> já está neste registo.</span><button type="button" class="btn sm p" data-act="gotoLine" data-lid="${line.lid}" data-target="${o.lid}">Ir para a linha</button></div>`).join('')}</div>`;
   if(!sug.length&&!os.length)return (String(line.manualName||'').trim()||line.manualBuyIn)?'<div class="msg info">Não há nada parecido no catálogo deste dia. A linha fica provisória e a gestão acrescenta o torneio ao catálogo.</div>':'';const inForm=id=>S.form.lines.find(o=>{if(o===line)return false;const oe=lineEvent(o,ents);return oe&&oe.festId===line.manualFest&&oe.eventId===id});
-  return `<div class="sug"><b>Será um destes?</b>${os.map(e=>{const cd=contDay(e,S.form.date);return `<div class="openrow"><span>Tens ${e.status==='open'?'saco':'inscrição'} no <b>${esc(e.info.name)}</b> desde ${fmtDate(e.last.date)}${cd?` · ${dayName(cd)}`:''}</span><button type="button" class="btn sm p" data-act="pickOpen" data-lid="${line.lid}" data-eid="${esc(e.id)}">Sim, é esse</button></div>`}).join('')}${sug.map(e=>{const s=e.sched.find(x=>x.date===S.form.date&&e.flights.includes(x.label));const dup=inForm(e.id);return `<div class="openrow"><span>${esc(e.no)} · ${esc(e.name)} · ${s?esc(s.time):''} · <b>${money(e.buyIn,fc)}</b></span>${dup?`<button type="button" class="btn sm" data-act="gotoLine" data-lid="${line.lid}" data-target="${dup.lid}">Já está neste registo</button>`:`<button type="button" class="btn sm p" data-act="pickSug" data-lid="${line.lid}" data-ev="${e.id}" data-day="${s?esc(s.label):''}">É este</button>`}</div>`}).join('')}
+  return `<div class="sug"><b>Será um destes?</b>${os.map(e=>{const cd=contDay(e,S.form.date);if(e.status==='open'&&!cd)return `<div class="msg info">${bagMsg(e,S.form.date)}</div>`;return `<div class="openrow"><span>Tens ${e.status==='open'?'saco':'inscrição'} no <b>${esc(e.info.name)}</b> desde ${fmtDate(e.last.date)}${cd?` · ${dayName(cd)}`:''}</span><button type="button" class="btn sm p" data-act="pickOpen" data-lid="${line.lid}" data-eid="${esc(e.id)}">Sim, é esse</button></div>`}).join('')}${sug.filter(e=>!osAll.some(o=>o.info.eventId===e.id&&o.status==='open'&&!contDay(o,S.form.date))).map(e=>{const s=e.sched.find(x=>x.date===S.form.date&&e.flights.includes(x.label));const dup=inForm(e.id);return `<div class="openrow"><span>${esc(e.no)} · ${esc(e.name)} · ${s?esc(s.time):''} · <b>${money(e.buyIn,fc)}</b></span>${dup?`<button type="button" class="btn sm" data-act="gotoLine" data-lid="${line.lid}" data-target="${dup.lid}">Já está neste registo</button>`:`<button type="button" class="btn sm p" data-act="pickSug" data-lid="${line.lid}" data-ev="${e.id}" data-day="${s?esc(s.label):''}">É este</button>`}</div>`}).join('')}
    <label class="btn sm" style="align-self:flex-start"><input type="checkbox" id="${line.lid}-no" data-f="l.${line.lid}.notOther" ${line.notOther?'checked':''}> Não, é outro torneio</label></div>`;
 }
 // Só reescreve uma caixa quando o conteúdo muda: um botão que não mudou não desaparece debaixo do dedo.
@@ -822,12 +833,13 @@ function updateDerived(){
   // erros dos campos de cima: aparecem ao sair do campo (ou ao Registar)
   const fieldErr=sel=>r.errors.filter(x=>r.errSel[x]===sel&&(S.submitted||S.blurred[sel.slice(1)]));
   const topErr=['#f-date','#f-start','#f-end'].flatMap(fieldErr);
-  setH(document.getElementById('timeHint'),topErr.map(x=>`<div class="msg err">${esc(x)}</div>`).join('')+r.timeWarns.map(w=>`<div class="msg warn">${esc(w)}</div>`).join(''));
+  const tfix=['start','end'].map(k=>r.fix['f|'+k]?`<div class="msg warn" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${k==='start'?'Início':'Fim'} "${esc(f[k])}": querias <button type="button" class="btn sm p" data-act="fixTime" data-k="${k}" data-val="${r.fix['f|'+k][0]}">${r.fix['f|'+k][0]}</button> ou <button type="button" class="btn sm p" data-act="fixTime" data-k="${k}" data-val="${r.fix['f|'+k][1]}">${r.fix['f|'+k][1]}</button>?</div>`:'').join('');
+  setH(document.getElementById('timeHint'),tfix+topErr.filter(x=>!/querias/.test(x)).map(x=>`<div class="msg err">${esc(x)}</div>`).join('')+r.timeWarns.map(w=>`<div class="msg warn">${esc(w)}</div>`).join(''));
   {let dh='';if(/^\d{4}-\d\d-\d\d$/.test(f.date||'')){try{dh=new Date(f.date+'T12:00:00Z').toLocaleDateString('pt-PT',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'})}catch(x){}}setH(document.getElementById('dateHint'),dh)}
   setH(document.getElementById('expHint'),dOk?`lido como <b>${money(r.declared,cur)}</b>`:(r.fix['f|declaredEnd']?'':room.live?'Conta o dinheiro que tens.':''));
   setH(document.getElementById('endErr'),(r.fix['f|declaredEnd']?`<div class="msg warn">Os milhares escrevem-se sem ponto. Querias ${money(num(r.fix['f|declaredEnd']),cur)}? ${fixBtn('f|declaredEnd',r.fix['f|declaredEnd'],cur)}</div>`:fieldErr('#f-end-bal').map(x=>`<div class="msg err">${esc(x)}</div>`).join(''))+(S.matchCleared?'<div class="msg info">As contas mudaram depois do "Bate certo": escreve o saldo outra vez.</div>':''));
   setH(document.getElementById('roomUndo'),S.roomUndo?`<div class="msg info" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">Saldo final apagado: é outra sala.<button type="button" class="btn sm" data-act="undoRoom">Desfazer</button></div>`:'');
-  const linesOk=room.live&&f.lines.length&&r.expected>=0&&f.lines.every(l=>r.perLine[l.lid]&&!r.perLine[l.lid].msgs.some(m=>m[0]==='err'));
+  const linesOk=room.live&&f.lines.length&&r.expected>=0&&f.lines.every(l=>r.perLine[l.lid]&&!r.perLine[l.lid].msgs.some(m=>m[0]==='err'||m[0]==='warn'));
   const mb=document.getElementById('matchBox');
   if(mb){if(!(linesOk&&String(f.declaredEnd||'').trim()==='')){setH(mb,'');S.matchArm=false}
     else setH(mb,S.matchArm?`<div class="msg warn" style="margin-top:6px">Contaste o dinheiro? As contas dão:<div class="rec" style="margin:6px 0"><div class="r"><span class="k">Saldo inicial</span><span>${money(r.start,cur)}</span></div><div class="r"><span class="k">Entradas pagas (${r.bullets})</span><span>${signed(-r.cost,cur)}</span></div><div class="r"><span class="k">Prémios em dinheiro</span><span>${signed(r.prize,cur)}</span></div><div class="r tot"><span>Saldo esperado</span><span>${money(r.expected,cur)}</span></div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm p" data-act="matchYes">Sim, contei e tenho ${money(r.expected,cur)}</button><button type="button" class="btn sm" data-act="matchNo">Não, vou contar</button></div></div>`:`<button type="button" class="btn sm" data-act="match" id="btnMatch" style="margin-top:6px">Bate certo com as contas</button>`)}
@@ -865,7 +877,8 @@ function updateDerived(){
    :`<h3>Contas do dia</h3><p class="hint">Sala online: sem saldo esperado nem diferença.</p><div class="rec" style="margin-top:8px"><div class="r"><span class="k">Saldo inicial</span><span>${money(r.start,cur)}</span></div><div class="r"><span class="k">Saldo final</span><span>${dOk?money(r.declared,cur):'—'}</span></div><div class="r tot"><span>Resultado da sessão</span><span>${dOk?signed(r.sessPnl,cur):'—'}</span></div></div>`;
   const chipErr=nErr?`<button type="button" class="chip ${S.submitted?'err':''} barbtn" data-act="goErrs">falta ${nErr}</button>`:`<span class="chip ok" title="pronto">✓</span>`;
   const chipWarn=nWarn?` <button type="button" class="chip warn barbtn" data-act="goWarns">${nWarn} ${nWarn===1?'aviso':'avisos'}</button>`:'';
-  setH(document.getElementById('barInfo'),room.live?`<span>Esperado <b>${money(r.expected,cur)}</b></span><span>Diferença <b>${r.diff===null?'—':signed(r.diff,cur)}</b></span>${chipErr}${chipWarn}`:`<span>Resultado <b>${dOk?signed(r.sessPnl,cur):'—'}</b></span>${chipErr}${chipWarn}`);
+  const pendingFix=Object.keys(r.fix).length>0;
+  setH(document.getElementById('barInfo'),room.live?`<span>Esperado <b>${pendingFix?'—':money(r.expected,cur)}</b></span><span>Diferença <b>${pendingFix||r.diff===null?'—':signed(r.diff,cur)}</b></span>${chipErr}${chipWarn}`:`<span>Resultado <b>${dOk?signed(r.sessPnl,cur):'—'}</b></span>${chipErr}${chipWarn}`);
   renderMyEntries();
   document.getElementById('payload').textContent=JSON.stringify(buildPayload(f,entries,r),null,2);
 }
@@ -917,11 +930,12 @@ function setField(key,val){const [scope,a,b]=key.split('.');
 const form=document.getElementById('form');
 form.addEventListener('keydown',e=>{const t=e.target;if(e.key==='Enter'&&t.tagName==='INPUT')e.preventDefault()});
 // Ao tocar numa hora ou num valor, o que lá está fica selecionado: o que se escreve substitui.
-form.addEventListener('focusin',e=>{const t=e.target;if(t.dataset&&(t.dataset.kind==='time'||t.dataset.kind==='dec')&&t.value)setTimeout(()=>{try{if(document.activeElement===t)t.select()}catch(x){}},0)});
+form.addEventListener('focusin',e=>{const t=e.target;if(t.dataset&&NUMK.includes(t.dataset.kind)&&t.value)setTimeout(()=>{try{if(document.activeElement===t)t.select()}catch(x){}},0)});
 // Um redesenho pedido a meio de um toque espera que o toque acabe (senão o botão desaparece debaixo do dedo).
-let pendingRender=false,pendingDerived=false,ptrDown=false,selOnUp=null;
-document.addEventListener('pointerdown',e=>{ptrDown=true;const t=e.target;if(t&&t.dataset&&(t.dataset.kind==='time'||t.dataset.kind==='dec')&&document.activeElement!==t)selOnUp=t},true);
-document.addEventListener('pointerup',()=>{ptrDown=false;if(pendingRender||pendingDerived)setTimeout(()=>{if(pendingRender)render();else if(pendingDerived){pendingDerived=false;updateDerived()}},0)},true);
+let pendingRender=false,pendingDerived=false,ptrDown=false,selOnUp=null,lastUp=0;
+const NUMK=['time','dec','int','ent'];
+document.addEventListener('pointerdown',e=>{ptrDown=true;const t=e.target;if(t&&t.dataset&&NUMK.includes(t.dataset.kind))selOnUp=t},true);
+document.addEventListener('pointerup',()=>{ptrDown=false;lastUp=Date.now();if(pendingRender||pendingDerived)setTimeout(()=>{if(pendingRender)render();else if(pendingDerived){pendingDerived=false;updateDerived()}},0)},true);
 // com o rato, o soltar do botão não tira a seleção feita ao entrar no campo
 document.addEventListener('mouseup',e=>{if(selOnUp&&e.target===selOnUp){e.preventDefault();try{selOnUp.select()}catch(x){}}selOnUp=null},true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&typeof T!=='undefined'&&T.i>=0)tourEnd()});
@@ -958,7 +972,7 @@ document.addEventListener('change',e=>{if(e.target.id==='gPlayer'){GS.player=e.t
 form.addEventListener('focusin',e=>{if(e.target.id==='f-date')S.dateAtFocus=S.form.date});
 form.addEventListener('focusout',e=>{const el=e.target;
   if(el.dataset&&el.dataset.kind==='time'&&!S.timeDel[el.id]){const v=normTime(el.value);if(v!==el.value){el.value=v;setField(el.dataset.f,v)}}
-  if(['f-date','f-start','f-end','f-end-bal'].includes(el.id)){S.blurred[el.id]=true;if(ptrDown)pendingDerived=true;else updateDerived()}
+  if(['f-date','f-start','f-end','f-end-bal'].includes(el.id)){S.blurred[el.id]=true;if(ptrDown||Date.now()-lastUp<500){pendingDerived=true;setTimeout(()=>{if(pendingDerived){pendingDerived=false;updateDerived()}},350)}else updateDerived()}
   if(el.id==='f-date'&&S.form.date!==S.dateAtFocus){if(S.form.lines.some(l=>l.picking))openPickerDefaults(S.form);if(ptrDown)pendingRender=true;else setTimeout(()=>render(),0)}});
 form.addEventListener('submit',e=>{e.preventDefault();S.submitted=true;disarmReset();updateDerived();const r=reconcile(S.form,entriesNow(),S.level);const box=document.getElementById('submitMsg');
   if(r.errors.length){box.innerHTML='';scrollToEl('errBox')}
@@ -970,15 +984,17 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
   if(a==='match'){S.matchArm=true;updateDerived();const y=document.querySelector('[data-act="matchYes"]');if(y)y.focus({preventScroll:true});return}
   if(a==='matchNo'){S.matchArm=false;updateDerived();const i=document.getElementById('f-end-bal');if(i)i.focus();return}
   if(a==='matchYes'){const r=reconcile(f,entriesNow(),S.level);f.declaredEnd=String(Math.round(r.expected*100)/100).replace('.',',');f.endSource='match_button';f.matchedAt=r.expected;S.matchArm=false;S.matchCleared=false;S.roomUndo=null;S.focusTo='#f-end-bal';render();return}
+  if(a==='fixTime'){f[b.dataset.k]=b.dataset.val;S.timeDel['f-'+b.dataset.k]=false;S.focusTo='#f-'+b.dataset.k;render();return}
   if(a==='fixThou'){const [scope,fld]=b.dataset.key.split('|');if(scope==='f'){f.declaredEnd=b.dataset.val;f.endSource='typed';S.focusTo='#f-end-bal'}else{const ln=findLine(scope);if(ln){ln[fld]=b.dataset.val;S.focusTo='#'+cssEsc(scope)+(fld==='prize'?'-pr':'-mb')}}render();return}
   if(a==='undoRoom'){const u=S.roomUndo;if(u){Object.assign(f,u);S.roomUndo=null;if(f.lines.some(l=>l.picking))openPickerDefaults(f);S.focusTo='#f-room';render()}return}
   if(a==='goErrs'){S.submitted=true;updateDerived();scrollToEl('errBox');return}
   if(a==='goWarns'){scrollToEl('errBox');return}
   if(a==='goField'){let el=null;try{el=document.querySelector(b.dataset.sel)}catch(x){}if(el){el.scrollIntoView({block:'center'});if(el.matches('input,select,textarea'))el.focus({preventScroll:true})}return}
   if(a==='goErr'){const ln=document.getElementById('ln-'+b.dataset.target);const el=document.getElementById('msgs-'+b.dataset.target)||ln;if(ln){ln.classList.add('hl');setTimeout(()=>ln.classList.remove('hl'),2000)}if(el)el.scrollIntoView({block:'center'});return}
-  if(a==='undoRm'){const x=S.removed.pop();if(x){f.lines.splice(Math.min(x.idx,f.lines.length),0,x.line);S.focusTo='#ln-'+cssEsc(x.line.lid);render()}return}
+  if(a==='undoRm'){const x=S.removed.pop();if(x){if(x.repick){const i=f.lines.findIndex(l=>l.lid===x.line.lid);if(i>=0)f.lines[i]=x.line;else f.lines.splice(Math.min(x.idx,f.lines.length),0,x.line)}else f.lines.splice(Math.min(x.idx,f.lines.length),0,x.line);S.focusTo='#ln-'+cssEsc(x.line.lid)+' .lb';render()}return}
   if(a==='gtile'){const v=b.dataset.v;if(['open','alert','today','quiet','plan','diff','miss','trans','sat'].includes(v)){GS.filter=v;renderGestao();const el=document.getElementById('gListCard');if(el)el.scrollIntoView({block:'start'})}else{GS.filter='all';renderGestao();const el=document.getElementById(v);if(el)el.scrollIntoView({block:'center'})}return}
   if(a==='gpl'){GS.player=b.dataset.v;renderGestao();const el=document.getElementById('gListCard');if(el)el.scrollIntoView({block:'start'});return}
+  if(a==='gsatNo'){const k=b.dataset.key;if(GS.satNo[k])delete GS.satNo[k];else GS.satNo[k]={by:'admin',at:fmtDate(G_TODAY)};renderGestao();return}
   if(a==='gsat'){const k=b.dataset.key;if(GS.satOk[k])delete GS.satOk[k];else GS.satOk[k]={by:'admin',at:fmtDate(G_TODAY)};renderGestao();return}
   if(a==='gconf'){const k=b.dataset.key;if(GS.confirmed[k])delete GS.confirmed[k];else GS.confirmed[k]={by:'admin',at:fmtDate(G_TODAY)};renderGestao();return}
   if(a==='tourStart'){tourGo(0);return}
@@ -1003,9 +1019,9 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
   if(a==='resolveOk'){const k=b.dataset.key;const g=gLine(k);const evId=GS.pending[k];GS.resolved[k]={how:'link',snap:clone(g.line)};
     const pe=findEvent('apt',evId);Object.assign(g.line,{manual:false,festId:'apt',eventId:evId,fl:null,paidBuyIn:g.line.manualBuyIn,day:autoDay(Object.assign({festId:'apt'},pe.ev),g.line.manualDate,'new')||pe.ev.flights[0]});delete GS.pending[k];renderGestao();return}
   if(a==='unresolve'){const k=b.dataset.key;const g=gLine(k);const res=GS.resolved[k];if(g&&res){Object.keys(g.line).forEach(x=>delete g.line[x]);Object.assign(g.line,res.snap)}delete GS.resolved[k];renderGestao();return}
-  if(a==='gotoLine'){const cur=findLine(b.dataset.lid);if(cur&&cur.picking&&!cur.eventId)f.lines=f.lines.filter(l=>l.lid!==cur.lid);S.focusTo='#ln-'+cssEsc(b.dataset.target);render();const el=document.getElementById('ln-'+b.dataset.target);if(el){el.classList.add('hl');el.scrollIntoView({block:'center'});setTimeout(()=>el.classList.remove('hl'),2500)}return}
+  if(a==='gotoLine'){const cur=findLine(b.dataset.lid);if(cur&&((cur.picking&&!cur.eventId)||cur.manual)){if(cur.manual)S.removed.push({idx:f.lines.indexOf(cur),line:cur,name:'o torneio escrito à mão'});f.lines=f.lines.filter(l=>l.lid!==cur.lid)}S.focusTo='#ln-'+cssEsc(b.dataset.target)+' .lb';render();const el=document.getElementById('ln-'+b.dataset.target);if(el){el.classList.add('hl');el.scrollIntoView({block:'center'});setTimeout(()=>el.classList.remove('hl'),2500)}return}
   if(a==='gotoOpen'){const ln=findLine(b.dataset.lid);const e2=entriesNow()[b.dataset.target];
-    if(ln&&e2&&!contDay(e2,f.date)){const nx=e2.info.sched&&e2.info.sched.find(x=>x.date>f.date&&e2.info.days.includes(x.label));S.pickMsg[ln.lid]=`Tens saco no ${esc(e2.info.name)} desde ${fmtDate(e2.last.date)}. ${nx?`O ${dayName(nx.label)} é a ${fmtDate(nx.date)}: regista-o nesse dia.`:'Não há dia seguinte hoje.'}`;render();return}
+    if(ln&&e2&&!contDay(e2,f.date)){const nx=e2.info.sched&&e2.info.sched.find(x=>x.date>f.date&&e2.info.days.includes(x.label));S.pickMsg[ln.lid]=bagMsg(e2,f.date);render();return}
     if(ln&&e2){Object.assign(ln,{kind:'cont',entryId:e2.id,picking:false,manual:false,fl:null,bullets:'0',day:contDay(e2,f.date)});S.focusTo='#ln-'+cssEsc(ln.lid)+' .lb';render();const el=document.getElementById('ln-'+ln.lid);if(el){el.classList.add('hl');el.scrollIntoView({block:'start'});setTimeout(()=>el.classList.remove('hl'),2500)}}return}
   if(a==='band'){PF.band=b.dataset.v;PF.min='';PF.max='';savePF();document.querySelectorAll('[data-act="band"]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.v===PF.band)));['pmin-','pmax-'].forEach(p=>{const i=document.getElementById(p+b.dataset.lid);if(i)i.value=''});renderPickList(b.dataset.lid);return}
   const line=f&&findLine(b.dataset.lid);if(!line)return;
@@ -1013,10 +1029,11 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
     const dupL=f.lines.find(o=>{if(o===line)return false;const oe=lineEvent(o,ents);return oe&&oe.festId===fest&&oe.eventId===evId});
     if(dupL){f.lines=f.lines.filter(o=>o!==line);S.focusTo='#ln-'+cssEsc(dupL.lid);render();const el=document.getElementById('ln-'+dupL.lid);if(el){el.classList.add('hl');el.scrollIntoView({block:'center'})}return}
     const open=Object.values(ents).find(x=>x.info&&x.info.festId===fest&&x.info.eventId===evId&&isOpen(x,f.date));
+    if(open&&open.status==='open'&&!contDay(open,f.date)){S.pickMsg[line.lid]=bagMsg(open,f.date);render();return}
     if(open){Object.assign(line,{kind:'cont',entryId:open.id,picking:false,manual:false,fl:null,bullets:open.status==='reentry'?'1':'0'});line.day=open.status==='reentry'&&b.dataset.day?b.dataset.day:contDay(open,f.date)}
     else{Object.assign(line,{kind:'new',festId:fest,eventId:evId,manual:false,picking:false,fl:null,bullets:'1',notOther:false});const ev=lineEvent(line,{});line.day=b.dataset.day||autoDay(ev,f.date,'new')}
     S.focusTo='#ln-'+cssEsc(line.lid)+' .lb';render();{const el=document.getElementById('ln-'+line.lid);if(el)el.scrollIntoView({block:'start'})}}
-  if(a==='repick'){Object.assign(line,{endState:'',chips:'',left:'',inMoney:false,pos:'',entrants:'',prize:'',proof:'',proofFile:'',planReason:'',fl:null,bullets:'1',method:'direto',satName:'',satDate:''});line.kind='new';line.picking=true;line.manual=false;openPickerDefaults(f);S.focusTo='#pk-'+cssEsc(line.lid);render()}
+  if(a==='repick'){const ev0=lineEvent(line,entriesNow());S.removed.push({idx:f.lines.indexOf(line),line:clone(line),name:'o resultado de '+(ev0?ev0.name:'torneio'),repick:true});Object.assign(line,{endState:'',chips:'',left:'',inMoney:false,pos:'',entrants:'',prize:'',proof:'',proofFile:'',planReason:'',fl:null,bullets:'1',method:'direto',satName:'',satDate:'',receivedIn:'live',wallet:walletsFor(roomOf(f.room).currency)[0]});line.kind='new';line.picking=true;line.manual=false;openPickerDefaults(f);S.focusTo='#pk-'+cssEsc(line.lid);render()}
   if(a==='missing'){const fest=PF.fest!=='all'?PF.fest:(CATALOG.find(x=>x.currency===roomOf(f.room).currency)||{}).id;Object.assign(line,{manual:true,picking:false,manualFest:fest,manualDate:f.date,festId:'',eventId:'',day:'Único',notOther:false});S.focusTo='#'+cssEsc(line.lid)+'-mn';render()}
   if(a==='state'){line.endState=b.dataset.v;if(b.dataset.v==='bagged'&&line.kind==='cont'){const e2=entriesNow()[line.entryId];if(e2&&e2.last&&e2.last.inMoney)line.inMoney=true}render()}
   if(a==='rmPhoto'){line.proofFile='';S.focusTo='#'+cssEsc(line.lid)+'-pf';render()}
@@ -1031,25 +1048,25 @@ const G_TODAY='2026-11-21';
 const GDATA=[
  {player:'Jogador A',level:'6.5',days:SCEN.days.map(d=>({form:d.form}))},
  {player:'Jogador B',level:'6.1',days:[
-   {form:F({date:'2026-11-16',startBalance:12000,declaredEnd:'11199',lines:[L({lid:'gb1',entryId:'GB1',festId:'apt',eventId:'apt1003',day:'1C',bullets:'1',endState:'bagged',chips:'98000'})]})},
+   {form:F({date:'2026-11-16',startBalance:12000,declaredEnd:'11199',lines:[L({lid:'gb1',entryId:'GB1',festId:'apt',eventId:'apt1003',day:'1C',bullets:'1',endState:'bagged',chips:'98000',left:'700'})]})},
    {form:F({date:'2026-11-17',startBalance:11199,declaredEnd:'7353',lines:[L({lid:'gb2',entryId:'GB2',manual:true,manualFest:'apt',manualDate:'2026-11-17',manualName:'Mistery Bounty High Roller',manualBuyIn:'3846',notOther:true,day:'Único',bullets:'1',endState:'busted',planReason:'O coach autorizou por mensagem no grupo.'})]})},
    {form:F({date:'2026-11-18',startBalance:7353,declaredEnd:'7353',lines:[L({lid:'gb3',kind:'cont',entryId:'GB1',day:'FT',bullets:'0',endState:'busted'})]})}]},
  {player:'Jogador C',level:'6.1',days:[
-   {form:F({date:'2026-11-13',startBalance:8000,declaredEnd:'7487',lines:[L({lid:'gc1',entryId:'GC1',festId:'apt',eventId:'apt1001',day:'1A',bullets:'1',endState:'bagged',chips:'76000'})]})},
+   {form:F({date:'2026-11-13',startBalance:8000,declaredEnd:'7487',lines:[L({lid:'gc1',entryId:'GC1',festId:'apt',eventId:'apt1001',day:'1A',bullets:'1',endState:'bagged',chips:'76000',left:'520'})]})},
    {form:F({date:'2026-11-17',startBalance:7487,declaredEnd:'3641',lines:[L({lid:'gc2',entryId:'GC2',festId:'apt',eventId:'apt46',day:'Único',bullets:'1',endState:'busted',planReason:'Autorizado pelo coach no grupo da série.'})]})},
    {form:F({date:'2026-11-19',startBalance:3641,declaredEnd:'5170',lines:[L({lid:'gc3',entryId:'GC3',festId:'apt',eventId:'apt72',day:'Único',bullets:'1',endState:'itm',pos:'2',entrants:'96',prize:'1850',receivedIn:'live'})]})}]},
  {player:'Jogador D',level:'7.5',days:[
    {form:F({date:'2026-11-19',startBalance:30000,declaredEnd:'19500',diffReason:'500 $ guardados no cofre do hotel.',diffFor:-500,lines:[L({lid:'gd1',entryId:'GD1',festId:'apt',eventId:'apt1009',day:'Único',bullets:'1',endState:'busted'})]})},
-   {form:F({date:'2026-11-20',startBalance:19500,declaredEnd:'19500',endSource:'match_button',lines:[L({lid:'gd2',entryId:'GD2',festId:'apt',eventId:'apt1011',day:'1',bullets:'1',method:'satelite',satName:'Satélite do Main Event',satDate:'2026-11-18',endState:'bagged',chips:'310000'})]})}]},
+   {form:F({date:'2026-11-20',startBalance:19500,declaredEnd:'19500',endSource:'match_button',lines:[L({lid:'gd2',entryId:'GD2',festId:'apt',eventId:'apt1011',day:'1',bullets:'1',method:'satelite',satName:'Satélite do Main Event',satDate:'2026-11-18',endState:'bagged',chips:'310000',left:'210'})]})}]},
 ];
-let GS={filter:'all',sel:null,resolved:{},pending:{},player:'all',confirmed:{},satOk:{}};
+let GS={filter:'all',sel:null,resolved:{},pending:{},player:'all',confirmed:{},satOk:{},satNo:{}};
 function gAll(){
   const out=[];const diffs=[];const plans=[];const lastReg={};const matched=[];
   GDATA.forEach(src=>{src.days.forEach((d,i)=>{const r=reconcile(d.form,buildEntries(src.days.slice(0,i)),src.level);if(r.diff)diffs.push({player:src.player,date:d.form.date,expected:r.expected,declared:r.declared,diff:r.diff,reason:d.form.diffReason});
       if(!lastReg[src.player]||d.form.date>lastReg[src.player])lastReg[src.player]=d.form.date;
       if(d.form.endSource==='match_button')matched.push({player:src.player,date:d.form.date,declared:r.declared,manual:d.form.lines.some(l=>l.manual)});
       d.form.lines.forEach(l=>{const pl=r.perLine[l.lid];if(pl&&pl.needPlan)plans.push({key:src.player+'|'+l.entryId,player:src.player,level:src.level,date:d.form.date,name:pl.ev?pl.ev.name:'',rule:pl.lr?pl.lr.txt:'',reason:l.planReason})})});
-    Object.values(settle(buildEntries(src.days),G_TODAY)).forEach(e=>{if(!e.info)return;const key=src.player+'|'+e.id;const res=GS.resolved[key];
+    Object.values(settle(buildEntries(src.days),G_TODAY)).forEach(e=>{if(!e.info)return;const key=src.player+'|'+e.id;const res=GS.resolved[key];if(GS.satNo[key])e.cost+=e.info.buyIn;
       out.push(Object.assign({key,player:src.player,level:src.level,src,resolved:res},e))})});
   return {entries:out,diffs,plans,lastReg,matched};
 }
@@ -1066,8 +1083,8 @@ function renderGestao(){
   const today=entries.filter(e=>gToday(e));const todayPl=[...new Set(today.map(e=>e.player))];
   const players=[...new Set(entries.map(e=>e.player))];const quiet=players.filter(p=>daysBetween(lastReg[p],G_TODAY)>=2&&open.some(e=>e.player===p));
   const trans=[],noProof=[];entries.forEach(e=>e.days.forEach(d=>{if(d.endState==='itm'){if(d.receivedIn==='transfer')trans.push({e,d});if((num(d.prize)||0)>0&&!proofOk(e.proof,e.proofFile))noProof.push({e,d})}}));
-  const toConfirm=trans.filter(({e})=>!GS.confirmed[e.key]);const sats=entries.filter(e=>e.method&&e.method!=='direto');const satTodo=sats.filter(e=>!GS.satOk[e.key]);
-  const SPECIAL={open:['Em aberto',e=>open.includes(e)],today:['Jogam hoje',e=>!!gToday(e)],closed:['Terminadas',e=>['closed','paid'].includes(e.status)],alert:['Com alerta',e=>!!gAlert(e)],quiet:['Sem registo há 2+ dias',e=>quiet.includes(e.player)&&open.includes(e)],plan:['Fora do plano',e=>planKeys.has(e.key)],diff:['Diferenças de saldo',e=>diffs.some(d=>d.player===e.player&&e.days.some(x=>x.date===d.date))],miss:['Torneios em falta',e=>e.manual&&!e.resolved],trans:['Prémios por confirmar',e=>e.days.some(d=>d.endState==='itm'&&d.receivedIn==='transfer')&&!GS.confirmed[e.key]],sat:['Satélites por confirmar',e=>e.method&&e.method!=='direto'&&!GS.satOk[e.key]]};
+  const toConfirm=trans.filter(({e})=>!GS.confirmed[e.key]);const sats=entries.filter(e=>e.method&&e.method!=='direto');const satTodo=sats.filter(e=>!GS.satOk[e.key]&&!GS.satNo[e.key]);
+  const SPECIAL={open:['Em aberto',e=>open.includes(e)],today:['Jogam hoje',e=>!!gToday(e)],closed:['Terminadas',e=>['closed','paid'].includes(e.status)],alert:['Com alerta',e=>!!gAlert(e)],quiet:['Sem registo há 2+ dias',e=>quiet.includes(e.player)&&open.includes(e)],plan:['Fora do plano',e=>planKeys.has(e.key)],diff:['Diferenças de saldo',e=>diffs.some(d=>d.player===e.player&&e.days.some(x=>x.date===d.date))],miss:['Torneios em falta',e=>e.manual&&!e.resolved],trans:['Prémios por confirmar',e=>e.days.some(d=>d.endState==='itm'&&d.receivedIn==='transfer')&&!GS.confirmed[e.key]],sat:['Satélites por confirmar',e=>e.method&&e.method!=='direto'&&!GS.satOk[e.key]&&!GS.satNo[e.key]]};
   let month='';try{month=new Date(G_TODAY+'T12:00:00Z').toLocaleString('pt-PT',{month:'long',timeZone:'UTC'})}catch(x){}
   const tile=(id,v,k,val,sub,alert)=>`<div class="tile ${alert?'alert':''}" id="${id}" data-act="gtile" data-v="${v}" style="cursor:pointer" role="button" tabindex="0"><div class="k">${k}</div><div class="v">${val}</div><div class="ls">${sub}</div></div>`;
   document.getElementById('gTiles').innerHTML=
@@ -1097,7 +1114,7 @@ function renderGestao(){
     dbox.innerHTML=`<div><div class="ls">${esc(e.player)} · nível ${esc(e.level)} · ${esc(e.info.festName||'')}</div><h3>${esc(e.info.name)} <span class="chip ${st[1]}">${st[0]}</span></h3><div class="ls">Buy-in ${money(e.info.buyIn,cur)}${e.paidBuyIn!=null&&num(e.paidBuyIn)!==e.info.buyIn?` (o jogador pagou ${money(num(e.paidBuyIn),cur)})`:''}${e.paidMix!=null?` (num dos dias pagou ${money(num(e.paidMix),cur)})`:''} · ${e.bullets} ${e.bullets===1?'entrada':'entradas'} · custo ${money(e.cost,cur)}${e.method!=='direto'?' · entrou com satélite/ticket':''}</div></div>
       <div class="tl">${e.days.map(d=>`<div class="ev"><div><b>${fmtDate(d.date)}</b> · ${dayName(d.day)}${d.bullets?` · ${d.bullets} ${d.bullets===1?'entrada':'entradas'}`:''}</div><div class="ls">${d.endState==='bagged'?`passou com ${NF.format(intOr0(d.chips))}${d.left?' · restam '+esc(d.left):''}${d.inMoney?' · já nos prémios':''}`:d.endState==='busted'?'eliminado sem prémio':`${esc(d.pos)}.º${d.entrants?' de '+esc(d.entrants):''} · prémio ${money(num(d.prize),cur)}${d.receivedIn==='transfer'?' na '+esc(d.wallet||'carteira'):' em dinheiro'}`}</div></div>`).join('')}</div>
       ${planKeys.has(e.key)?`<div class="msg info">Fora do plano do nível. Explicação: ${esc(e.planReason||'—')}</div>`:''}
-      ${e.method!=='direto'?`<div class="msg ${GS.satOk[e.key]?'':'warn'}" style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><span>Entrou com satélite/ticket: <b>${esc(e.satName||'—')}</b>${e.satDate?' a '+fmtDate(e.satDate):''}.${GS.satOk[e.key]?' Confirmado por '+esc(GS.satOk[e.key].by)+' a '+esc(GS.satOk[e.key].at)+'.':''}</span><button type="button" class="btn sm ${GS.satOk[e.key]?'':'p'}" data-act="gsat" data-key="${esc(e.key)}">${GS.satOk[e.key]?'Desfazer':'Confirmar satélite'}</button></div>`:''}
+      ${e.method!=='direto'?`<div class="msg ${GS.satOk[e.key]?'':'warn'}" style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><span>Entrou com satélite/ticket: <b>${esc(e.satName||'—')}</b>${e.satDate?' a '+fmtDate(e.satDate):''}.${GS.satOk[e.key]?' Confirmado por '+esc(GS.satOk[e.key].by)+' a '+esc(GS.satOk[e.key].at)+'.':''}${GS.satNo[e.key]?` Recusado por ${esc(GS.satNo[e.key].by)} a ${esc(GS.satNo[e.key].at)}: a 1.ª entrada (${money(e.info.buyIn,cur)}) volta a contar e o jogador é avisado.`:''}</span><span style="display:flex;gap:6px">${GS.satOk[e.key]||GS.satNo[e.key]?`<button type="button" class="btn sm" data-act="${GS.satOk[e.key]?'gsat':'gsatNo'}" data-key="${esc(e.key)}">Desfazer</button>`:`<button type="button" class="btn sm p" data-act="gsat" data-key="${esc(e.key)}">Confirmar satélite</button><button type="button" class="btn sm" data-act="gsatNo" data-key="${esc(e.key)}">Recusar</button>`}</span></div>`:''}
       ${gAlert(e)?`<div class="msg warn">Alerta: ${esc(gAlert(e))} Confirmar com o jogador.</div>`:''}
       ${e.proofFile?`<div class="ls">Prova: foto ${esc(e.proofFile)}</div>`:e.proof?`<div class="ls">Prova: ${esc(e.proof)}${proofOk(e.proof)?'':' <span class="chip warn">não é link https://</span>'}</div>`:''}`}
   document.getElementById('gPlan').innerHTML=`<h3>Fora do plano do nível</h3><p class="hint" style="margin:0">Torneios jogados fora do plano da série para o nível do jogador, com a explicação que ele deu.</p>
@@ -1117,7 +1134,7 @@ function renderGestao(){
        const prior=entries.find(o=>o.player===x.player&&o.key!==x.key&&o.info&&o.info.eventId===pend);const canMerge=!!(prior&&prior.days.some(d=>d.endState==='busted'&&flightsLeft(d.day,prior.info))&&!prior.days.some(d=>d.endState==='bagged'&&d.date<line.manualDate));
        return `<div class="stack" style="gap:6px;border:1px solid var(--warn);border-radius:6px;padding:10px"><div><b>Ligar "${esc(line.manualName)}" a ${esc(pe.ev.no)} · ${esc(pe.ev.name)}?</b></div>
         ${Math.abs(pe.ev.buyIn-paid)>1?`<div class="msg warn">O jogador escreveu ${money(paid,cur)} e este evento tem buy-in de ${money(pe.ev.buyIn,cur)}. O custo e o saldo dele não mudam: fica o que pagou, com a marca "pagou ${money(paid,cur)}" para rever.</div>`:''}
-        ${lr&&lr.out?`<div class="msg warn">Este evento está fora do plano do nível ${esc(x.level)}, e o jogador não explicou. Vai aparecer em "Fora do plano".</div>`:''}
+        ${lr&&lr.out?`<div class="msg warn">Este evento está fora do plano do nível ${esc(x.level)}. ${String(line.planReason||'').trim()?'O jogador explicou: "'+esc(line.planReason)+'".':'O jogador não explicou.'} Vai aparecer em "Fora do plano".</div>`:''}
         ${has?`<div class="msg warn">O ${esc(x.player)} já tem uma inscrição neste evento. Confirma que não é o mesmo torneio duas vezes.</div>`:''}
         <div style="display:flex;gap:8px;flex-wrap:wrap">${has&&canMerge?`<button type="button" class="btn sm p" data-act="resolveMerge" data-key="${esc(x.key)}">Juntar à inscrição que já existe (re-entrada)</button><button type="button" class="btn sm" data-act="resolveOk" data-key="${esc(x.key)}">Ligar como inscrição nova</button>`:has?`<span class="ls">Não dá para juntar: nessa inscrição o jogador já tinha saco.</span><button type="button" class="btn sm p" data-act="resolveOk" data-key="${esc(x.key)}">Ligar como inscrição nova</button>`:`<button type="button" class="btn sm p" data-act="resolveOk" data-key="${esc(x.key)}">Ligar</button>`}<button type="button" class="btn sm" data-act="resolveCancel" data-key="${esc(x.key)}">Cancelar</button></div></div>`}
      const dd=line?line.manualDate:'';const onDay=ev=>(ev.sched||[]).some(s=>s.date===dd&&ev.flights.includes(s.label));
@@ -1139,7 +1156,7 @@ function renderCases(){
       if(d.gapBefore)rows+=`<tr><td colspan="7" class="gap">${esc(d.gapBefore)}</td></tr>`;
       const lines=d.form.lines.map(l=>{const ev=lineEvent(l,entries);const st={busted:'eliminado sem prémio',bagged:'passou'+(l.chips?' com '+NF.format(num(l.chips)):''),itm:(l.pos?l.pos+'.º':'')+' · prémio '+money(num(l.prize),cur)+(l.receivedIn==='transfer'?' (transferência)':'')}[l.endState];
         return `<div><span class="chip ${l.kind==='new'?'y':'info'}">${l.kind==='new'?'Novo':'Dia seguinte'}</span> ${esc(ev?ev.name:'')} · ${dayName(l.day)} · ${num(l.bullets)||0} ${num(l.bullets)===1?'entrada':'entradas'} · ${st}</div>`}).join('');
-      rows+=`<tr><td>${fmtDate(d.form.date)}</td><td>${lines}</td><td class="n">${r.bullets}</td><td class="n">${money(d.form.startBalance,cur)}</td><td class="n">${money(r.expected,cur)}</td><td class="n">${money(r.declared,cur)} ${r.diff?`<span class="chip warn">${signed(r.diff,cur)}</span>`:'<span class="chip ok">bate</span>'}</td><td><button type="button" class="btn sm" data-act="open" data-ci="${ci}" data-di="${di}">Abrir</button></td></tr>`});
+      rows+=`<tr><td>${fmtDate(d.form.date)}</td><td>${lines}</td><td class="n">${r.events}</td><td class="n">${money(d.form.startBalance,cur)}</td><td class="n">${money(r.expected,cur)}</td><td class="n">${money(r.declared,cur)} ${r.diff?`<span class="chip warn">${signed(r.diff,cur)}</span>`:'<span class="chip ok">bate</span>'}</td><td><button type="button" class="btn sm" data-act="open" data-ci="${ci}" data-di="${di}">Abrir</button></td></tr>`});
     const all=buildEntries(c.days);
     h+=`<div class="card case"><div class="ch"><div><div class="ls">Caso ${c.id}</div><h2>${esc(c.title)}</h2></div></div><p style="margin:0;max-width:75ch">${esc(c.story)}</p><ul class="proves">${c.proves.map(p=>`<li>${esc(p)}</li>`).join('')}</ul>
       <div class="scroll"><table class="t"><thead><tr><th>Dia</th><th>Torneios</th><th class="n">Nº torn.</th><th class="n">Saldo inicial</th><th class="n">Esperado</th><th class="n">Declarado</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
