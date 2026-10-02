@@ -215,14 +215,14 @@ tr.sel td{background:var(--primary-soft)}
     <p class="sub">Caso de uso novo dentro do registo de sessões do tracker. O jogador escolhe a sala Live e regista os torneios do dia a partir do catálogo da série. A gestão acompanha tudo numa página própria. Só equipa MTT. Fase 1: não depende do módulo de compras de ação.</p>
   </div>
   <div class="meta">
-    <span class="chip y">v9 · rascunho</span>
+    <span class="chip y">v10 · rascunho</span>
     <span class="chip">02/out/2026</span>
     <button type="button" class="btn sm" id="themeBtn" aria-label="Mudar tema">☀ Claro</button>
   </div>
 </header>
 
 <div class="card startcard" style="margin-bottom:14px">
-  <div><div class="lt">Simulação guiada · APT Taipei 2026</div><div class="ls">Cinco dias de um jogador de nível 6.5, com o catálogo real da série (99 eventos), e depois a mesma semana vista pela gestão. Cerca de 10 minutos. A v9 corrige os dois testes da v8 e o teste no iPhone: "Querias $9 200?" nos milhares com ponto, horas mais seguras, prova só por link https:// ou foto, e o formulário pensado para o telemóvel.</div></div>
+  <div><div class="lt">Simulação guiada · APT Taipei 2026</div><div class="ls">Cinco dias de um jogador de nível 6.5, com o catálogo real da série (99 eventos), e depois a mesma semana vista pela gestão. Cerca de 10 minutos. A v10 corrige os dois testes da v9: satélite com nome e dia, plano por flight, torneios à mão com o limite do dia, sala online sem torneios live e horas mais seguras.</div></div>
   <button type="button" class="btn p" data-act="tourStart">▶ Começar a simulação</button>
 </div>
 
@@ -306,31 +306,42 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 // Texto que não é número devolve NaN (para a validação distinguir "vazio" de "mal escrito").
 function num(v){if(v===null||v===undefined)return null;if(typeof v==='number')return v;const s=String(v).replace(/\s/g,'');if(s==='')return null;
   return /^-?\d+([.,]\d{1,2})?$/.test(s)?Number(s.replace(',','.')):NaN}
-const isInt=v=>{if(typeof v==='number')return Number.isInteger(v)&&v>=0;return /^\d+$/.test(String(v??'').trim())};
-const intOr0=v=>isInt(v)?Number(String(v).trim()):0;
+const isInt=v=>{if(typeof v==='number')return Number.isInteger(v)&&v>=0;return /^\d+$/.test(String(v??'').replace(/\s/g,''))&&String(v??'').trim()!==''};
+const intOr0=v=>isInt(v)?Number(String(v).replace(/\s/g,'')):0;
 // Limpeza enquanto se escreve: o ponto passa a vírgula. Nada mais é mudado em silêncio.
 function cleanDec(v){return String(v).replace(/\./g,',')}
 // Separador seguido de grupos de 3 algarismos = milhares escritos com ponto: devolve o número sem eles.
 function thouFix(v){const s=String(v??'').replace(/\s/g,'').replace(/\./g,',');
-  if(/^\d{1,3}(,\d{3})+$/.test(s))return s.replace(/,/g,'');
-  if(/^\d{1,3}(,\d{3})+,\d{1,2}$/.test(s)){const i=s.lastIndexOf(',');return s.slice(0,i).replace(/,/g,'')+s.slice(i)}
+  if(/^[1-9]\d{0,2}(,\d{3})+$/.test(s))return s.replace(/,/g,'');
+  if(/^[1-9]\d{0,2}(,\d{3})+,\d{1,2}$/.test(s)){const i=s.lastIndexOf(',');return s.slice(0,i).replace(/,/g,'')+s.slice(i)}
   return null}
 // Fichas: só se tira o separador quando é claramente de milhares ("185.000" → 185000). Nas entradas não.
 function cleanInt(v){const s=String(v).replace(/\s/g,'');return /^\d{1,3}([.,]\d{3})+$/.test(s)?s.replace(/[.,]/g,''):String(v)}
 // Horas: escreve-se só os algarismos ("2130" → "21:30"); "21h30" e "21.30" também servem.
 // Começado por 3–9 é uma hora de um algarismo ("930" → 9:30). "25:00" fica como está, para dar erro.
-function cleanTime(v){let s=String(v).replace(/[hH.,;\s]/g,':').replace(/[^\d:]/g,'');
-  if(s.includes(':')){const p=s.split(':');return p[0].slice(0,2)+':'+p.slice(1).join('').slice(0,2)}
-  if(s.length>=2&&/^[3-9]/.test(s))return s.slice(0,1)+':'+s.slice(1,3);
-  return s.length>2?s.slice(0,2)+':'+s.slice(2,4):s}
+function cleanTime(v){const raw=String(v);const ap=(raw.match(/[ap]m?$/i)||[''])[0].toLowerCase();let s=raw.replace(/[ap]m?$/i,'').replace(/[hH.,;\s]/g,':').replace(/[^\d:]/g,'');
+  if(ap)return s+ap;
+  if(s.includes(':')){const p=s.split(':');return p[0].slice(0,2)+':'+p.slice(1).join('')}
+  if(s.length>=2&&/^[3-9]/.test(s))return s.slice(0,1)+':'+s.slice(1);
+  return s.length>2?s.slice(0,2)+':'+s.slice(2):s}
 // Ao sair do campo: "21:" (de "21h") → 21:00 e "9:30" → 09:30. Algarismos soltos ("9", "21") ficam, e dão erro.
-function normTime(v){const s=String(v||'').trim();let m=s.match(/^(\d{1,2}):$/);if(m&&+m[1]<24)return m[1].padStart(2,'0')+':00';m=s.match(/^(\d{1,2}):(\d{2})$/);return m?m[1].padStart(2,'0')+':'+m[2]:s}
-const hm=v=>/^([01]?\d|2[0-3]):[0-5]\d$/.test(String(v||'').trim());
+function normTime(v){let s=String(v||'').trim();
+  let m=s.match(/^(\d{1,2})(?::(\d{2}))?\s*(a|p)m?$/i);if(m){let h=+m[1];if(h>=1&&h<=12){if(m[3].toLowerCase()==='p'&&h<12)h+=12;if(m[3].toLowerCase()==='a'&&h===12)h=0;return String(h).padStart(2,'0')+':'+(m[2]||'00')}return s}
+  m=s.match(/^(\d)(\d):(\d)$/);if(m)return '0'+m[1]+':'+m[2]+m[3];
+  m=s.match(/^(\d{1,2}):$/);if(m&&+m[1]<24)return m[1].padStart(2,'0')+':00';m=s.match(/^(\d{1,2}):(\d{2})$/);return m?m[1].padStart(2,'0')+':'+m[2]:s}
+const hm=v=>/^([01]\d|2[0-3]):[0-5]\d$/.test(String(v||'').trim());
 const toMin=t=>{const [h,m]=String(t).trim().split(':').map(Number);return h*60+m};
 // Explicação: pelo menos 10 letras e 2 palavras diferentes de 3 ou mais letras ("aaaaaaaaaa" não serve).
-const enough=s=>{const t=String(s||'').toLowerCase();const letters=(t.match(/[a-zà-úç]/g)||[]).length;const words=new Set(t.match(/[a-zà-úç]{3,}/g)||[]);return letters>=10&&words.size>=2};
+// Explicação: pelo menos 10 letras e 2 palavras a sério (com vogal, sem 4 consoantes seguidas, que não sejam vagas).
+const VAGUE=new Set(['não','nao','sei','porquê','porque','nada','coisa','coisas','qualquer','algo','talvez','sim','ok','okay','erro','teste','asdf']);
+const realWords=s=>[...new Set((String(s||'').toLowerCase().match(/[a-zà-úç]{3,}/g)||[]).filter(w=>/[aeiouáàâãéêíóôõú]/.test(w)&&!/[^aeiouáàâãéêíóôõú]{4}/.test(w)&&!VAGUE.has(w)&&!/^(.)\1+$/.test(w)))];
+const letterCount=s=>(String(s||'').toLowerCase().match(/[a-zà-úç]/g)||[]).length;
+const enough=s=>letterCount(s)>=10&&realWords(s).length>=2;
+const whyShort=(s,what)=>letterCount(s)<10?`A explicação ${what} é curta demais: escreve pelo menos 10 letras.`:`Escreve o motivo ${what} em palavras (ex.: câmbio no casino).`;
 // Prova: link https:// com domínio a sério, ou foto junta pelo botão (proofFile). Texto escrito não conta.
-const linkOk=p=>/^https:\/\/[^\s\/]+\.[a-z]{2,}(\/\S*)?$/i.test(String(p||'').trim());
+const normLink=p=>{const t=String(p||'').trim();return /^www\./i.test(t)?'https://'+t:t};
+const isFileLink=p=>/\.(jpe?g|png|heic|gif|webp|pdf)(\?.*)?$/i.test(String(p||'').trim());
+const linkOk=p=>{const t=normLink(p);return /^https:\/\/[^\s\/]+\.[a-z]{2,}(\/\S*)?$/i.test(t)&&!isFileLink(t)};
 const proofOk=(p,file)=>linkOk(p)||!!file;
 const NF=(()=>{try{return new Intl.NumberFormat('pt-PT',{minimumFractionDigits:0,maximumFractionDigits:0,useGrouping:'always'})}catch(e){return new Intl.NumberFormat('pt-PT',{maximumFractionDigits:0})}})();
 const NF2=(()=>{try{return new Intl.NumberFormat('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2,useGrouping:'always'})}catch(e){return new Intl.NumberFormat('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})}})();
@@ -344,7 +355,7 @@ const roomOf=id=>ROOMS.find(r=>r.id===id)||ROOMS[0];
 const dayName=d=>d==='Único'?'Único dia':d==='FT'?'Final Day':/^1[A-Z]$/.test(d)?'Flight '+d.slice(1):'Day '+d;
 const theDay=d=>d==='Único'?'Este torneio':'O '+dayName(d)+' deste torneio';
 function L(o){return Object.assign({lid:uid('l'),kind:'new',entryId:null,festId:'',eventId:'',manual:false,manualFest:'',manualDate:'',manualName:'',manualBuyIn:'',manualNo:'',notOther:false,day:'',bullets:'1',method:'direto',
-  endState:'',chips:'',left:'',inMoney:false,pos:'',entrants:'',prize:'',receivedIn:'live',wallet:'Luxon USD',walletBy:{},proof:'',proofFile:'',picking:false,fl:null,planReason:'',paidBuyIn:null},o)}
+  endState:'',chips:'',left:'',inMoney:false,pos:'',entrants:'',prize:'',receivedIn:'live',wallet:'Luxon USD',walletBy:{},proof:'',proofFile:'',satName:'',satDate:'',picking:false,fl:null,planReason:'',paidBuyIn:null},o)}
 function F(o){return Object.assign({room:'live_usd',homeRoom:null,date:'',start:'',end:'',startBalance:0,declaredEnd:'',endSource:'typed',matchedAt:null,diffReason:'',diffFor:null,warmup:false,meditation:false,notes:'',lines:[]},o)}
 // Saldo inicial da sala escolhida: o da sala com que o dia abriu, ou o saldo próprio de cada outra sala.
 function startBal(f){if(!f.homeRoom||f.room===f.homeRoom)return num(f.startBalance)||0;return DEFAULT_BAL[f.room]||0}
@@ -391,20 +402,25 @@ function syncFlights(line,ev,date,status,played){
 function setFlightState(line,lab,v){if(!line.fl||!line.fl[lab])return;if(v==='bagged')Object.keys(line.fl).forEach(l=>{if(l!==lab&&line.fl[l].st==='bagged')line.fl[l].st=''});line.fl[lab].st=v}
 function setFlightOn(line,lab,on){if(!line.fl||!line.fl[lab])return;line.fl[lab].on=on;if(!on)line.fl[lab].st=''}
 function statusFrom(line,ev){if(line.endState==='bagged')return 'open';if(line.endState==='busted')return flightsLeft(line.day,ev)?'reentry':'closed';if(line.endState==='itm')return 'paid';return 'open'}
+// Plano da folha, por flight: "X" = pode; "1 entrada" = máximo nesse flight; "2 entradas (total)" = máximo no torneio todo.
 function levelRule(ev,day,level){
   if(!ev||!level||!ev.sched)return null;const s=schedFor(ev,day)||ev.sched[0];const r=s&&s.rules;if(!r)return null;
   const t=r[LEVELS.indexOf(level)]||'';if(!t)return {out:true,txt:'fora do plano do nível '+level};
-  const m=t.match(/(\d)\s*entrada/);if(m)return {max:+m[1],txt:'nível '+level+': '+t};
+  const m=t.match(/(\d)\s*entrada/);if(m){const per=/total/i.test(t)?'total':'flight';const n=+m[1];const multi=ev.flights&&ev.flights.length>1;
+    return {max:n,per,txt:'nível '+level+': '+n+' '+(n===1?'entrada':'entradas')+(per==='total'?' no total':multi?' por flight':'')}}
   return {ok:true,txt:'no plano do nível '+level};
 }
-// Torneio em falta: fora do plano se o buy-in passa o maior buy-in que o plano permite ao nível
-// em toda a série, ou se nesse dia há um torneio fora do plano com buy-in igual ou menor.
+// Torneio em falta: fora do plano se o buy-in passa o maior buy-in que o nível pode jogar nesse dia
+// (torneios no plano ou sem plano desse dia); sem torneios nesse dia, conta o teto da série.
+// A partir de MANUAL_REVIEW, fica também marcado para a gestão confirmar.
+const MANUAL_REVIEW=2000;
 function manualPlan(line,date,level){if(!level)return null;const f=CATALOG.find(x=>x.id===line.manualFest);const bi=num(line.manualBuyIn);if(!f||!(bi>0))return null;
   const all=[];f.events.forEach(e=>(e.sched||[]).forEach(s=>{if(e.flights.includes(s.label)&&s.rules)all.push({e,s,t:s.rules[LEVELS.indexOf(level)]||''})}));if(!all.length)return null;
   const maxSeries=Math.max(0,...all.filter(r=>r.t).map(r=>r.e.buyIn));
   if(bi>maxSeries+1)return {out:true,manual:true,txt:'acima do maior buy-in do plano do nível '+level+' ('+money(maxSeries,f.currency)+')'};
-  const day=all.filter(r=>r.s.date===date);const maxDay=Math.max(0,...day.filter(r=>r.t).map(r=>r.e.buyIn));
-  if(bi>maxDay+1&&day.some(r=>!r.t&&r.e.buyIn<=bi+1))return {out:true,manual:true,txt:'acima do plano do nível '+level+' neste dia'};return null}
+  // limite do dia: o maior buy-in que o nível pode jogar nesse dia (torneios no plano ou sem plano)
+  let maxDay=-1;f.events.forEach(e=>(e.sched||[]).forEach(s=>{if(s.date===date&&e.flights.includes(s.label)){const t=s.rules?s.rules[LEVELS.indexOf(level)]||'':'free';if(t)maxDay=Math.max(maxDay,e.buyIn)}}));
+  if(maxDay>=0&&bi>maxDay+1)return {out:true,manual:true,txt:'acima do maior buy-in que o nível '+level+' pode jogar neste dia ('+money(maxDay,f.currency)+')'};return null}
 const STOP=new Set(['event','evento','events','championship','champion','tournament','torneio','series','poker','holdem','hold\'em','nlhe','flight','final','edition']);
 function suggestions(line,date){
   const f=CATALOG.find(x=>x.id===line.manualFest);if(!f)return [];const d=date||line.manualDate;const bi=num(line.manualBuyIn);
@@ -420,7 +436,7 @@ function buildEntries(days){
   days.forEach(d=>{const f=d.form;f.lines.forEach(line=>{
     let e;
     if(line.kind==='new'){const ev=lineEvent(line,entries);
-      e=entries[line.entryId]={id:line.entryId,info:ev,manual:!!line.manual,method:line.method,paidBuyIn:line.paidBuyIn,days:[],bullets:0,cost:0,status:'open',prize:0,proof:''};
+      e=entries[line.entryId]={id:line.entryId,info:ev,manual:!!line.manual,method:line.method,satName:line.satName,satDate:line.satDate,paidBuyIn:line.paidBuyIn,days:[],bullets:0,cost:0,status:'open',prize:0,proof:''};
     } else e=entries[line.entryId];
     if(!e||!e.info)return;
     const ev=e.info;
@@ -428,6 +444,7 @@ function buildEntries(days){
     if(multi)line._sel.forEach(l=>{const x=line.fl[l];e.days.push({date:f.date,day:l,endState:x.st,chips:x.st==='bagged'?line.chips:'',left:x.st==='bagged'?line.left:'',inMoney:false,bullets:intOr0(x.bul)})});
     else e.days.push({date:f.date,day:line.day,endState:line.endState,chips:line.chips,left:line.left,inMoney:line.inMoney,bullets:intOr0(line.bullets),pos:line.pos,entrants:line.entrants,prize:line.prize,receivedIn:line.receivedIn,wallet:line.wallet,planReason:line.planReason,endSource:f.endSource});
     if(line.planReason)e.planReason=line.planReason;
+    if(line.kind==='cont'&&line.paidBuyIn!=null)e.paidMix=line.paidBuyIn;
     e.bullets+=intOr0(line.bullets);e.cost+=lineCashCost(line,ev,e.method);e.status=statusFrom(line,ev);
     e.last={date:f.date,day:line.day,endState:line.endState,chips:line.chips,left:line.left,inMoney:line.inMoney};
     if(line.endState==='itm'){e.prize=netPrize(line);e.pos=line.pos;e.entrants=line.entrants;e.receivedIn=line.receivedIn;e.wallet=line.wallet;e.proof=line.proof;e.proofFile=line.proofFile}
@@ -446,13 +463,13 @@ function reconcile(form,entries,level){
   const E=(m,sel)=>{out.errors.push(m);if(sel)out.errSel[m]=sel};
   const seen=new Set();const seenEv=new Set();const seenManual=new Set();
   if(room.live&&!form.lines.length)E('Acrescenta pelo menos um torneio ou tira a sala Live.','#c-live');
-  if(!room.live&&form.lines.length)out.infos=[`${form.lines.length===1?'O torneio live só conta':'Os '+form.lines.length+' torneios live só contam'} com uma sala Live. ${form.lines.length===1?'Volta':'Voltam'} se escolheres Live USD ou Live EUR.`];
+  if(!room.live&&form.lines.length)E(`Tens ${form.lines.length===1?'1 torneio live':form.lines.length+' torneios live'}: volta à sala Live ou ${form.lines.length===1?'remove-o':'remove-os'}.`,'#f-room');
   // data e horas
   if(!form.date)E('Escreve a data da sessão.','#f-date');else if(!/^\d{4}-\d\d-\d\d$/.test(form.date))E('A data da sessão não é válida.','#f-date');
-  const st=String(form.start||'').trim(),en=String(form.end||'').trim();
+  const st=String(form.start||'').trim(),en=String(form.end||'').trim();const oneDigit=t=>/^\d:\d\d$/.test(t)?' Falta um algarismo na hora?':'';
   const badHour=t=>/^\d{2}/.test(t)&&+t.slice(0,2)>23?' A hora vai de 00 a 23.':'';
-  if(!st)E('Escreve a hora de início.','#f-start');else if(!hm(st))E('Hora de início mal escrita: usa hh:mm (ex.: 2130 → 21:30).'+badHour(st),'#f-start');
-  if(!en)E('Escreve a hora de fim.','#f-end');else if(!hm(en))E('Hora de fim mal escrita: usa hh:mm (ex.: 0330 → 03:30).'+badHour(en),'#f-end');
+  if(!st)E('Escreve a hora de início.','#f-start');else if(!hm(st))E('Hora de início mal escrita: usa hh:mm (ex.: 2130 → 21:30).'+badHour(st)+oneDigit(st),'#f-start');
+  if(!en)E('Escreve a hora de fim.','#f-end');else if(!hm(en))E('Hora de fim mal escrita: usa hh:mm (ex.: 0330 → 03:30).'+badHour(en)+oneDigit(en),'#f-end');
   if(hm(st)&&hm(en)){let d=toMin(en)-toMin(st);if(d===0)E('O início e o fim são iguais.','#f-end');else{if(d<0)d+=1440;if(d>16*60)out.timeWarns.push(`Sessão de ${Math.floor(d/60)} h${d%60?' '+(d%60)+' min':''}. Confirma as horas.`);else if(d<30)out.timeWarns.push(`Sessão de ${d} min. Confirma as horas.`)}
     if(toMin(st)<600&&form.date)out.timeWarns.push(`Começou antes das 10:00: conta como sessão do dia anterior. Se começaste de madrugada a ${fmtDate(form.date)}, a data certa é ${fmtDate(addDays(form.date,-1))}.`)}
   (room.live?form.lines:[]).forEach(line=>{
@@ -471,7 +488,9 @@ function reconcile(form,entries,level){
       const bf=thouFix(line.manualBuyIn);
       if(line.manualBuyIn===''||line.manualBuyIn==null)err('Escreve o buy-in por entrada.');else if(bf){err(`Buy-in "${esc(line.manualBuyIn)}": os milhares escrevem-se sem ponto. Querias ${money(num(bf),cur)}?`);out.fix[line.lid+'|manualBuyIn']=bf}else if(isNaN(bi)||!(bi>0))err('O buy-in não é um número válido.');else if(bi<50)warn(`Buy-in de ${money(bi,cur)}? Confirma o valor.`);
       const fr=festRange(line.manualFest);if(fr&&form.date&&(form.date<fr[0]||form.date>fr[1]))err(`A sessão é a ${fmtDateY(form.date,fr[0])} e a ${fest.name} é de ${fmtDate(fr[0])} a ${fmtDate(fr[1])}.`);
-      const sg=suggestions(line,form.date);const os=openSug(line,entries,form.date);if((sg.length||os.length)&&!line.notOther)err('Confirma que não é nenhum dos torneios sugeridos.');
+      const sg=suggestions(line,form.date);const osAll=openSug(line,entries,form.date);const os=osAll.filter(x=>!form.lines.some(o=>o.entryId===x.id));const inF2=osAll.find(x=>form.lines.some(o=>o!==line&&o.entryId===x.id));
+      if(inF2)err(`O ${esc(inF2.info.name)} já está neste registo. Se é esse, remove esta linha.`);else if((sg.length||os.length)&&!line.notOther)err('Confirma que não é nenhum dos torneios sugeridos.');
+      if(bi>=MANUAL_REVIEW)msgs.push(['info',`Torneio escrito à mão a partir de ${money(MANUAL_REVIEW,cur)}: a gestão confirma-o.`]);
       const inF=sg.find(x=>form.lines.some(o=>{if(o===line)return false;const oe=lineEvent(o,entries);return oe&&oe.festId===line.manualFest&&oe.eventId===x.id&&Math.abs(x.buyIn-(bi||0))<=1}));if(inF)err(`O ${inF.no} · ${inF.name} já está neste registo. Se é esse, remove esta linha.`);
       const mk=nm.toLowerCase().replace(/[^a-z0-9à-ú]/g,'')+'|'+(bi||0);if(nm&&seenManual.has(mk))err('Já escreveste este torneio neste registo. Remove esta linha.');
       else{const sw=sigWords(nm);const twin=form.lines.find(o=>o!==line&&o.manual&&form.lines.indexOf(o)<form.lines.indexOf(line)&&Math.abs((num(o.manualBuyIn)||0)-(bi||0))<=1&&[...sigWords(o.manualName)].some(w=>sw.has(w)));if(twin)warn(`Parece o mesmo que "${esc(String(twin.manualName).trim())}". Se é, remove esta linha.`)}
@@ -484,7 +503,7 @@ function reconcile(form,entries,level){
       else if(line.kind==='new'&&!(b>=1))err('Um torneio novo tem pelo menos 1 entrada paga.')}
     if(ev&&b>4)warn(`${b} entradas num só torneio. Confirma.`);
     if(repeatLast&&b>0)err('Num dia que continua não se pagam entradas. Põe 0.');
-    if(ev&&line.kind==='cont'&&line.day&&!ev.flights.includes(line.day)&&b>0)err('Num dia seguinte não se pagam entradas. Põe 0.');
+    if(ev&&line.kind==='cont'&&line.day&&!ev.flights.includes(line.day)&&b>0&&!repeatLast)err('Num dia seguinte não se pagam entradas. Põe 0.');
     if(ev&&line.kind==='cont'&&line.day&&played.includes(line.day)&&!repeatLast)err(`Já registaste o ${dayName(line.day)} deste torneio noutra sessão.`);
     if(repeatLast){if(form.date&&form.date<=e.last.date)err(`O ${dayName(line.day)} começou a ${fmtDate(e.last.date)}: continua num dia depois.`);else if(form.date&&daysBetween(e.last.date,form.date)>2)warn(`O ${dayName(line.day)} foi a ${fmtDate(e.last.date)} e continua ${daysBetween(e.last.date,form.date)} dias depois. Confirma a data.`)}
     else{const sc=ev&&schedFor(ev,line.day);if(sc&&sc.date&&form.date&&sc.date!==form.date)err(`${theDay(line.day)} é a ${fmtDateY(sc.date,form.date)}, e a sessão é a ${fmtDateY(form.date,sc.date)}. Confirma a data.`)}
@@ -504,12 +523,19 @@ function reconcile(form,entries,level){
       if(line.entrants!==''){if(!isInt(line.entrants)||intOr0(line.entrants)<1)err('Os inscritos são um número inteiro, pelo menos 1.');else if(isInt(line.pos)&&intOr0(line.pos)>intOr0(line.entrants))err('A posição não pode ser maior que o nº de inscritos.')}
       if(prevLeft&&isInt(line.pos)&&intOr0(line.pos)>prevLeft)warn(`Ontem restavam ${prevLeft} jogadores e acabaste em ${intOr0(line.pos)}.º. Confirma.`);
       if(ev&&ev.buyIn&&p>0&&p>=30*ev.buyIn)warn(`O prémio é ${Math.round(p/ev.buyIn)}× o buy-in. Confirma que está em ${cur}.`);
-      if(p>=1000&&!proofOk(line.proof,line.proofFile))warn(String(line.proof||'').trim()?'A prova tem de ser um link https:// ou uma foto (botão Foto).':'Junta a prova do prémio (foto do recibo ou link dos resultados).')}
-    const lr=line.manual?manualPlan(line,form.date,level):levelRule(ev,line.day,level);const total=(e?e.bullets:0)+b;const over=!!(lr&&lr.max&&total>lr.max);const needPlan=!!(lr&&(lr.out||over));
-    if(lr&&lr.out)warn(lr.manual?`Pelo buy-in, este torneio fica fora do plano do teu nível (${level}) neste dia.`:`Este torneio não está no plano do teu nível (${level}) para esta série.`);
-    if(over)warn(`O plano do teu nível é ${lr.max} ${lr.max===1?'entrada':'entradas'} neste torneio, e esta já é a ${total}.ª.`);
-    if(needPlan){if(!String(line.planReason||'').trim())err('Explica porque jogaste este torneio fora do plano do teu nível.');else if(!enough(line.planReason))err('A explicação do plano é curta demais: escreve pelo menos 10 letras.')}
-    if(line.kind==='new'&&line.method!=='direto')msgs.push(['info','O satélite onde ganhaste o lugar regista-se como torneio próprio, no dia em que o jogaste.']);
+      if(p>=1000&&!proofOk(line.proof,line.proofFile))warn(isFileLink(line.proof)?'Isso parece um ficheiro: usa o botão Foto.':String(line.proof||'').trim()?'A prova tem de ser um link https:// ou uma foto (botão Foto).':'Junta a prova do prémio (foto do recibo ou link dos resultados).')}
+    // plano: em vários flights, cada flight tem a sua regra
+    let lr,over=false;const outFl=[];const total=(e?e.bullets:0)+b;const ent=n=>n+' '+(n===1?'entrada':'entradas');
+    if(line.manual)lr=manualPlan(line,form.date,level);
+    else{const fls=multi?line._sel.map(l=>[l,intOr0(line.fl[l].bul)]):[[line.day,b]];
+      fls.forEach(([l,n])=>{const r=levelRule(ev,l,level);if(!r)return;if(!lr||r.out)lr=r;
+        if(r.out){if(multi)outFl.push(l)}
+        else if(r.max&&r.per==='flight'&&n>r.max&&!over){over=true;warn(`O plano do teu nível é ${ent(r.max)} por flight, e no ${dayName(l)} pagaste ${n}.`)}
+        else if(r.max&&r.per==='total'&&total>r.max&&!over){over=true;warn(`O plano do teu nível é ${ent(r.max)} no total deste torneio, e já vais na ${total}.ª.`)}})}
+    const outAll=!!(lr&&lr.out&&(!multi||outFl.length));const needPlan=outAll||over;
+    if(outAll)warn(lr.manual?`Pelo buy-in, este torneio fica fora do plano do teu nível (${level}): ${lr.txt}.`:multi&&outFl.length<line._sel.length?`O ${outFl.map(dayName).join(' e o ')} não ${outFl.length===1?'está':'estão'} no plano do teu nível (${level}).`:`Este torneio não está no plano do teu nível (${level}) para esta série.`);
+    if(needPlan){if(!String(line.planReason||'').trim())err('Explica porque jogaste este torneio fora do plano do teu nível.');else if(!enough(line.planReason))err(whyShort(line.planReason,'do plano'))}
+    if(line.kind==='new'&&line.method!=='direto'){if((String(line.satName||'').match(/[A-Za-zÀ-ú]/g)||[]).length<3||!line.satDate)err('Diz qual foi o satélite ou ticket: nome e dia.');else if(form.date&&line.satDate>form.date)err('O satélite não pode ser depois deste torneio.');msgs.push(['info','A 1.ª entrada não sai do saldo. A gestão confirma o satélite.'])}
     const c=curOk?lineCashCost(line,ev,method):0;out.cost+=c;out.bullets+=ev&&curOk?b:0;
     if(line.endState==='itm'&&curOk){const np=netPrize(line);if(line.receivedIn==='live')out.prize+=np;else{out.walletPrize+=np;out.pending.push(`O prémio de ${money(np,cur)} (${ev?esc(ev.name):''}) entra já na ${esc(line.wallet)}. Não conta no saldo do Live.`)}}
     out.perLine[line.lid]={msgs,ev,cost:c,lr,needPlan,multi,repeatLast};msgs.forEach(m=>{(m[0]==='err'?out.errors:out.warns).push(m[1])});
@@ -523,10 +549,10 @@ function reconcile(form,entries,level){
   const lineErrs=Object.values(out.perLine).some(pl=>pl.msgs.some(m=>m[0]==='err'));const ef=thouFix(form.declaredEnd);
   if(out.declared===null)E('Escreve o saldo final.','#f-end-bal');
   else if(ef){E(`Saldo final "${esc(form.declaredEnd)}": os milhares escrevem-se sem ponto. Querias ${money(num(ef),cur)}?`,'#f-end-bal');out.fix['f|declaredEnd']=ef;out.diff=null}
-  else if(isNaN(out.declared)){E(/[$€]/.test(String(form.declaredEnd))?`Escreve só o número: esta sala é em ${cur}.`:'O saldo final está mal escrito. Usa só algarismos e uma vírgula para os cêntimos (ex.: 18398,50).','#f-end-bal');out.diff=null}
+  else if(isNaN(out.declared)){E(/[$€]/.test(String(form.declaredEnd))?'Escreve só o número, sem $ nem €.':'O saldo final está mal escrito. Usa só algarismos e uma vírgula para os cêntimos (ex.: 18398,50).','#f-end-bal');out.diff=null}
   else if(out.declared<0)E('O saldo final não pode ser negativo.','#f-end-bal');
   else if(out.diff){const rs=String(form.diffReason||'').trim();
-    if(!rs)E('Explica a diferença de saldo.','#f-diff');else if(!enough(rs))E('A explicação da diferença é curta demais: escreve pelo menos 10 letras.','#f-diff');
+    if(!rs)E('Explica a diferença de saldo.','#f-diff');else if(!enough(rs))E(whyShort(rs,'da diferença'),'#f-diff');
     else if(!lineErrs&&form.diffFor!=null&&Math.abs(form.diffFor-out.diff)>0.004)E(`Explicaste uma diferença de ${signed(form.diffFor,cur)}; agora são ${signed(out.diff,cur)}. Revê a explicação.`,'#f-diff')}
   return out;
 }
@@ -610,18 +636,19 @@ const CASES=[
 
 /* ---------------- estado ---------------- */
 // drafts: o que o jogador mudou em cada dia da simulação fica guardado até carregar em Repor.
-let S={src:'scen',di:0,variant:'empty',ci:0,level:SCEN.level,player:SCEN.player,form:null,touched:{},submitted:false,removed:[],resetArm:0,matchArm:false,drafts:{},dirty:false,focusTo:null,blurred:{},roomUndo:null,matchCleared:false};
-function freshUI(){S.touched={};S.submitted=false;S.removed=[];S.resetArm=0;S.matchArm=false;S.blurred={};S.roomUndo=null;S.matchCleared=false}
+let S={src:'scen',di:0,variant:'empty',ci:0,level:SCEN.level,player:SCEN.player,form:null,touched:{},submitted:false,removed:[],resetArm:0,matchArm:false,drafts:{},dirty:false,focusTo:null,blurred:{},roomUndo:null,matchCleared:false,timeDel:{},pickMsg:{},photoMsg:{}};
+function freshUI(){S.touched={};S.submitted=false;S.removed=[];S.resetArm=0;S.matchArm=false;S.blurred={};S.roomUndo=null;S.matchCleared=false;S.timeDel={};S.pickMsg={};S.photoMsg={}}
 function priorDays(){if(S.src==='scen')return SCEN.days.slice(0,S.di).map(d=>({form:d.form}));if(S.src==='case')return CASES[S.ci].days.slice(0,S.di);return []}
 function entriesNow(){return buildEntries(priorDays())}
-function draftKey(){return S.src==='scen'?'scen|'+S.di+'|'+S.variant:S.src==='case'?'case|'+S.ci+'|'+S.di:'blank'}
+// Um rascunho por dia (seja qual for a variante com que o dia abriu).
+function draftKey(){return S.src==='scen'?'scen|'+S.di:S.src==='case'?'case|'+S.ci+'|'+S.di:'blank'}
 function keepDraft(){if(S.form&&S.dirty)S.drafts[draftKey()]=S.form}
 // fresh=true: Repor (apaga o rascunho). fresh='peek': simulação guiada (mostra o exemplo e guarda o rascunho).
 function takeDraft(fresh,make){const k=draftKey();if(fresh===true)delete S.drafts[k];const d=fresh?null:S.drafts[k];S.form=d||make();S.dirty=!!d;if(!S.form.homeRoom)S.form.homeRoom=S.form.room}
 function loadScen(di,variant,fresh){keepDraft();freshUI();S.src='scen';S.di=di;S.variant=variant||'form';S.level=SCEN.level;S.player=SCEN.player;takeDraft(fresh,()=>clone(SCEN.days[di][S.variant]||SCEN.days[di].form));afterLoad();render()}
 function loadCase(ci,di,fresh){keepDraft();freshUI();S.src='case';S.ci=ci;S.di=di;S.level=null;S.player='Caso '+CASES[ci].id;takeDraft(fresh,()=>clone(CASES[ci].days[di].form));afterLoad();render()}
 function loadBlank(fresh){keepDraft();freshUI();S.src='blank';S.level=SCEN.level;S.player='Jogador A';takeDraft(fresh,()=>F({date:'2026-11-16',start:'11:00',startBalance:20000,lines:[L({lid:uid('n'),entryId:uid('E'),picking:true})]}));afterLoad();render()}
-function afterLoad(){if(S.form.lines.some(l=>l.picking))openPickerDefaults(S.form)}
+function afterLoad(){if(S.form.lines.some(l=>l.picking))openPickerDefaults(S.form);if(S.form.diffReasonAt===undefined)S.form.diffReasonAt=S.form.diffReason||''}
 
 /* ---------------- render jogador ---------------- */
 function renderLoader(){
@@ -641,8 +668,8 @@ function renderForm(){
   h+=`<div class="card" style="background:var(--primary-soft);border-color:var(--primary)"><div class="ls">${ctx}</div></div>`;
   h+=`<div class="card stack" id="c-time"><div class="timegrid">
       <div class="tg-date"><label class="l" for="f-date">Data da sessão</label><input class="i" id="f-date" type="date" min="2020-01-01" max="2030-12-31" value="${esc(f.date)}" data-f="f.date"><div class="hint" id="dateHint"></div></div>
-      <div><label class="l" for="f-start">Início</label><input class="i" id="f-start" value="${esc(f.start)}" data-f="f.start" data-kind="time" placeholder="hh:mm" inputmode="numeric" maxlength="5" autocomplete="off"></div>
-      <div><label class="l" for="f-end">Fim</label><input class="i" id="f-end" value="${esc(f.end)}" data-f="f.end" data-kind="time" placeholder="hh:mm" inputmode="numeric" maxlength="5" autocomplete="off"></div></div><div class="msgs" id="timeHint"></div></div>`;
+      <div><label class="l" for="f-start">Início</label><input class="i" id="f-start" value="${esc(f.start)}" data-f="f.start" data-kind="time" placeholder="hh:mm" inputmode="numeric" autocomplete="off"></div>
+      <div><label class="l" for="f-end">Fim</label><input class="i" id="f-end" value="${esc(f.end)}" data-f="f.end" data-kind="time" placeholder="hh:mm" inputmode="numeric" autocomplete="off"></div></div><div class="msgs" id="timeHint"></div></div>`;
   h+=`<div class="card stack" id="c-rooms">
     <div class="row c2" id="c-room">
       <div><label class="l" for="f-room">Sala</label><select class="i" id="f-room" data-f="f.room">${ROOMS.map(r=>opt(r.id,r.name,f.room)).join('')}</select></div>
@@ -706,6 +733,9 @@ function renderPickList(lid){
     <span class="tm">${fmtDate(s.date)}<br><span class="ls">${esc(s.time)}</span></span>
     <span><span class="lt" style="display:block">${esc(e.no)} · ${esc(e.name)}</span><span class="ls">${dayName(s.label)}${s.reg?' · registo até '+esc(s.reg):''}${e.gtd?' · '+esc(e.gtd):''}${lr?` · <span class="chip ${lr.out?'warn':lr.max?'info':'ok'}" style="padding:0 6px">${esc(lr.txt)}</span>`:''}</span></span>
     ${dup?'<span class="chip ok">já está neste registo</span>':bg?`<span class="chip info">tens saco desde ${fmtDate(bg.last.date)}</span>`:`<span class="amt">${money(e.buyIn,f.currency)}</span>`}</button>`}).join(''):'<p class="hint">Nenhum torneio com estes filtros.</p>';
+  const cur=roomOf(S.form.room).currency;const covers=CATALOG.filter(x=>x.currency===cur).some(x=>{const fr=festRange(x.id);return fr&&S.form.date>=fr[0]&&S.form.date<=fr[1]});
+  if(!covers&&S.form.date)el.insertAdjacentHTML('afterbegin',`<div class="msg warn">Não há série em ${cur} a ${fmtDate(S.form.date)}. Estás na sala certa?</div>`);
+  if(S.pickMsg&&S.pickMsg[lid])el.insertAdjacentHTML('afterbegin',`<div class="msg info">${S.pickMsg[lid]}</div>`);
   const m=document.getElementById('pmiss-'+lid);const fest=CATALOG.find(x=>x.id===PF.fest);
   if(m)m.innerHTML=fest?`<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:8px"><span class="ls">Não encontras o torneio?</span><button type="button" class="btn sm" data-act="missing" data-lid="${lid}">Falta um torneio de ${fmtDate(S.form.date)}</button></div>`:`<p class="hint">Escolhe a série para dizer que falta um torneio.</p>`;
 }
@@ -713,7 +743,7 @@ function renderLine(line,entries,cur,f){
   const ev=lineEvent(line,entries);const isNew=line.kind==='new';const e=entries[line.entryId];const k=line.lid;
   const title=ev?`${ev.no?esc(ev.no)+' · ':''}${esc(ev.name)}`:(line.manual?'Torneio em falta':'Torneio novo');
   const sub=ev?`${esc(ev.festName)} · buy-in ${money(ev.buyIn,ev.currency||cur)}${ev.rake?' · rake '+NF2.format(ev.rake)+'%':''}`:'Escolhe na lista';
-  let h=`<div class="line" id="ln-${k}"><div class="lh"><div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="chip ${isNew?(line.manual?'warn':'y'):'info'}">${isNew?(line.manual?'Provisório':'Novo'):'Dia seguinte'}</span><span class="lt">${title}</span>${isNew&&!line.picking?`<button type="button" class="btn ghost sm" data-act="repick" data-lid="${k}">Trocar torneio</button>`:''}</div><div class="ls">${sub}${!isNew&&e?` · ${e.days.length} ${e.days.length===1?'dia jogado':'dias jogados'}, ${e.bullets} ${e.bullets===1?'entrada':'entradas'}`:''}</div></div>
+  let h=`<div class="line" id="ln-${k}"><div class="lh"><div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="chip ${isNew?(line.manual?'warn':'y'):'info'}">${isNew?(line.manual?'Provisório':'Novo'):'Dia seguinte'}</span><span class="lt" id="ttl-${k}">${title}</span>${isNew&&!line.picking?`<button type="button" class="btn ghost sm" data-act="repick" data-lid="${k}">Trocar torneio</button>`:''}</div><div class="ls" id="sub-${k}">${sub}${!isNew&&e?` · ${e.days.length} ${e.days.length===1?'dia jogado':'dias jogados'}, ${e.bullets} ${e.bullets===1?'entrada':'entradas'}`:''}</div></div>
     <button type="button" class="btn sm rmbtn" data-act="rm" data-lid="${k}" aria-label="Remover este torneio">Remover</button></div><div class="lb">`;
   if(isNew&&line.picking)h+=renderPicker(line,f);
   if(isNew&&line.manual){const fest=CATALOG.find(x=>x.id===line.manualFest);const sug=suggestions(line,f.date);
@@ -726,6 +756,7 @@ function renderLine(line,entries,cur,f){
     if(line.receivedIn==='transfer'&&!walletsFor(cur).includes(line.wallet))line.wallet=(line.walletBy||{})[cur]||walletsFor(cur)[0];
     const status=e?e.status:null;const played=!isNew&&e?e.days.map(x=>x.day):[];const multi=syncFlights(line,ev,f.date,status,played);const lr=line.manual?manualPlan(line,f.date,S.level):levelRule(ev,line.day,S.level);
     const satBox=isNew?`<label class="btn" style="justify-content:flex-start"><input type="checkbox" id="${k}-sat" data-f="l.${k}.satellite" ${line.method!=='direto'?'checked':''}> Entrei com satélite/ticket</label>`:'';
+    const satFields=isNew&&line.method!=='direto'?`<div class="row c2"><div><label class="l" for="${k}-sn">Qual satélite ou ticket? <span class="req">*</span></label><input class="i" id="${k}-sn" value="${esc(line.satName)}" data-f="l.${k}.satName" placeholder="Ex.: Satélite do Main Event" autocomplete="off"></div><div><label class="l" for="${k}-sd">Dia do satélite <span class="req">*</span></label><input class="i" id="${k}-sd" type="date" value="${esc(line.satDate)}" data-f="l.${k}.satDate"></div></div>`:'';
     const planChip=lr&&(isNew||ev.flights.includes(line.day))?`<span class="ls">Plano da série: <span class="chip ${lr.out?'warn':lr.max?'info':'ok'}">${esc(lr.txt)}</span></span>`:'';
     if(multi){
       const labels=dayFlights(ev,f.date,played);const passed=labels.indexOf(line._passed);
@@ -750,6 +781,7 @@ function renderLine(line,entries,cur,f){
         ${[['busted','Eliminado sem prémio'],['bagged',isLastDay(ev,line.day)?'Continua amanhã':'Passou ao dia seguinte'],['itm','Terminou nos prémios']].map(([v,t])=>`<button type="button" data-act="state" data-lid="${k}" data-v="${v}" aria-pressed="${line.endState===v}">${t}</button>`).join('')}</div>
         ${line.endState==='busted'&&flightsLeft(line.day,ev)?`<div class="hint">Ainda há flights até ${fmtDate(lastFlightDate(ev))}: o torneio fica em aberto, caso re-entres.</div>`:''}</div>`;
     }
+    h+=satFields;
     h+=`<div id="plan-${k}" hidden><label class="l" for="${k}-plan">Porque jogaste fora do plano do teu nível? <span class="req">*</span></label><textarea class="i" id="${k}-plan" rows="2" data-f="l.${k}.planReason" placeholder="Ex.: autorizado pelo coach no grupo da série">${esc(line.planReason)}</textarea></div>`;
     if(line.endState==='bagged')h+=`<div class="row c3"><div><label class="l" for="${k}-ch">Fichas no saco <span class="req">*</span></label><input class="i num" id="${k}-ch" value="${esc(line.chips)}" data-f="l.${k}.chips" data-kind="int" inputmode="numeric" autocomplete="off"></div>
         <div><label class="l" for="${k}-lf">Jogadores restantes</label><input class="i num" id="${k}-lf" value="${esc(line.left)}" data-f="l.${k}.left" data-kind="int" inputmode="numeric" autocomplete="off"></div>
@@ -762,7 +794,7 @@ function renderLine(line,entries,cur,f){
           <button type="button" data-act="recv" data-lid="${k}" data-v="live" aria-pressed="${line.receivedIn==='live'}">Em dinheiro</button>
           <button type="button" data-act="recv" data-lid="${k}" data-v="transfer" aria-pressed="${line.receivedIn==='transfer'}">Transferência</button></div>
           ${line.receivedIn==='transfer'?`<div style="margin-top:8px"><label class="l" for="${k}-wal">Para que carteira?</label><select class="i" id="${k}-wal" data-f="l.${k}.wallet">${walletsFor(cur).map(w=>opt(w,w,line.wallet)).join('')}</select><div class="hint">Entra já nesta carteira, e não no saldo do Live.</div></div>`:''}</div>
-        <div><label class="l" for="${k}-pf">Prova (link ou foto)</label>${line.proofFile?`<div style="display:flex;gap:6px;align-items:center"><span class="chip ok">Foto: ${esc(line.proofFile)}</span><button type="button" class="btn sm" data-act="rmPhoto" data-lid="${k}">Tirar foto</button></div>`:`<div style="display:flex;gap:6px"><input class="i" id="${k}-pf" value="${esc(line.proof)}" data-f="l.${k}.proof" placeholder="https://…" inputmode="url" autocomplete="off"><label class="btn sm" style="white-space:nowrap">Foto<input type="file" accept="image/*" data-photo="${k}" hidden></label></div>`}</div></div>`;
+        <div><label class="l" for="${k}-pf">Prova (link ou foto)</label>${line.proofFile?`<div style="display:flex;gap:6px;align-items:center"><span class="chip ok">Foto: ${esc(line.proofFile)}</span><button type="button" class="btn sm" data-act="rmPhoto" data-lid="${k}">Tirar foto</button></div>`:`<div style="display:flex;gap:6px"><input class="i" id="${k}-pf" value="${esc(line.proof)}" data-f="l.${k}.proof" placeholder="https://…" inputmode="url" autocomplete="off"><label class="btn sm" style="white-space:nowrap">Foto<input type="file" accept="image/*" data-photo="${k}" hidden></label></div>`}${S.photoMsg&&S.photoMsg[k]?`<div class="hint" style="color:var(--err)">${S.photoMsg[k]}</div>`:''}</div></div>`;
   }
   h+=`</div><div class="msgs" id="msgs-${k}"></div></div>`;return h;
 }
@@ -770,7 +802,9 @@ const WALLETS={USD:['Luxon USD','Skrill USD'],EUR:['Luxon EUR','Skrill EUR']};
 function walletsFor(cur){return WALLETS[cur]||WALLETS.USD}
 function renderSug(line,sug){
   const fest=CATALOG.find(x=>x.id===line.manualFest);const fc=fest?fest.currency:'USD';
-  const ents=entriesNow();const os=openSug(line,ents,S.form.date).filter(e=>!S.form.lines.some(o=>o.entryId===e.id));
+  const ents=entriesNow();const osAll=openSug(line,ents,S.form.date);const os=osAll.filter(e=>!S.form.lines.some(o=>o.entryId===e.id));
+  const inF=osAll.map(e=>[e,S.form.lines.find(o=>o!==line&&o.entryId===e.id)]).filter(x=>x[1]);
+  if(inF.length)return `<div class="sug">${inF.map(([e,o])=>`<div class="openrow"><span>O <b>${esc(e.info.name)}</b> já está neste registo.</span><button type="button" class="btn sm p" data-act="gotoLine" data-lid="${line.lid}" data-target="${o.lid}">Ir para a linha</button></div>`).join('')}</div>`;
   if(!sug.length&&!os.length)return (String(line.manualName||'').trim()||line.manualBuyIn)?'<div class="msg info">Não há nada parecido no catálogo deste dia. A linha fica provisória e a gestão acrescenta o torneio ao catálogo.</div>':'';const inForm=id=>S.form.lines.find(o=>{if(o===line)return false;const oe=lineEvent(o,ents);return oe&&oe.festId===line.manualFest&&oe.eventId===id});
   return `<div class="sug"><b>Será um destes?</b>${os.map(e=>{const cd=contDay(e,S.form.date);return `<div class="openrow"><span>Tens ${e.status==='open'?'saco':'inscrição'} no <b>${esc(e.info.name)}</b> desde ${fmtDate(e.last.date)}${cd?` · ${dayName(cd)}`:''}</span><button type="button" class="btn sm p" data-act="pickOpen" data-lid="${line.lid}" data-eid="${esc(e.id)}">Sim, é esse</button></div>`}).join('')}${sug.map(e=>{const s=e.sched.find(x=>x.date===S.form.date&&e.flights.includes(x.label));const dup=inForm(e.id);return `<div class="openrow"><span>${esc(e.no)} · ${esc(e.name)} · ${s?esc(s.time):''} · <b>${money(e.buyIn,fc)}</b></span>${dup?`<button type="button" class="btn sm" data-act="gotoLine" data-lid="${line.lid}" data-target="${dup.lid}">Já está neste registo</button>`:`<button type="button" class="btn sm p" data-act="pickSug" data-lid="${line.lid}" data-ev="${e.id}" data-day="${s?esc(s.label):''}">É este</button>`}</div>`}).join('')}
    <label class="btn sm" style="align-self:flex-start"><input type="checkbox" id="${line.lid}-no" data-f="l.${line.lid}.notOther" ${line.notOther?'checked':''}> Não, é outro torneio</label></div>`;
@@ -792,7 +826,7 @@ function updateDerived(){
   setH(document.getElementById('expHint'),dOk?`lido como <b>${money(r.declared,cur)}</b>`:(r.fix['f|declaredEnd']?'':room.live?'Conta o dinheiro que tens.':''));
   setH(document.getElementById('endErr'),(r.fix['f|declaredEnd']?`<div class="msg warn">Os milhares escrevem-se sem ponto. Querias ${money(num(r.fix['f|declaredEnd']),cur)}? ${fixBtn('f|declaredEnd',r.fix['f|declaredEnd'],cur)}</div>`:fieldErr('#f-end-bal').map(x=>`<div class="msg err">${esc(x)}</div>`).join(''))+(S.matchCleared?'<div class="msg info">As contas mudaram depois do "Bate certo": escreve o saldo outra vez.</div>':''));
   setH(document.getElementById('roomUndo'),S.roomUndo?`<div class="msg info" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">Saldo final apagado: é outra sala.<button type="button" class="btn sm" data-act="undoRoom">Desfazer</button></div>`:'');
-  const linesOk=room.live&&f.lines.length&&f.lines.every(l=>r.perLine[l.lid]&&!r.perLine[l.lid].msgs.some(m=>m[0]==='err'));
+  const linesOk=room.live&&f.lines.length&&r.expected>=0&&f.lines.every(l=>r.perLine[l.lid]&&!r.perLine[l.lid].msgs.some(m=>m[0]==='err'));
   const mb=document.getElementById('matchBox');
   if(mb){if(!(linesOk&&String(f.declaredEnd||'').trim()==='')){setH(mb,'');S.matchArm=false}
     else setH(mb,S.matchArm?`<div class="msg warn" style="margin-top:6px">Contaste o dinheiro? As contas dão:<div class="rec" style="margin:6px 0"><div class="r"><span class="k">Saldo inicial</span><span>${money(r.start,cur)}</span></div><div class="r"><span class="k">Entradas pagas (${r.bullets})</span><span>${signed(-r.cost,cur)}</span></div><div class="r"><span class="k">Prémios em dinheiro</span><span>${signed(r.prize,cur)}</span></div><div class="r tot"><span>Saldo esperado</span><span>${money(r.expected,cur)}</span></div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm p" data-act="matchYes">Sim, contei e tenho ${money(r.expected,cur)}</button><button type="button" class="btn sm" data-act="matchNo">Não, vou contar</button></div></div>`:`<button type="button" class="btn sm" data-act="match" id="btnMatch" style="margin-top:6px">Bate certo com as contas</button>`)}
@@ -804,7 +838,8 @@ function updateDerived(){
     const c=document.getElementById('cost-'+line.lid);if(c)c.textContent=money(pl.cost,cur);
     const pb=document.getElementById('plan-'+line.lid);if(pb)pb.hidden=!pl.needPlan;
     [['pr','prize'],['mb','manualBuyIn']].forEach(([s2,fld])=>{const el=document.getElementById('rd-'+line.lid+'-'+s2);if(!el)return;const fx=r.fix[line.lid+'|'+fld];const n=num(line[fld]);
-      setH(el,fx?`<div class="msg warn" style="margin-top:4px">Os milhares escrevem-se sem ponto. Querias ${money(num(fx),cur)}? ${fixBtn(line.lid+'|'+fld,fx,cur)}</div>`:n>0?'lido como <b>'+money(n,cur)+'</b>':'')});
+      const was=el._h;setH(el,fx?`<div class="msg warn" style="margin-top:4px">Os milhares escrevem-se sem ponto. Querias ${money(num(fx),cur)}? ${fixBtn(line.lid+'|'+fld,fx,cur)}</div>`:n>0?'lido como <b>'+money(n,cur)+'</b>':'');
+      if(fx&&was!==el._h){const ae=document.activeElement;if(ae&&ae.dataset&&ae.dataset.f==='l.'+line.lid+'.'+fld)el.scrollIntoView({block:'nearest'})}});
     const ft=document.getElementById('fltot-'+line.lid);if(ft)ft.innerHTML=`Total hoje: <b>${line.bullets}</b> ${num(line.bullets)===1?'entrada':'entradas'} · ${money(pl.cost,cur)}`});
   const lineMsgs=new Set(lineErr.map(x=>x[1]));const globalErr=r.errors.filter(x=>!lineMsgs.has(x));
   const nErr=lineErr.length+globalErr.length;
@@ -827,9 +862,9 @@ function updateDerived(){
    ${bagged?'<div class="ls" style="margin-top:6px">Os sacos ainda não contam: só entram no resultado quando o torneio acabar.</div>':''}
    ${r.pending.length?`<div style="margin-top:10px" class="ls">${r.pending.join('<br>')}</div>`:''}`
    :`<h3>Contas do dia</h3><p class="hint">Sala online: sem saldo esperado nem diferença.</p><div class="rec" style="margin-top:8px"><div class="r"><span class="k">Saldo inicial</span><span>${money(r.start,cur)}</span></div><div class="r"><span class="k">Saldo final</span><span>${dOk?money(r.declared,cur):'—'}</span></div><div class="r tot"><span>Resultado da sessão</span><span>${dOk?signed(r.sessPnl,cur):'—'}</span></div></div>`;
-  const chipErr=nErr?`<button type="button" class="chip ${S.submitted?'err':''} barbtn" data-act="goErrs">falta ${nErr}</button>`:`<span class="chip ok">pronto</span>`;
+  const chipErr=nErr?`<button type="button" class="chip ${S.submitted?'err':''} barbtn" data-act="goErrs">falta ${nErr}</button>`:`<span class="chip ok" title="pronto">✓</span>`;
   const chipWarn=nWarn?` <button type="button" class="chip warn barbtn" data-act="goWarns">${nWarn} ${nWarn===1?'aviso':'avisos'}</button>`:'';
-  setH(document.getElementById('barInfo'),room.live?`<span>Esp. <b>${money(r.expected,cur)}</b></span><span>Dif. <b>${r.diff===null?'—':signed(r.diff,cur)}</b></span>${chipErr}${chipWarn}`:`<span>Resultado <b>${dOk?signed(r.sessPnl,cur):'—'}</b></span>${chipErr}${chipWarn}`);
+  setH(document.getElementById('barInfo'),room.live?`<span>Esperado <b>${money(r.expected,cur)}</b></span><span>Diferença <b>${r.diff===null?'—':signed(r.diff,cur)}</b></span>${chipErr}${chipWarn}`:`<span>Resultado <b>${dOk?signed(r.sessPnl,cur):'—'}</b></span>${chipErr}${chipWarn}`);
   renderMyEntries();
   document.getElementById('payload').textContent=JSON.stringify(buildPayload(f,entries,r),null,2);
 }
@@ -850,11 +885,11 @@ function buildPayload(f,entries,r){
     if(pl.repeatLast)d.continues_previous_day=true;
     if(pl.multi&&line._sel){d.flights=line._sel.map(l=>({schedule_label:l,bullets_paid:isInt(line.fl[l].bul)?intOr0(line.fl[l].bul):null,end_state:({busted:'busted',bagged:'bagged'})[line.fl[l].st]||null}));d.bullets_paid_total=intOr0(line.bullets)}
     else d.bullets_paid=isInt(line.bullets)?intOr0(line.bullets):null;
-    d.via_satellite=line.method!=='direto';d.end_state=({busted:'busted',bagged:'bagged',itm:'in_prizes'})[line.endState]||null;
+    d.via_satellite=line.method!=='direto';if(line.kind==='new'&&line.method!=='direto')d.satellite={name:String(line.satName||'').trim(),date:line.satDate||null};d.end_state=({busted:'busted',bagged:'bagged',itm:'in_prizes'})[line.endState]||null;
     if(line.kind==='new')d.entry=line.manual?{provisional:true,series:line.manualFest,date:f.date||null,typed_name:String(line.manualName||'').trim(),typed_buy_in:num(line.manualBuyIn)>0?num(line.manualBuyIn):null,typed_event_no:line.manualNo||null,confirmed_not_suggested:!!line.notOther}:{series_id:ev?ev.festId:null,catalog_event_id:ev?ev.id:null,action_purchase_id:null};
     else d.entry_id=line.entryId;
     if(line.endState==='bagged')Object.assign(d,{chips:isInt(line.chips)?intOr0(line.chips):null,players_left:isInt(line.left)?intOr0(line.left):null,in_the_money:!!line.inMoney});
-    if(line.endState==='itm')Object.assign(d,{final_position:isInt(line.pos)?intOr0(line.pos):null,entrants:isInt(line.entrants)?intOr0(line.entrants):null,prize_received:num(line.prize)>0?num(line.prize):null,prize_paid_in:line.receivedIn==='live'?'live_cash':'wallet',prize_wallet:line.receivedIn==='live'?null:line.wallet,proof_url:linkOk(line.proof)?String(line.proof).trim():null,proof_photo:line.proofFile||null});
+    if(line.endState==='itm')Object.assign(d,{final_position:isInt(line.pos)?intOr0(line.pos):null,entrants:isInt(line.entrants)?intOr0(line.entrants):null,prize_received:num(line.prize)>0?num(line.prize):null,prize_paid_in:line.receivedIn==='live'?'live_cash':'wallet',prize_wallet:line.receivedIn==='live'?null:line.wallet,proof_url:linkOk(line.proof)?normLink(line.proof):null,proof_photo:line.proofFile||null});
     if(pl.needPlan&&String(line.planReason||'').trim())d.plan_reason=String(line.planReason).trim();
     return d})};
   return p;
@@ -863,7 +898,7 @@ const cssEsc=s=>(window.CSS&&CSS.escape)?CSS.escape(s):String(s).replace(/["\\]/
 // O formulário volta a ser desenhado a cada escolha: o foco volta ao mesmo campo ou botão.
 function focusSel(el){if(!el||el===document.body||!el.closest||!el.closest('#form,#loader'))return null;if(el.id)return '#'+cssEsc(el.id);
   const ks=['data-act','data-lid','data-v','data-flab','data-fl','data-eid','data-di','data-f','data-pf'];const p=ks.filter(k=>el.hasAttribute(k)).map(k=>`[${k}="${cssEsc(el.getAttribute(k))}"]`);return p.length?el.tagName.toLowerCase()+p.join(''):null}
-function render(){pendingRender=false;const ae=document.activeElement;const sel=S.focusTo||focusSel(ae);let caret=null;try{if(!S.focusTo&&ae&&typeof ae.selectionStart==='number')caret=[ae.selectionStart,ae.selectionEnd]}catch(x){}S.focusTo=null;
+function render(){pendingRender=false;pendingDerived=false;const ae=document.activeElement;const sel=S.focusTo||focusSel(ae);let caret=null;try{if(!S.focusTo&&ae&&typeof ae.selectionStart==='number')caret=[ae.selectionStart,ae.selectionEnd]}catch(x){}S.focusTo=null;
   renderLoader();renderForm();updateDerived();
   if(sel){let el=null;try{el=document.querySelector(sel)}catch(x){}
     if(el&&!el.matches('input,select,textarea,button,a,summary'))el=el.querySelector('input:not([disabled]):not([type=file]),select,textarea,button:not([disabled])');
@@ -875,7 +910,7 @@ function disarmReset(){if(S.resetArm){S.resetArm=0;const br=document.getElementB
 /* ---------------- eventos jogador ---------------- */
 function findLine(lid){return S.form.lines.find(l=>l.lid===lid)}
 function setField(key,val){const [scope,a,b]=key.split('.');
-  if(scope==='f'){S.form[a]=val;if(a==='date')S.form.lines.forEach(l=>{if(l.manual)l.manualDate=val});if(a==='declaredEnd')S.form.endSource='typed';return}
+  if(scope==='f'){S.form[a]=val;if(a==='date')S.form.lines.forEach(l=>{if(l.manual){l.manualDate=val;l.notOther=false}});if(a==='declaredEnd')S.form.endSource='typed';return}
   if(scope==='l'){const line=findLine(a);if(!line)return;if(b==='satellite'){line.method=val?'satelite':'direto';return}
     if(b==='wallet'){line.walletBy=Object.assign({},line.walletBy,{[roomOf(S.form.room).currency]:val})}line[b]=val}}
 const form=document.getElementById('form');
@@ -883,11 +918,15 @@ form.addEventListener('keydown',e=>{const t=e.target;if(e.key==='Enter'&&t.tagNa
 // Ao tocar numa hora ou num valor, o que lá está fica selecionado: o que se escreve substitui.
 form.addEventListener('focusin',e=>{const t=e.target;if(t.dataset&&(t.dataset.kind==='time'||t.dataset.kind==='dec')&&t.value)setTimeout(()=>{try{if(document.activeElement===t)t.select()}catch(x){}},0)});
 // Um redesenho pedido a meio de um toque espera que o toque acabe (senão o botão desaparece debaixo do dedo).
-let pendingRender=false,ptrDown=false;
-document.addEventListener('pointerdown',()=>{ptrDown=true},true);
-document.addEventListener('pointerup',()=>{ptrDown=false;if(pendingRender)setTimeout(()=>{if(pendingRender)render()},0)},true);
+let pendingRender=false,pendingDerived=false,ptrDown=false,selOnUp=null;
+document.addEventListener('pointerdown',e=>{ptrDown=true;const t=e.target;if(t&&t.dataset&&(t.dataset.kind==='time'||t.dataset.kind==='dec')&&document.activeElement!==t)selOnUp=t},true);
+document.addEventListener('pointerup',()=>{ptrDown=false;if(pendingRender||pendingDerived)setTimeout(()=>{if(pendingRender)render();else if(pendingDerived){pendingDerived=false;updateDerived()}},0)},true);
+// com o rato, o soltar do botão não tira a seleção feita ao entrar no campo
+document.addEventListener('mouseup',e=>{if(selOnUp&&e.target===selOnUp){e.preventDefault();try{selOnUp.select()}catch(x){}}selOnUp=null},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&typeof T!=='undefined'&&T.i>=0)tourEnd()});
 form.addEventListener('input',e=>{const el=e.target;clearDone();disarmReset();S.dirty=true;
   const kind=el.dataset.kind||(el.dataset.fl&&el.dataset.fl.endsWith('|bul')?'ent':null);
+  if(kind==='time')S.timeDel[el.id]=/^delete/.test(e.inputType||'');
   if(kind&&kind!=='ent'&&!(kind==='time'&&/^delete/.test(e.inputType||''))){const before=el.value;const paste=/^insertFrom/.test(e.inputType||'');let atEnd=true;try{atEnd=el.selectionStart===before.length}catch(x){}
     const v=kind==='dec'?cleanDec(before,paste,atEnd):kind==='int'?cleanInt(before):cleanTime(before);
     if(v!==before){let pos=before.length;try{pos=el.selectionStart}catch(x){}el.value=v;try{const p=Math.max(0,Math.min(v.length,pos+(v.length-before.length)));el.setSelectionRange(p,p)}catch(x){}}}
@@ -896,16 +935,20 @@ form.addEventListener('input',e=>{const el=e.target;clearDone();disarmReset();S.
   if(el.dataset.pf){if(el.tagName==='SELECT')return;PF[el.dataset.pf]=el.value;if(el.dataset.pf==='min'||el.dataset.pf==='max'){PF.band='all';document.querySelectorAll('[data-act="band"]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v==='all')))}renderPickList(el.dataset.lid);return}
   if(!el.dataset.f||el.tagName==='SELECT'||el.type==='checkbox'||el.type==='file')return;setField(el.dataset.f,el.value);
   if(el.dataset.f==='f.declaredEnd'){S.matchCleared=false;S.roomUndo=null}
-  if(el.dataset.f==='f.diffReason'){S.form.diffFor=reconcile(S.form,entriesNow(),S.level).diff}
-  if(el.dataset.sug){const line=findLine(el.dataset.sug);const box=document.getElementById('sug-'+el.dataset.sug);if(line){line.notOther=false;if(box)box.innerHTML=renderSug(line,suggestions(line,S.form.date))}}
+  // a explicação fica presa à diferença; só uma explicação nova (não um espaço a mais) a liga à diferença de agora
+  if(el.dataset.f==='f.diffReason'){const nz=t=>String(t||'').toLowerCase().replace(/[^a-zà-úç0-9]/g,'');if(nz(el.value)!==nz(S.form.diffReasonAt)){S.form.diffFor=reconcile(S.form,entriesNow(),S.level).diff;S.form.diffReasonAt=el.value}}
+  if(el.dataset.sug){const line=findLine(el.dataset.sug);const box=document.getElementById('sug-'+el.dataset.sug);if(line){line.notOther=false;if(box)box.innerHTML=renderSug(line,suggestions(line,S.form.date));
+    const ev=lineEvent(line,{});const t=document.getElementById('ttl-'+line.lid);if(t&&ev)t.textContent=(ev.no?ev.no+' · ':'')+ev.name;const sb=document.getElementById('sub-'+line.lid);if(sb&&ev)sb.textContent=ev.festName+' · buy-in '+money(ev.buyIn,ev.currency||'USD')}}
   updateDerived()});
 form.addEventListener('change',e=>{const el=e.target;clearDone();S.dirty=true;
-  if(el.dataset.photo){const line=findLine(el.dataset.photo);const fl=el.files&&el.files[0];if(line&&fl&&/^image\//.test(fl.type||'image/')){line.proofFile=fl.name||'foto.jpg';S.touched[line.lid]=true;S.focusTo='#ln-'+cssEsc(line.lid)+' [data-act="rmPhoto"]';render()}return}
+  if(el.dataset.photo){const line=findLine(el.dataset.photo);const fl=el.files&&el.files[0];if(!line||!fl)return;
+    if(!/^image\//.test(fl.type||'image/')){S.photoMsg[line.lid]='Só fotos (jpg, png).';render();return}
+    S.photoMsg[line.lid]='';line.proofFile=fl.name||'foto.jpg';S.touched[line.lid]=true;S.focusTo='#ln-'+cssEsc(line.lid)+' [data-act="rmPhoto"]';render();return}
   if(el.dataset.fl){const [lid,lab,fld]=el.dataset.fl.split('|');const line=findLine(lid);if(line&&fld==='on'){setFlightOn(line,lab,el.checked);render()}return}
   if(el.dataset.pf&&el.tagName==='SELECT'){PF[el.dataset.pf]=el.value;savePF();if(el.dataset.pf==='fest'){PF.date='all'}render();return}
   if(!el.dataset.f)return;
   if(el.tagName==='SELECT'){
-    if(el.dataset.f==='f.room'){const f=S.form;if(String(f.declaredEnd||'').trim())S.roomUndo={room:f.room,declaredEnd:f.declaredEnd,diffReason:f.diffReason,diffFor:f.diffFor,endSource:f.endSource,matchedAt:f.matchedAt};else S.roomUndo=null;
+    if(el.dataset.f==='f.room'){const f=S.form;if(String(f.declaredEnd||'').trim())S.roomUndo={room:f.room,declaredEnd:f.declaredEnd,diffReason:f.diffReason,diffFor:f.diffFor,diffReasonAt:f.diffReasonAt,endSource:f.endSource,matchedAt:f.matchedAt};
       Object.assign(f,{declaredEnd:'',diffReason:'',diffFor:null,endSource:'typed',matchedAt:null})}
     setField(el.dataset.f,el.value);if(el.dataset.f==='f.room'&&S.form.lines.some(l=>l.picking))openPickerDefaults(S.form);render()}
   else if(el.type==='checkbox'){setField(el.dataset.f,el.checked);if(el.dataset.f.endsWith('satellite'))render();else updateDerived()}
@@ -913,15 +956,15 @@ form.addEventListener('change',e=>{const el=e.target;clearDone();S.dirty=true;
 document.addEventListener('change',e=>{if(e.target.id==='gPlayer'){GS.player=e.target.value;renderGestao()}});
 form.addEventListener('focusin',e=>{if(e.target.id==='f-date')S.dateAtFocus=S.form.date});
 form.addEventListener('focusout',e=>{const el=e.target;
-  if(el.dataset&&el.dataset.kind==='time'){const v=normTime(el.value);if(v!==el.value){el.value=v;setField(el.dataset.f,v)}}
-  if(['f-date','f-start','f-end','f-end-bal'].includes(el.id)){S.blurred[el.id]=true;updateDerived()}
+  if(el.dataset&&el.dataset.kind==='time'&&!S.timeDel[el.id]){const v=normTime(el.value);if(v!==el.value){el.value=v;setField(el.dataset.f,v)}}
+  if(['f-date','f-start','f-end','f-end-bal'].includes(el.id)){S.blurred[el.id]=true;if(ptrDown)pendingDerived=true;else updateDerived()}
   if(el.id==='f-date'&&S.form.date!==S.dateAtFocus){if(S.form.lines.some(l=>l.picking))openPickerDefaults(S.form);if(ptrDown)pendingRender=true;else setTimeout(()=>render(),0)}});
 form.addEventListener('submit',e=>{e.preventDefault();S.submitted=true;disarmReset();updateDerived();const r=reconcile(S.form,entriesNow(),S.level);const box=document.getElementById('submitMsg');
   if(r.errors.length){box.innerHTML='';scrollToEl('errBox')}
   else box.innerHTML=`<div class="msg" style="background:var(--ok-bg);color:var(--ok)">Sessão registada (simulação). Nada foi gravado.</div>`});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;const f=S.form;
   if(b.closest('#form')&&!['goErr','goErrs','goWarns','goField','reset','gotoLine','gotoOpen'].includes(a)){S.dirty=true;clearDone()}
-  if(b.dataset.lid&&S.touched)S.touched[b.dataset.lid]=true;
+  if(b.dataset.lid&&S.touched&&!['pickEv','pickSug','pickOpen','gotoOpen','repick','missing','gotoLine','band'].includes(a))S.touched[b.dataset.lid]=true;
   if(a!=='reset')disarmReset();
   if(a==='match'){S.matchArm=true;updateDerived();const y=document.querySelector('[data-act="matchYes"]');if(y)y.focus({preventScroll:true});return}
   if(a==='matchNo'){S.matchArm=false;updateDerived();const i=document.getElementById('f-end-bal');if(i)i.focus();return}
@@ -933,8 +976,9 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
   if(a==='goField'){let el=null;try{el=document.querySelector(b.dataset.sel)}catch(x){}if(el){el.scrollIntoView({block:'center'});if(el.matches('input,select,textarea'))el.focus({preventScroll:true})}return}
   if(a==='goErr'){const ln=document.getElementById('ln-'+b.dataset.target);const el=document.getElementById('msgs-'+b.dataset.target)||ln;if(ln){ln.classList.add('hl');setTimeout(()=>ln.classList.remove('hl'),2000)}if(el)el.scrollIntoView({block:'center'});return}
   if(a==='undoRm'){const x=S.removed.pop();if(x){f.lines.splice(Math.min(x.idx,f.lines.length),0,x.line);S.focusTo='#ln-'+cssEsc(x.line.lid);render()}return}
-  if(a==='gtile'){const v=b.dataset.v;if(['open','alert','today','quiet','plan','miss','trans'].includes(v)){GS.filter=v;renderGestao();const el=document.getElementById('gListCard');if(el)el.scrollIntoView({block:'start'})}else{GS.filter='all';renderGestao();const el=document.getElementById(v);if(el)el.scrollIntoView({block:'center'})}return}
+  if(a==='gtile'){const v=b.dataset.v;if(['open','alert','today','quiet','plan','diff','miss','trans','sat'].includes(v)){GS.filter=v;renderGestao();const el=document.getElementById('gListCard');if(el)el.scrollIntoView({block:'start'})}else{GS.filter='all';renderGestao();const el=document.getElementById(v);if(el)el.scrollIntoView({block:'center'})}return}
   if(a==='gpl'){GS.player=b.dataset.v;renderGestao();const el=document.getElementById('gListCard');if(el)el.scrollIntoView({block:'start'});return}
+  if(a==='gsat'){const k=b.dataset.key;if(GS.satOk[k])delete GS.satOk[k];else GS.satOk[k]={by:'admin',at:fmtDate(G_TODAY)};renderGestao();return}
   if(a==='gconf'){const k=b.dataset.key;if(GS.confirmed[k])delete GS.confirmed[k];else GS.confirmed[k]={by:'admin',at:fmtDate(G_TODAY)};renderGestao();return}
   if(a==='tourStart'){tourGo(0);return}
   if(a==='tourNext'){tourGo(T.i+1);return}
@@ -959,7 +1003,9 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
     const pe=findEvent('apt',evId);Object.assign(g.line,{manual:false,festId:'apt',eventId:evId,fl:null,paidBuyIn:g.line.manualBuyIn,day:autoDay(Object.assign({festId:'apt'},pe.ev),g.line.manualDate,'new')||pe.ev.flights[0]});delete GS.pending[k];renderGestao();return}
   if(a==='unresolve'){const k=b.dataset.key;const g=gLine(k);const res=GS.resolved[k];if(g&&res){Object.keys(g.line).forEach(x=>delete g.line[x]);Object.assign(g.line,res.snap)}delete GS.resolved[k];renderGestao();return}
   if(a==='gotoLine'){const cur=findLine(b.dataset.lid);if(cur&&cur.picking&&!cur.eventId)f.lines=f.lines.filter(l=>l.lid!==cur.lid);S.focusTo='#ln-'+cssEsc(b.dataset.target);render();const el=document.getElementById('ln-'+b.dataset.target);if(el){el.classList.add('hl');el.scrollIntoView({block:'center'});setTimeout(()=>el.classList.remove('hl'),2500)}return}
-  if(a==='gotoOpen'){const ln=findLine(b.dataset.lid);const e2=entriesNow()[b.dataset.target];if(ln&&e2){Object.assign(ln,{kind:'cont',entryId:e2.id,picking:false,manual:false,fl:null,bullets:'0',day:contDay(e2,f.date)});S.focusTo='#ln-'+cssEsc(ln.lid)+' .lb';render();const el=document.getElementById('ln-'+ln.lid);if(el){el.classList.add('hl');el.scrollIntoView({block:'start'});setTimeout(()=>el.classList.remove('hl'),2500)}}return}
+  if(a==='gotoOpen'){const ln=findLine(b.dataset.lid);const e2=entriesNow()[b.dataset.target];
+    if(ln&&e2&&!contDay(e2,f.date)){const nx=e2.info.sched&&e2.info.sched.find(x=>x.date>f.date&&e2.info.days.includes(x.label));S.pickMsg[ln.lid]=`Tens saco no ${esc(e2.info.name)} desde ${fmtDate(e2.last.date)}. ${nx?`O ${dayName(nx.label)} é a ${fmtDate(nx.date)}: regista-o nesse dia.`:'Não há dia seguinte hoje.'}`;render();return}
+    if(ln&&e2){Object.assign(ln,{kind:'cont',entryId:e2.id,picking:false,manual:false,fl:null,bullets:'0',day:contDay(e2,f.date)});S.focusTo='#ln-'+cssEsc(ln.lid)+' .lb';render();const el=document.getElementById('ln-'+ln.lid);if(el){el.classList.add('hl');el.scrollIntoView({block:'start'});setTimeout(()=>el.classList.remove('hl'),2500)}}return}
   if(a==='band'){PF.band=b.dataset.v;PF.min='';PF.max='';savePF();document.querySelectorAll('[data-act="band"]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.v===PF.band)));['pmin-','pmax-'].forEach(p=>{const i=document.getElementById(p+b.dataset.lid);if(i)i.value=''});renderPickList(b.dataset.lid);return}
   const line=f&&findLine(b.dataset.lid);if(!line)return;
   if(a==='pickEv'||a==='pickSug'){const fest=b.dataset.fest||line.manualFest||'apt';const evId=b.dataset.ev;const ents=entriesNow();
@@ -969,7 +1015,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
     if(open){Object.assign(line,{kind:'cont',entryId:open.id,picking:false,manual:false,fl:null,bullets:open.status==='reentry'?'1':'0'});line.day=open.status==='reentry'&&b.dataset.day?b.dataset.day:contDay(open,f.date)}
     else{Object.assign(line,{kind:'new',festId:fest,eventId:evId,manual:false,picking:false,fl:null,bullets:'1',notOther:false});const ev=lineEvent(line,{});line.day=b.dataset.day||autoDay(ev,f.date,'new')}
     S.focusTo='#ln-'+cssEsc(line.lid)+' .lb';render();{const el=document.getElementById('ln-'+line.lid);if(el)el.scrollIntoView({block:'start'})}}
-  if(a==='repick'){line.kind='new';line.picking=true;line.manual=false;openPickerDefaults(f);S.focusTo='#pk-'+cssEsc(line.lid);render()}
+  if(a==='repick'){Object.assign(line,{endState:'',chips:'',left:'',inMoney:false,pos:'',entrants:'',prize:'',proof:'',proofFile:'',planReason:'',fl:null,bullets:'1',method:'direto',satName:'',satDate:''});line.kind='new';line.picking=true;line.manual=false;openPickerDefaults(f);S.focusTo='#pk-'+cssEsc(line.lid);render()}
   if(a==='missing'){const fest=PF.fest!=='all'?PF.fest:(CATALOG.find(x=>x.currency===roomOf(f.room).currency)||{}).id;Object.assign(line,{manual:true,picking:false,manualFest:fest,manualDate:f.date,festId:'',eventId:'',day:'Único',notOther:false});S.focusTo='#'+cssEsc(line.lid)+'-mn';render()}
   if(a==='state'){line.endState=b.dataset.v;if(b.dataset.v==='bagged'&&line.kind==='cont'){const e2=entriesNow()[line.entryId];if(e2&&e2.last&&e2.last.inMoney)line.inMoney=true}render()}
   if(a==='rmPhoto'){line.proofFile='';S.focusTo='#'+cssEsc(line.lid)+'-pf';render()}
@@ -993,14 +1039,14 @@ const GDATA=[
    {form:F({date:'2026-11-19',startBalance:3641,declaredEnd:'5170',lines:[L({lid:'gc3',entryId:'GC3',festId:'apt',eventId:'apt72',day:'Único',bullets:'1',endState:'itm',pos:'2',entrants:'96',prize:'1850',receivedIn:'live'})]})}]},
  {player:'Jogador D',level:'7.5',days:[
    {form:F({date:'2026-11-19',startBalance:30000,declaredEnd:'19500',diffReason:'500 $ guardados no cofre do hotel.',diffFor:-500,lines:[L({lid:'gd1',entryId:'GD1',festId:'apt',eventId:'apt1009',day:'Único',bullets:'1',endState:'busted'})]})},
-   {form:F({date:'2026-11-20',startBalance:19500,declaredEnd:'19500',endSource:'match_button',lines:[L({lid:'gd2',entryId:'GD2',festId:'apt',eventId:'apt1011',day:'1',bullets:'1',method:'satelite',endState:'bagged',chips:'310000'})]})}]},
+   {form:F({date:'2026-11-20',startBalance:19500,declaredEnd:'19500',endSource:'match_button',lines:[L({lid:'gd2',entryId:'GD2',festId:'apt',eventId:'apt1011',day:'1',bullets:'1',method:'satelite',satName:'Satélite do Main Event',satDate:'2026-11-18',endState:'bagged',chips:'310000'})]})}]},
 ];
-let GS={filter:'all',sel:null,resolved:{},pending:{},player:'all',confirmed:{}};
+let GS={filter:'all',sel:null,resolved:{},pending:{},player:'all',confirmed:{},satOk:{}};
 function gAll(){
   const out=[];const diffs=[];const plans=[];const lastReg={};const matched=[];
   GDATA.forEach(src=>{src.days.forEach((d,i)=>{const r=reconcile(d.form,buildEntries(src.days.slice(0,i)),src.level);if(r.diff)diffs.push({player:src.player,date:d.form.date,expected:r.expected,declared:r.declared,diff:r.diff,reason:d.form.diffReason});
       if(!lastReg[src.player]||d.form.date>lastReg[src.player])lastReg[src.player]=d.form.date;
-      if(d.form.endSource==='match_button')matched.push({player:src.player,date:d.form.date,declared:r.declared});
+      if(d.form.endSource==='match_button')matched.push({player:src.player,date:d.form.date,declared:r.declared,manual:d.form.lines.some(l=>l.manual)});
       d.form.lines.forEach(l=>{const pl=r.perLine[l.lid];if(pl&&pl.needPlan)plans.push({key:src.player+'|'+l.entryId,player:src.player,level:src.level,date:d.form.date,name:pl.ev?pl.ev.name:'',rule:pl.lr?pl.lr.txt:'',reason:l.planReason})})});
     Object.values(settle(buildEntries(src.days),G_TODAY)).forEach(e=>{if(!e.info)return;const key=src.player+'|'+e.id;const res=GS.resolved[key];
       out.push(Object.assign({key,player:src.player,level:src.level,src,resolved:res},e))})});
@@ -1019,8 +1065,8 @@ function renderGestao(){
   const today=entries.filter(e=>gToday(e));const todayPl=[...new Set(today.map(e=>e.player))];
   const players=[...new Set(entries.map(e=>e.player))];const quiet=players.filter(p=>daysBetween(lastReg[p],G_TODAY)>=2&&open.some(e=>e.player===p));
   const trans=[],noProof=[];entries.forEach(e=>e.days.forEach(d=>{if(d.endState==='itm'){if(d.receivedIn==='transfer')trans.push({e,d});if((num(d.prize)||0)>=1000&&!proofOk(e.proof,e.proofFile))noProof.push({e,d})}}));
-  const toConfirm=trans.filter(({e})=>!GS.confirmed[e.key]);
-  const SPECIAL={quiet:['Sem registo há 2+ dias',e=>quiet.includes(e.player)&&open.includes(e)],plan:['Fora do plano',e=>planKeys.has(e.key)],miss:['Torneios em falta',e=>e.manual&&!e.resolved],trans:['Prémios por transferência',e=>e.days.some(d=>d.endState==='itm'&&d.receivedIn==='transfer')]};
+  const toConfirm=trans.filter(({e})=>!GS.confirmed[e.key]);const sats=entries.filter(e=>e.method&&e.method!=='direto');const satTodo=sats.filter(e=>!GS.satOk[e.key]);
+  const SPECIAL={open:['Em aberto',e=>open.includes(e)],today:['Jogam hoje',e=>!!gToday(e)],closed:['Terminadas',e=>['closed','paid'].includes(e.status)],alert:['Com alerta',e=>!!gAlert(e)],quiet:['Sem registo há 2+ dias',e=>quiet.includes(e.player)&&open.includes(e)],plan:['Fora do plano',e=>planKeys.has(e.key)],diff:['Diferenças de saldo',e=>diffs.some(d=>d.player===e.player&&e.days.some(x=>x.date===d.date))],miss:['Torneios em falta',e=>e.manual&&!e.resolved],trans:['Prémios por confirmar',e=>e.days.some(d=>d.endState==='itm'&&d.receivedIn==='transfer')&&!GS.confirmed[e.key]],sat:['Satélites por confirmar',e=>e.method&&e.method!=='direto'&&!GS.satOk[e.key]]};
   let month='';try{month=new Date(G_TODAY+'T12:00:00Z').toLocaleString('pt-PT',{month:'long',timeZone:'UTC'})}catch(x){}
   const tile=(id,v,k,val,sub,alert)=>`<div class="tile ${alert?'alert':''}" id="${id}" data-act="gtile" data-v="${v}" style="cursor:pointer" role="button" tabindex="0"><div class="k">${k}</div><div class="v">${val}</div><div class="ls">${sub}</div></div>`;
   document.getElementById('gTiles').innerHTML=
@@ -1028,34 +1074,35 @@ function renderGestao(){
     tile('t-today','today','Jogam hoje',todayPl.length,todayPl.length?esc(todayPl.join(', ')):'ninguém',false)+
     tile('t-quiet','quiet','Sem registo há 2+ dias',quiet.length,quiet.length?esc(quiet.map(p=>p+' ('+fmtDate(lastReg[p])+')').join(', ')):'todos em dia',quiet.length)+
     tile('t-plan','plan','Fora do plano do nível',plans.length,plans.every(p=>p.reason)?'todos com explicação':plans.filter(p=>!p.reason).length+' sem explicação',plans.some(p=>!p.reason))+
-    tile('t-diff','gDiffs',`Diferenças de saldo${month?' ('+month+')':''}`,diffs.length,`${signed(diffs.reduce((a,d)=>a+d.diff,0),cur)} · ${diffs.every(d=>d.reason)?'todas explicadas':diffs.filter(d=>!d.reason).length+' sem explicação'} · ${matched.length} pelo "Bate certo"`,diffs.some(d=>!d.reason))+
+    tile('t-diff','diff',`Diferenças de saldo${month?' ('+month+')':''}`,diffs.length,`${signed(diffs.reduce((a,d)=>a+d.diff,0),cur)} · ${diffs.every(d=>d.reason)?'todas explicadas':diffs.filter(d=>!d.reason).length+' sem explicação'} · ${matched.length} pelo "Bate certo"${matched.some(m=>m.manual)?' (com torneio à mão)':''}`,diffs.some(d=>!d.reason)||matched.some(m=>m.manual))+
     tile('t-miss','miss','Torneios em falta',missing.length,'escritos à mão, por resolver',missing.length)+
-    tile('t-trans','trans','Prémios por confirmar',toConfirm.length,`transferências · ${noProof.length} sem prova`,toConfirm.length||noProof.length);
+    tile('t-trans','trans','Prémios por confirmar',toConfirm.length,`transferências · ${noProof.length} sem prova`,toConfirm.length||noProof.length)+
+    tile('t-sat','sat','Satélites por confirmar',satTodo.length,satTodo.length?esc(satTodo.map(e=>e.player).join(', ')):'nenhum',satTodo.length);
   const FL=[['all','Todas'],['open','Em aberto'],['today','Jogam hoje'],['closed','Terminadas'],['alert','Com alerta']];
   document.getElementById('gFilters').innerHTML=`<select class="i" id="gPlayer" style="width:auto" aria-label="Jogador">${opt('all','Todos os jogadores',GS.player)}${players.map(p=>opt(p,p,GS.player)).join('')}</select><div class="seg" role="group">${FL.map(([v,l])=>`<button type="button" data-act="gf" data-v="${v}" aria-pressed="${GS.filter===v}">${l}</button>`).join('')}</div>${SPECIAL[GS.filter]?`<button type="button" class="chipbtn" aria-pressed="true" data-act="gf" data-v="all">${SPECIAL[GS.filter][0]} ✕</button>`:''}${GS.player!=='all'?`<button type="button" class="chipbtn" aria-pressed="true" data-act="gpl" data-v="all">${esc(GS.player)} ✕</button>`:''}`;
-  const fOk=e=>GS.filter==='all'||(GS.filter==='open'?open.includes(e):GS.filter==='today'?!!gToday(e):GS.filter==='closed'?['closed','paid'].includes(e.status):GS.filter==='alert'?!!gAlert(e):SPECIAL[GS.filter]?SPECIAL[GS.filter][1](e):true);
+  const fOk=e=>GS.filter==='all'||(SPECIAL[GS.filter]?SPECIAL[GS.filter][1](e):true);
   const list=entries.filter(e=>GS.player==='all'||e.player===GS.player).filter(fOk).sort((a,b)=>(b.last?b.last.date:'').localeCompare(a.last?a.last.date:''));
   if(!GS.sel||!list.find(x=>x.key===GS.sel))GS.sel=list.length?list[0].key:null;
-  const tags=e=>`${e.manual&&!e.resolved?'<span class="chip warn" style="padding:0 6px">provisório</span>':esc(e.info.no||'')}${e.method!=='direto'?' <span class="chip" style="padding:0 6px">satélite</span>':''}${e.paidBuyIn!=null&&num(e.paidBuyIn)!==e.info.buyIn?` <span class="chip warn" style="padding:0 6px">pagou ${money(num(e.paidBuyIn),cur)}</span>`:''}`;
+  const tags=e=>`${e.manual&&!e.resolved?'<span class="chip warn" style="padding:0 6px">provisório</span>'+(e.info.buyIn>=MANUAL_REVIEW?' <span class="chip warn" style="padding:0 6px">confirmar (≥ '+money(MANUAL_REVIEW,cur)+')</span>':''):esc(e.info.no||'')}${e.method!=='direto'?' <span class="chip" style="padding:0 6px">satélite</span>':''}${e.paidBuyIn!=null&&num(e.paidBuyIn)!==e.info.buyIn?` <span class="chip warn" style="padding:0 6px">pagou ${money(num(e.paidBuyIn),cur)}</span>`:''}`;
   const alertTxt=e=>{const al=gAlert(e);const td=gToday(e);return al?`<span class="chip warn">${esc(al)}</span>`:td?`<span class="chip info">${dayName(td.label)} é hoje</span>`:''};
   const daysTxt=e=>e.days.map(d=>dayName(d.day)).join(' → ');
   const resTxt=e=>['paid','closed'].includes(e.status)?signed((e.prize||0)-e.cost,cur):'—';
   document.getElementById('gTable').innerHTML=`<div class="scroll gtable"><table class="t"><thead><tr><th>Jogador</th><th>Torneio</th><th>Dias</th><th class="n">Entradas</th><th class="n hide-sm">Custo</th><th class="n hide-sm">Prémio</th><th class="n">Resultado</th><th>Estado</th><th class="hide-sm">Último dia</th><th>Alerta</th></tr></thead><tbody>${list.map(e=>{const st=STATUS[e.status];
-    return `<tr class="click ${GS.sel===e.key?'sel':''}" data-act="gsel" data-key="${esc(e.key)}"><td>${esc(e.player)}<div class="ls">nível ${esc(e.level)}</div></td><td>${esc(e.info.name)}<div class="ls">${tags(e)}</div></td><td>${daysTxt(e)}</td><td class="n">${e.bullets}</td><td class="n hide-sm">${money(e.cost,cur)}</td><td class="n hide-sm">${e.prize?money(e.prize,cur):'—'}</td><td class="n">${resTxt(e)}</td><td><span class="chip ${st[1]}">${st[0]}</span></td><td class="hide-sm">${e.last?fmtDate(e.last.date):''}</td><td>${alertTxt(e)}</td></tr>`}).join('')||'<tr><td colspan="10" class="hint">Nada neste filtro.</td></tr>'}</tbody></table></div>
+    return `<tr class="click ${GS.sel===e.key?'sel':''}" data-act="gsel" data-key="${esc(e.key)}" tabindex="0" role="button"><td>${esc(e.player)}<div class="ls">nível ${esc(e.level)}</div></td><td>${esc(e.info.name)}<div class="ls">${tags(e)}</div></td><td>${daysTxt(e)}</td><td class="n">${e.bullets}</td><td class="n hide-sm">${money(e.cost,cur)}</td><td class="n hide-sm">${e.prize?money(e.prize,cur):'—'}</td><td class="n">${resTxt(e)}</td><td><span class="chip ${st[1]}">${st[0]}</span></td><td class="hide-sm">${e.last?fmtDate(e.last.date):''}</td><td>${alertTxt(e)}</td></tr>`}).join('')||'<tr><td colspan="10" class="hint">Nada neste filtro.</td></tr>'}</tbody></table></div>
     <div class="gcards">${list.map(e=>{const st=STATUS[e.status];return `<button type="button" class="tour" style="grid-template-columns:minmax(0,1fr) auto;${GS.sel===e.key?'border-color:var(--primary)':''}" data-act="gsel" data-key="${esc(e.key)}"><span><span class="lt" style="display:block">${esc(e.info.name)}</span><span class="ls">${esc(e.player)} · nível ${esc(e.level)} · ${daysTxt(e)} · ${e.bullets} ${e.bullets===1?'entrada':'entradas'}</span><span style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px"><span class="chip ${st[1]}">${st[0]}</span>${tags(e)}${alertTxt(e)}</span></span><span class="amt">${resTxt(e)}</span></button>`}).join('')||'<p class="hint">Nada neste filtro.</p>'}</div>`;
   const e=entries.find(x=>x.key===GS.sel);const dbox=document.getElementById('gDetail');
   if(!e)dbox.innerHTML='<p class="hint">Escolhe uma inscrição.</p>';
   else{const st=STATUS[e.status];
-    dbox.innerHTML=`<div><div class="ls">${esc(e.player)} · nível ${esc(e.level)} · ${esc(e.info.festName||'')}</div><h3>${esc(e.info.name)} <span class="chip ${st[1]}">${st[0]}</span></h3><div class="ls">Buy-in ${money(e.info.buyIn,cur)}${e.paidBuyIn!=null&&num(e.paidBuyIn)!==e.info.buyIn?` (o jogador pagou ${money(num(e.paidBuyIn),cur)})`:''} · ${e.bullets} ${e.bullets===1?'entrada':'entradas'} · custo ${money(e.cost,cur)}${e.method!=='direto'?' · entrou com satélite/ticket':''}</div></div>
+    dbox.innerHTML=`<div><div class="ls">${esc(e.player)} · nível ${esc(e.level)} · ${esc(e.info.festName||'')}</div><h3>${esc(e.info.name)} <span class="chip ${st[1]}">${st[0]}</span></h3><div class="ls">Buy-in ${money(e.info.buyIn,cur)}${e.paidBuyIn!=null&&num(e.paidBuyIn)!==e.info.buyIn?` (o jogador pagou ${money(num(e.paidBuyIn),cur)})`:''}${e.paidMix!=null?` (num dos dias pagou ${money(num(e.paidMix),cur)})`:''} · ${e.bullets} ${e.bullets===1?'entrada':'entradas'} · custo ${money(e.cost,cur)}${e.method!=='direto'?' · entrou com satélite/ticket':''}</div></div>
       <div class="tl">${e.days.map(d=>`<div class="ev"><div><b>${fmtDate(d.date)}</b> · ${dayName(d.day)}${d.bullets?` · ${d.bullets} ${d.bullets===1?'entrada':'entradas'}`:''}</div><div class="ls">${d.endState==='bagged'?`passou com ${NF.format(intOr0(d.chips))}${d.left?' · restam '+esc(d.left):''}${d.inMoney?' · já nos prémios':''}`:d.endState==='busted'?'eliminado sem prémio':`${esc(d.pos)}.º${d.entrants?' de '+esc(d.entrants):''} · prémio ${money(num(d.prize),cur)}${d.receivedIn==='transfer'?' na '+esc(d.wallet||'carteira'):' em dinheiro'}`}</div></div>`).join('')}</div>
       ${planKeys.has(e.key)?`<div class="msg info">Fora do plano do nível. Explicação: ${esc(e.planReason||'—')}</div>`:''}
-      ${e.method!=='direto'?'<div class="msg info">Entrou com satélite/ticket: confirmar que o satélite está registado.</div>':''}
+      ${e.method!=='direto'?`<div class="msg ${GS.satOk[e.key]?'':'warn'}" style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><span>Entrou com satélite/ticket: <b>${esc(e.satName||'—')}</b>${e.satDate?' a '+fmtDate(e.satDate):''}.${GS.satOk[e.key]?' Confirmado por '+esc(GS.satOk[e.key].by)+' a '+esc(GS.satOk[e.key].at)+'.':''}</span><button type="button" class="btn sm ${GS.satOk[e.key]?'':'p'}" data-act="gsat" data-key="${esc(e.key)}">${GS.satOk[e.key]?'Desfazer':'Confirmar satélite'}</button></div>`:''}
       ${gAlert(e)?`<div class="msg warn">Alerta: ${esc(gAlert(e))} Confirmar com o jogador.</div>`:''}
       ${e.proofFile?`<div class="ls">Prova: foto ${esc(e.proofFile)}</div>`:e.proof?`<div class="ls">Prova: ${esc(e.proof)}${proofOk(e.proof)?'':' <span class="chip warn">não é link https://</span>'}</div>`:''}`}
   document.getElementById('gPlan').innerHTML=`<h3>Fora do plano do nível</h3><p class="hint" style="margin:0">Torneios jogados fora do plano da série para o nível do jogador, com a explicação que ele deu.</p>
    <div class="scroll"><table class="t"><thead><tr><th>Dia</th><th>Jogador</th><th>Torneio</th><th>Plano</th><th>Explicação</th></tr></thead><tbody>${plans.map(p=>`<tr><td>${fmtDate(p.date)}</td><td>${esc(p.player)}<div class="ls">nível ${esc(p.level)}</div></td><td>${esc(p.name)}</td><td><span class="chip warn">${esc(p.rule)}</span></td><td>${esc(p.reason||'—')}</td></tr>`).join('')||'<tr><td colspan="5" class="hint">Nenhum.</td></tr>'}</tbody></table></div>`;
   const byP={};players.forEach(p=>byP[p]={n:0,ent:0,cost:0,prize:0,res:0,diff:0,match:0});matched.forEach(m=>{if(byP[m.player])byP[m.player].match++});entries.forEach(e=>{const x=byP[e.player];x.n++;x.ent+=e.bullets;x.cost+=e.cost;x.prize+=e.prize||0;if(['paid','closed'].includes(e.status))x.res+=(e.prize||0)-e.cost});diffs.forEach(d=>{byP[d.player].diff+=d.diff});
-  document.getElementById('gSum').innerHTML=`<h3>Resumo por jogador · APT Taipei 2026 (toda a série)</h3><p class="hint" style="margin:0">O resultado é o dos torneios terminados. As diferenças de saldo estão à parte. "Bate certo" = sessões em que o saldo final veio do botão, e não foi escrito.</p><div class="scroll"><table class="t"><thead><tr><th>Jogador</th><th class="n">Inscrições</th><th class="n">Entradas</th><th class="n">Custo</th><th class="n">Prémios</th><th class="n">Resultado</th><th class="n">Dif. de saldo</th><th class="n">Bate certo</th><th>Último registo</th></tr></thead><tbody>${Object.entries(byP).map(([p,x])=>{const idle=daysBetween(lastReg[p],G_TODAY);return `<tr class="click" data-act="gpl" data-v="${esc(p)}"><td>${esc(p)}${todayPl.includes(p)?' <span class="chip info" style="padding:0 6px">joga hoje</span>':''}</td><td class="n">${x.n}</td><td class="n">${x.ent}</td><td class="n">${money(x.cost,cur)}</td><td class="n">${money(x.prize,cur)}</td><td class="n">${signed(x.res,cur)}</td><td class="n">${x.diff?signed(x.diff,cur):'—'}</td><td class="n">${x.match||'—'}</td><td>${fmtDate(lastReg[p])}${idle>=2?` <span class="chip warn" style="padding:0 6px">há ${idle} dias</span>`:''}</td></tr>`}).join('')}</tbody></table></div>`;
+  document.getElementById('gSum').innerHTML=`<h3>Resumo por jogador · APT Taipei 2026 (toda a série)</h3><p class="hint" style="margin:0">O resultado é o dos torneios terminados. As diferenças de saldo estão à parte. "Bate certo" = sessões em que o saldo final veio do botão, e não foi escrito.</p><div class="scroll"><table class="t"><thead><tr><th>Jogador</th><th class="n">Inscrições</th><th class="n">Entradas</th><th class="n">Custo</th><th class="n">Prémios</th><th class="n">Resultado</th><th class="n">Dif. de saldo</th><th class="n">Bate certo</th><th>Último registo</th></tr></thead><tbody>${Object.entries(byP).map(([p,x])=>{const idle=daysBetween(lastReg[p],G_TODAY);return `<tr class="click" data-act="gpl" data-v="${esc(p)}" tabindex="0" role="button"><td>${esc(p)}${todayPl.includes(p)?' <span class="chip info" style="padding:0 6px">joga hoje</span>':''}</td><td class="n">${x.n}</td><td class="n">${x.ent}</td><td class="n">${money(x.cost,cur)}</td><td class="n">${money(x.prize,cur)}</td><td class="n">${signed(x.res,cur)}</td><td class="n">${x.diff?signed(x.diff,cur):'—'}</td><td class="n">${x.match||'—'}</td><td>${fmtDate(lastReg[p])}${idle>=2?` <span class="chip warn" style="padding:0 6px">há ${idle} dias</span>`:''}</td></tr>`}).join('')}</tbody></table></div>`;
   document.getElementById('gTrans').innerHTML=`<h3>Prémios por transferência</h3><p class="hint" style="margin:0">Entram logo na carteira no registo. Confirma-se aqui quando o dinheiro chega mesmo.</p>${trans.map(({e,d})=>{const c=GS.confirmed[e.key];return `<div class="openrow" style="border-top:1px solid var(--border);padding-top:6px"><span>${esc(e.player)} · ${esc(e.info.name)} · <b>${money(num(d.prize),cur)}</b> → ${esc(d.wallet||'carteira')} · ${fmtDate(d.date)}${c?`<br><span class="ls">Chegou · confirmado por ${esc(c.by)} a ${esc(c.at)}</span>`:''}</span><button type="button" class="btn sm ${c?'':'p'}" data-act="gconf" data-key="${esc(e.key)}">${c?'Desfazer':'Confirmar que chegou'}</button></div>`}).join('')||'<p class="hint">Nenhum.</p>'}
    <h3 style="margin-top:10px">Prémios de 1 000 ou mais sem prova</h3><p class="hint" style="margin:0">Conta como prova um link (https://…) ou uma foto.</p>${noProof.map(({e,d})=>`<div class="ls">${esc(e.player)} · ${esc(e.info.name)} · ${money(num(d.prize),cur)} · ${fmtDate(d.date)}</div>`).join('')||'<p class="hint">Nenhum.</p>'}`;
   // torneios em falta
@@ -1066,11 +1113,12 @@ function renderGestao(){
      const res=GS.resolved[x.key];if(res)return `<div class="msg" style="background:var(--ok-bg);color:var(--ok);display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><span>${esc(x.player)} · "${esc(res.snap.manualName)}" → ${res.how==='add'?'acrescentado ao catálogo':res.how==='merge'?'junto à inscrição que já tinha':'ligado a '+esc(x.info.no+' · '+x.info.name)}</span><button type="button" class="btn sm" data-act="unresolve" data-key="${esc(x.key)}">Desfazer</button></div>`;
      const pend=GS.pending[x.key];if(pend){const pe=findEvent('apt',pend);const has=entries.some(o=>o.player===x.player&&o.key!==x.key&&o.info&&o.info.eventId===pend);
        const day=autoDay(Object.assign({festId:'apt'},pe.ev),line.manualDate,'new')||pe.ev.flights[0];const lr=levelRule(pe.ev,day,x.level);const paid=num(line.manualBuyIn)||0;
+       const prior=entries.find(o=>o.player===x.player&&o.key!==x.key&&o.info&&o.info.eventId===pend);const canMerge=!!(prior&&prior.days.some(d=>d.endState==='busted'&&flightsLeft(d.day,prior.info))&&!prior.days.some(d=>d.endState==='bagged'&&d.date<line.manualDate));
        return `<div class="stack" style="gap:6px;border:1px solid var(--warn);border-radius:6px;padding:10px"><div><b>Ligar "${esc(line.manualName)}" a ${esc(pe.ev.no)} · ${esc(pe.ev.name)}?</b></div>
         ${Math.abs(pe.ev.buyIn-paid)>1?`<div class="msg warn">O jogador escreveu ${money(paid,cur)} e este evento tem buy-in de ${money(pe.ev.buyIn,cur)}. O custo e o saldo dele não mudam: fica o que pagou, com a marca "pagou ${money(paid,cur)}" para rever.</div>`:''}
         ${lr&&lr.out?`<div class="msg warn">Este evento está fora do plano do nível ${esc(x.level)}, e o jogador não explicou. Vai aparecer em "Fora do plano".</div>`:''}
         ${has?`<div class="msg warn">O ${esc(x.player)} já tem uma inscrição neste evento. Confirma que não é o mesmo torneio duas vezes.</div>`:''}
-        <div style="display:flex;gap:8px;flex-wrap:wrap">${has?`<button type="button" class="btn sm p" data-act="resolveMerge" data-key="${esc(x.key)}">Juntar à inscrição que já existe</button><button type="button" class="btn sm" data-act="resolveOk" data-key="${esc(x.key)}">Ligar como inscrição nova</button>`:`<button type="button" class="btn sm p" data-act="resolveOk" data-key="${esc(x.key)}">Ligar</button>`}<button type="button" class="btn sm" data-act="resolveCancel" data-key="${esc(x.key)}">Cancelar</button></div></div>`}
+        <div style="display:flex;gap:8px;flex-wrap:wrap">${has&&canMerge?`<button type="button" class="btn sm p" data-act="resolveMerge" data-key="${esc(x.key)}">Juntar à inscrição que já existe (re-entrada)</button><button type="button" class="btn sm" data-act="resolveOk" data-key="${esc(x.key)}">Ligar como inscrição nova</button>`:has?`<span class="ls">Não dá para juntar: nessa inscrição o jogador já tinha saco.</span><button type="button" class="btn sm p" data-act="resolveOk" data-key="${esc(x.key)}">Ligar como inscrição nova</button>`:`<button type="button" class="btn sm p" data-act="resolveOk" data-key="${esc(x.key)}">Ligar</button>`}<button type="button" class="btn sm" data-act="resolveCancel" data-key="${esc(x.key)}">Cancelar</button></div></div>`}
      const dd=line?line.manualDate:'';const onDay=ev=>(ev.sched||[]).some(s=>s.date===dd&&ev.flights.includes(s.label));
      return `<div class="stack" style="gap:6px;border:1px solid var(--border);border-radius:6px;padding:10px"><div><b>${esc(x.player)}</b> escreveu "${esc(line?line.manualName:'')}" · ${money(num(line?line.manualBuyIn:0),cur)} · ${fmtDate(dd)}</div>
       ${sug.length?`<div class="msg warn">O tracker sugeriu ${esc(sug[0].no)} · ${esc(sug[0].name)} (${money(sug[0].buyIn,cur)}) e o jogador respondeu "não, é outro".</div>`:''}
@@ -1078,7 +1126,7 @@ function renderGestao(){
        <button type="button" class="btn sm p" data-act="resolve" data-how="link" data-key="${esc(x.key)}">Ligar a este evento</button><button type="button" class="btn sm" data-act="resolve" data-how="add" data-key="${esc(x.key)}">Acrescentar ao catálogo</button></div></div>`}).join('')||'<p class="hint">Nenhum.</p>'}
    ${Object.keys(byPlayer).length?`<div class="scroll"><table class="t"><thead><tr><th>Jogador</th><th class="n">Escritos à mão</th><th class="n">Estavam na lista</th></tr></thead><tbody>${Object.entries(byPlayer).map(([p,v])=>`<tr><td>${esc(p)}</td><td class="n">${v.n}</td><td class="n">${v.inList}${v.inList?' <span class="chip warn">falar com ele</span>':''}</td></tr>`).join('')}</tbody></table></div>`:''}`;
   document.getElementById('gDiffs').innerHTML=`<h3>Diferenças de saldo</h3>
-   ${matched.length?`<p class="hint" style="margin:0">Saldo final pelo "Bate certo" (não foi escrito): ${matched.map(m=>esc(m.player)+' a '+fmtDate(m.date)).join(', ')}.</p>`:''}
+   ${matched.length?`<p class="hint" style="margin:0">Saldo final pelo "Bate certo" (não foi escrito): ${matched.map(m=>esc(m.player)+' a '+fmtDate(m.date)+(m.manual?' <span class="chip warn" style="padding:0 6px">com torneio à mão</span>':'')).join(', ')}.</p>`:''}
    <div class="scroll"><table class="t"><thead><tr><th>Dia</th><th>Jogador</th><th class="n">Esperado</th><th class="n">Declarado</th><th class="n">Diferença</th><th>Explicação</th></tr></thead><tbody>${diffs.map(d=>`<tr><td>${fmtDate(d.date)}</td><td>${esc(d.player)}</td><td class="n">${money(d.expected,cur)}</td><td class="n">${money(d.declared,cur)}</td><td class="n">${signed(d.diff,cur)}</td><td>${esc(d.reason)}</td></tr>`).join('')||'<tr><td colspan="6" class="hint">Nenhuma.</td></tr>'}</tbody></table></div>`;
 }
 
@@ -1116,7 +1164,7 @@ const TOUR=[
  {role:'Jogador',v:'jogador',st:[4,'form'],hl:'#myEntries',t:'As tuas inscrições da semana',b:`O resumo: quatro inscrições, os flights e dias de cada uma, e o resultado.<br><br>Agora a mesma semana do lado da gestão.`},
  {role:'Gestão',v:'gestao',hl:'#gTiles',t:'A página da gestão',b:`Só admin e manager. "Hoje" é 21/11. Os indicadores levam à lista certa quando se carrega neles. Há um resumo por jogador, os prémios por transferência para confirmar e os prémios sem prova.`},
  {role:'Gestão',v:'gestao',fn:()=>{GS.filter='alert';GS.sel='Jogador C|GC1'},hl:'#gListCard',t:'Alerta: Final Day sem resultado',b:`O <b>Jogador C</b> ensacou no National Cup a 13/11. O Final Day foi a 15/11, e passaram mais de 3 dias sem resultado.<br><br>O alerta pergunta "ainda a jogar ou esqueceu-se?". Um Final Day pode durar vários dias, por isso nunca bloqueia o registo.`},
- {role:'Gestão',v:'gestao',fn:()=>{GS.filter='all'},hl:'#gPlan',t:'Fora do plano do nível',b:`Os Jogadores B e C (nível 6.1) jogaram o Mystery Bounty High Roller, que não está no plano deles, e explicaram porquê: <b>"Autorizado pelo coach no grupo da série."</b>`},
+ {role:'Gestão',v:'gestao',fn:()=>{GS.filter='all'},hl:'#gPlan',t:'Fora do plano do nível',b:`Os Jogadores B e C (nível 6.1) jogaram o Mystery Bounty High Roller, que não está no plano deles, e explicaram porquê. A explicação de cada um está na lista.`},
  {role:'Gestão',v:'gestao',fn:()=>{GS.filter='all'},hl:'#gMissing',t:'Torneios em falta',b:`O <b>Jogador B</b> escreveu "Mistery Bounty High Roller", $3 846. O tracker sugeriu o <b>Ev. 46</b> e ele respondeu "não, é outro".<br><br>A gestão liga-o num clique, e o indicador mostra que "estava na lista".`},
  {role:'Gestão',v:'gestao',hl:'#gDiffs',t:'Diferenças de saldo',b:`As sessões em que o saldo não bateu, com a explicação. Os $40 do câmbio do Jogador A estão aqui.`},
  {role:'Fim',v:'jogador',fn:()=>loadBlank('peek'),hl:'#c-live',t:'Agora experimenta tu',b:`Registo em branco a 16/11. Escolhe o Ultra Stack e marca flights, tenta passar em dois, acrescenta o mesmo torneio duas vezes, escolhe um torneio fora do plano…<br><br>Quando acabares, escreve o que te confundiu ou falhou.`},
