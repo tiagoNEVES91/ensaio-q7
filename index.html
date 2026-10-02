@@ -1,0 +1,1084 @@
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Registo de Torneios Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:hsl(40 20% 95%);--fg:hsl(30 10% 12%);--card:hsl(40 33% 99%);--muted:hsl(40 15% 90%);--muted-fg:hsl(35 8% 38%);
+  --accent:hsl(40 20% 89%);--border:hsl(40 12% 82%);--primary:hsl(48 100% 50%);--primary-fg:#000;--primary-soft:hsl(48 100% 88%);
+  --ok:hsl(145 55% 32%);--ok-bg:hsl(145 45% 92%);--warn:hsl(32 90% 36%);--warn-bg:hsl(40 95% 90%);--err:hsl(0 70% 45%);--err-bg:hsl(0 80% 95%);
+  --info:hsl(210 60% 38%);--info-bg:hsl(210 70% 94%);
+  --radius:.5rem;--mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --sans:Inter,"SF Pro Display",-apple-system,"Segoe UI",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;--bg:hsl(0 0% 4%);--fg:hsl(0 0% 94%);--card:hsl(0 0% 8%);--muted:hsl(0 0% 12%);--muted-fg:hsl(0 0% 62%);
+  --accent:hsl(0 0% 12%);--border:hsl(0 0% 18%);--primary-soft:hsl(48 60% 16%);
+  --ok:hsl(145 55% 60%);--ok-bg:hsl(145 40% 13%);--warn:hsl(40 90% 62%);--warn-bg:hsl(38 60% 13%);--err:hsl(0 80% 66%);--err-bg:hsl(0 50% 14%);
+  --info:hsl(210 80% 70%);--info-bg:hsl(210 45% 14%);
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;--bg:hsl(0 0% 4%);--fg:hsl(0 0% 94%);--card:hsl(0 0% 8%);--muted:hsl(0 0% 12%);--muted-fg:hsl(0 0% 62%);
+  --accent:hsl(0 0% 12%);--border:hsl(0 0% 18%);--primary-soft:hsl(48 60% 16%);
+  --ok:hsl(145 55% 60%);--ok-bg:hsl(145 40% 13%);--warn:hsl(40 90% 62%);--warn-bg:hsl(38 60% 13%);--err:hsl(0 80% 66%);--err-bg:hsl(0 50% 14%);
+  --info:hsl(210 80% 70%);--info-bg:hsl(210 45% 14%);
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:14px;line-height:1.5;padding:0 16px 64px}
+.wrap{max-width:1180px;margin:0 auto}
+header.top{padding-block:28px 12px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+h1{font-size:26px;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--muted-fg);margin:4px 0 0;max-width:68ch}
+.meta{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--muted);color:var(--muted-fg);white-space:nowrap}
+.chip.y{background:var(--primary);color:#000;font-weight:600}
+.chip.ok{background:var(--ok-bg);color:var(--ok)}.chip.warn{background:var(--warn-bg);color:var(--warn)}.chip.err{background:var(--err-bg);color:var(--err)}.chip.info{background:var(--info-bg);color:var(--info)}
+nav.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:20px;overflow-x:auto;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:5}
+nav.tabs button{background:none;border:0;border-bottom:2px solid transparent;padding:10px 14px;font:inherit;font-weight:500;color:var(--muted-fg);cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--primary)}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--primary);outline-offset:1px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:20px;align-items:start}
+@media (max-width:920px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+.sticky{position:sticky;top:56px}
+@media (max-width:920px){.sticky{position:static}}
+label.l{display:block;font-size:13px;font-weight:500;margin-bottom:4px}
+.req{color:var(--err)}
+.hint{font-size:12px;color:var(--muted-fg);margin-top:3px}
+input.i,select.i,textarea.i{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--fg);font:inherit}
+input.i[readonly]{background:var(--muted);color:var(--muted-fg)}
+input.num{font-variant-numeric:tabular-nums}
+.row{display:grid;gap:12px}
+.c2{grid-template-columns:repeat(2,minmax(0,1fr))}.c3{grid-template-columns:repeat(3,minmax(0,1fr))}.c4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:640px){.c3,.c4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:420px){.c2,.c3,.c4{grid-template-columns:1fr}}
+.stack{display:flex;flex-direction:column;gap:14px}
+h2{font-size:17px;margin:0}
+h3{font-size:15px;margin:0}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border);background:var(--card);color:var(--fg);padding:6px 12px;border-radius:6px;font:inherit;font-weight:500;cursor:pointer}
+.btn:hover{background:var(--accent)}
+.btn.p{background:var(--primary);border-color:var(--primary);color:#000}
+.btn.sm{padding:3px 9px;font-size:12.5px}
+.btn.ghost{border-color:transparent;background:none;color:var(--muted-fg)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.seg{display:flex;flex-wrap:wrap;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.seg button{flex:1 1 auto;border:0;background:var(--bg);color:var(--fg);padding:7px 10px;font:inherit;cursor:pointer;border-right:1px solid var(--border)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--primary);color:#000;font-weight:600}
+.room{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:end}
+@media (max-width:640px){.room{grid-template-columns:1fr}}
+.live{border:1px solid var(--primary);border-radius:var(--radius);background:var(--card)}
+.live>.hd{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 16px;background:var(--primary-soft);border-bottom:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;flex-wrap:wrap}
+.live>.bd{padding:14px 16px;display:flex;flex-direction:column;gap:14px}
+.open{border:1px dashed var(--border);border-radius:6px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.openrow{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.line{border:1px solid var(--border);border-radius:var(--radius);background:var(--bg)}
+.line>.lh{display:flex;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);align-items:flex-start}
+.line>.lb{padding:12px;display:flex;flex-direction:column;gap:12px}
+.lt{font-weight:600}
+.ls{font-size:12px;color:var(--muted-fg)}
+.subbox{border-top:1px dashed var(--border);padding-top:10px;display:flex;flex-direction:column;gap:8px}
+.sale{display:grid;grid-template-columns:1.1fr 1.3fr .6fr .6fr 1fr auto;gap:8px;align-items:end}
+@media (max-width:760px){.sale{grid-template-columns:1fr 1fr}}
+.amt{font-variant-numeric:tabular-nums;font-weight:600}
+.msgs{display:flex;flex-direction:column;gap:4px}
+.msg{font-size:12.5px;padding:5px 9px;border-radius:5px}
+.msg.err{background:var(--err-bg);color:var(--err)}.msg.warn{background:var(--warn-bg);color:var(--warn)}.msg.info{background:var(--info-bg);color:var(--info)}
+table.t{border-collapse:collapse;width:100%;font-size:13px}
+table.t th,table.t td{padding:7px 8px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}
+table.t th{font-weight:600;color:var(--muted-fg);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.scroll{overflow-x:auto}
+.rec{display:flex;flex-direction:column;gap:2px;font-variant-numeric:tabular-nums}
+.rec .r{display:flex;justify-content:space-between;gap:8px;padding:3px 0}
+.rec .r.tot{border-top:1px solid var(--border);margin-top:4px;padding-top:7px;font-weight:700}
+.rec .r .k{color:var(--muted-fg)}
+.bigstate{margin-top:10px;padding:10px 12px;border-radius:6px;font-weight:600}
+.bigstate.ok{background:var(--ok-bg);color:var(--ok)}.bigstate.warn{background:var(--warn-bg);color:var(--warn)}.bigstate.err{background:var(--err-bg);color:var(--err)}
+pre.code{font-family:var(--mono);font-size:11.5px;background:var(--muted);border-radius:6px;padding:10px;overflow:auto;max-height:360px;margin:0}
+.loader{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.daybtn[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:#000}
+.doc{max-width:860px}
+.doc h2{font-size:19px;margin:28px 0 8px}
+.doc h3{margin:18px 0 6px}
+.doc p,.doc li{max-width:72ch}
+.doc ul,.doc ol{padding-left:20px;margin:6px 0}
+.doc li{margin:3px 0}
+.callout{border-left:3px solid var(--primary);background:var(--card);padding:10px 14px;border-radius:0 6px 6px 0;margin:10px 0}
+.q{border:1px solid var(--border);border-radius:6px;padding:10px 12px;background:var(--card);margin:8px 0}
+.q b{display:block}
+code{font-family:var(--mono);font-size:12.5px;background:var(--muted);padding:1px 5px;border-radius:4px}
+.case{margin-bottom:22px}
+.case .ch{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start;margin-bottom:10px}
+.proves{margin:6px 0 10px;padding-left:18px;color:var(--muted-fg);font-size:13px}
+.gap{font-size:12.5px;color:var(--muted-fg);font-style:italic}
+.toast{margin-top:10px}
+[hidden]{display:none!important}
+@media (prefers-reduced-motion:no-preference){.btn,.seg button{transition:background .12s}}
+</style>
+<style>
+.viewsw{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.viewsw .seg button{padding:7px 14px}
+.picker{border:1px dashed var(--border);border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--card)}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.filters .i{width:auto}
+.plist{display:flex;flex-direction:column;gap:5px;max-height:320px;overflow:auto}
+.tour{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--border);border-radius:6px;padding:7px 10px;background:var(--bg);cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%}
+.tour:hover{background:var(--accent)}
+.tour .tm{font-variant-numeric:tabular-nums;font-size:12.5px;font-weight:600;line-height:1.25}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chipbtn{border:1px solid var(--border);background:var(--bg);color:var(--fg);border-radius:999px;padding:2px 10px;font:inherit;font-size:12.5px;cursor:pointer}
+.chipbtn[aria-pressed="true"]{background:var(--primary);border-color:var(--primary);color:#000;font-weight:600}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.tile{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+.tile .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2}
+.tile .k{font-size:12px;color:var(--muted-fg)}
+.tile.alert{border-color:var(--warn)}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--accent)}
+tr.sel td{background:var(--primary-soft)}
+.tl{display:flex;flex-direction:column;border-left:2px solid var(--border);margin-left:6px;padding-left:14px}
+.tl .ev{position:relative;padding:6px 0}
+.tl .ev::before{content:"";position:absolute;left:-20px;top:11px;width:10px;height:10px;border-radius:50%;background:var(--primary);border:2px solid var(--card)}
+.subtabs{display:inline-flex;margin-bottom:16px}
+.guide{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));width:380px;max-width:calc(100vw - 32px);background:var(--card);border:2px solid var(--primary);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:50;display:flex;flex-direction:column;max-height:70vh}
+.guide .gh{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;background:var(--primary);color:#000;border-radius:8px 8px 0 0}
+.guide .gb{padding:12px 14px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.guide .gb p{margin:0}
+.guide .gf{display:flex;justify-content:space-between;gap:8px;padding:10px 12px;border-top:1px solid var(--border);flex-wrap:wrap}
+.guide .bar{height:4px;background:var(--muted);border-radius:4px;overflow:hidden}
+.guide .bar>span{display:block;height:100%;background:var(--primary)}
+.guide .role{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.hl{outline:3px solid var(--primary)!important;outline-offset:3px;border-radius:6px;box-shadow:0 0 0 8px var(--primary-soft)!important}
+@media (prefers-reduced-motion:no-preference){.hl{animation:pulse 1.6s ease-in-out 2}@keyframes pulse{50%{box-shadow:0 0 0 14px var(--primary-soft)}}}
+.startcard{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--primary-soft);border-color:var(--primary)}
+.sbar{position:sticky;bottom:0;z-index:20;display:flex;justify-content:space-between;gap:10px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;box-shadow:0 -6px 16px rgba(0,0,0,.10);flex-wrap:wrap}
+.sbar .barinfo{font-size:13px;font-variant-numeric:tabular-nums;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.errlink{background:none;border:0;padding:0;color:inherit;font:inherit;text-decoration:underline;cursor:pointer;text-align:left}
+.fmore>summary{cursor:pointer;font-size:12.5px;color:var(--muted-fg);list-style:none}
+.fmore>summary::before{content:"▸ "}.fmore[open]>summary::before{content:"▾ "}
+.tour .lt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+@media (max-width:640px){
+ .seg button{flex:1 1 100%;border-right:0;border-bottom:1px solid var(--border);min-height:44px}
+ .seg button:last-child{border-bottom:0}
+ input[type=checkbox]{width:20px;height:20px}
+ .plist{max-height:none}
+ .tour{grid-template-columns:44px minmax(0,1fr) auto;padding:6px 8px;gap:8px}
+ .live>.bd,.line>.lb{padding:10px 8px}
+ .card{padding:12px}
+ .guide{max-height:40vh;width:calc(100vw - 16px);right:8px}
+ .hide-sm{display:none}
+ .sbar{margin-inline:-4px}
+}
+.seg.two button{flex:1 1 0}
+.rmbtn{min-height:36px}
+.line{scroll-margin-top:12px;scroll-margin-bottom:120px}
+#errBox,.msgs{scroll-margin-bottom:120px}
+.gcards{display:none}
+.gcards .chip{white-space:normal;text-align:left}
+.gcards .tour>span{min-width:0}
+.gdet{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.tiles{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+.barbtn{font:inherit;cursor:pointer}
+.guide.min .gb{display:none}
+@media (max-width:640px){
+ .seg.two button{flex:1 1 0;border-bottom:0;border-right:1px solid var(--border)}
+ .seg.two button:last-child{border-right:0}
+ input[type=checkbox]{width:24px;height:24px}
+ .rmbtn,.line .lh .btn,.sbar .btn{min-height:44px}
+ .gtable{display:none}.gcards{display:flex;flex-direction:column;gap:8px}
+ .gdet{grid-template-columns:minmax(0,1fr)}
+ .guide{top:8px;bottom:auto;max-height:42vh}
+}
+.sug{border:1px solid var(--warn);background:var(--warn-bg);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div>
+    <h1>Registo de Torneios Live</h1>
+    <p class="sub">Caso de uso novo dentro do registo de sessões do tracker. O jogador escolhe a sala Live e regista os torneios do dia a partir do catálogo da série. A gestão acompanha tudo numa página própria. Só equipa MTT. Fase 1: não depende do módulo de compras de ação.</p>
+  </div>
+  <div class="meta">
+    <span class="chip y">v8 · rascunho</span>
+    <span class="chip">01/out/2026</span>
+    <button type="button" class="btn sm" id="themeBtn" aria-label="Mudar tema">☀ Claro</button>
+  </div>
+</header>
+
+<div class="card startcard" style="margin-bottom:14px">
+  <div><div class="lt">Simulação guiada · APT Taipei 2026</div><div class="ls">Cinco dias de um jogador de nível 6.5, com o catálogo real da série (99 eventos), e depois a mesma semana vista pela gestão. Cerca de 10 minutos. A v8 corrige os dois testes da v7 e o teste no telemóvel: horas sem ":", ponto que passa a vírgula, saldo final no fim, "Bate certo" com confirmação.</div></div>
+  <button type="button" class="btn p" data-act="tourStart">▶ Começar a simulação</button>
+</div>
+
+<div class="card viewsw" style="margin-bottom:18px">
+  <span class="l" style="margin:0">Ver como</span>
+  <div class="seg" role="group" id="viewSw">
+    <button type="button" data-view="jogador" aria-pressed="true">Jogador</button>
+    <button type="button" data-view="gestao" aria-pressed="false">Gestão</button>
+  </div>
+  <span class="hint" id="viewHint" style="margin:0"></span>
+</div>
+
+<!-- ============ JOGADOR ============ -->
+<section data-view-panel="jogador">
+  <div class="card" style="margin-bottom:16px">
+    <div class="loader" id="loader"></div>
+  </div>
+  <div class="grid2">
+    <form id="form" class="stack" autocomplete="off" novalidate></form>
+    <aside class="stack sticky">
+      <div class="card" id="summary"></div>
+      <div class="card" id="myEntries"></div>
+    </aside>
+  </div>
+</section>
+
+<!-- ============ GESTÃO ============ -->
+<section data-view-panel="gestao" hidden>
+  <p class="sub" style="margin-bottom:14px">Página nova no tracker, só para admin e manager, com o filtro de equipa MTT. Mostra as inscrições live da equipa, o que está em aberto, os prémios por receber, as diferenças de saldo com a explicação dada e os torneios em falta no catálogo. Dados de exemplo da APT Taipei, com "hoje" = 21/11/2026.</p>
+  <div class="tiles" id="gTiles"></div>
+  <div class="card stack" style="margin-top:16px" id="gListCard">
+    <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><h3>Inscrições live</h3><div class="filters" id="gFilters"></div></div>
+    <div id="gTable"></div>
+  </div>
+  <div class="card stack" style="margin-top:16px" id="gSum"></div>
+  <div class="gdet" style="margin-top:16px">
+    <div class="card stack" id="gDetail"></div>
+    <div class="stack">
+      <div class="card stack" id="gTrans"></div>
+      <div class="card stack" id="gPlan"></div>
+      <div class="card stack" id="gMissing"></div>
+      <div class="card stack" id="gDiffs"></div>
+    </div>
+  </div>
+</section>
+
+<section data-view-panel="it" hidden><div id="cases"></div><pre id="payload"></pre></section>
+</div>
+
+<div class="guide" id="guide" hidden></div>
+
+<script>
+const APT_EVENTS=[{"id":"apt1000","no":"Ev. 1000","name":"[Event 0] Asia Gaming Industry Championship Freezeout","buyIn":417.0,"rake":20.36,"gtd":"","sched":[{"label":"Único","date":"2026-11-12","time":"14:00","reg":"17:50","levels":20,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-12","time":"14:00"},{"id":"apt1001","no":"Ev. 1001","name":"[Event 1] National Cup Championship","buyIn":513.0,"rake":19.66,"gtd":"TWD 20,000,000 GTD","sched":[{"label":"1A","date":"2026-11-13","time":"11:00","reg":"16:30","levels":30,"rules":null},{"label":"1B","date":"2026-11-13","time":"20:00","reg":"22:45","levels":15,"rules":null},{"label":"1C","date":"2026-11-14","time":"11:00","reg":"15:40","levels":25,"rules":null},{"label":"1D","date":"2026-11-14","time":"16:30","reg":"20:20","levels":20,"rules":null},{"label":"1E","date":"2026-11-14","time":"20:30","reg":"23:15","levels":15,"rules":null},{"label":"FT","date":"2026-11-15","time":"11:15","reg":"11:05","levels":30,"rules":null}],"flights":["1A","1B","1C","1D","1E"],"days":["FT"],"date":"2026-11-13","time":"11:00"},{"id":"apt1","no":"Ev. 1","name":"NL - Hold'em - Heads Up (64 Cap) - Best of 3 all rounds","buyIn":321.0,"rake":21.07,"gtd":"","sched":[{"label":"Único","date":"2026-11-13","time":"11:05","reg":"11:15","levels":10,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-13","time":"11:05"},{"id":"apt3","no":"Ev. 3","name":"High Roller - The Opener","buyIn":2244.0,"rake":15.11,"gtd":"","sched":[{"label":"1","date":"2026-11-13","time":"12:00","reg":"21:05","levels":40,"rules":["","1 entrada","X","X","X"]},{"label":"FT","date":"2026-11-14","time":"11:15","reg":"","levels":40,"rules":null}],"flights":["1"],"days":["FT"],"date":"2026-11-13","time":"12:00"},{"id":"apt8","no":"Ev. 8","name":"Turbo - High Roller","buyIn":1122.0,"rake":12.7,"gtd":"","sched":[{"label":"Único","date":"2026-11-13","time":"19:45","reg":"21:45","levels":15,"rules":["","","1 entrada","X","X"]}],"flights":["Único"],"days":[],"date":"2026-11-13","time":"19:45"},{"id":"apt11","no":"Ev. 11","name":"Hyper Turbo - High Roller","buyIn":801.0,"rake":10.38,"gtd":"","sched":[{"label":"Único","date":"2026-11-13","time":"22:15","reg":"23:40","levels":10,"rules":["","","","1 entrada","X"]}],"flights":["Único"],"days":[],"date":"2026-11-13","time":"22:15"},{"id":"apt12","no":"Ev. 12","name":"Super Hyper Turbo - NLH","buyIn":256.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-13","time":"23:00","reg":"23:40","levels":5,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-13","time":"23:00"},{"id":"apt15","no":"Ev. 15","name":"High Roller - Single Day","buyIn":2083.0,"rake":15.11,"gtd":"","sched":[{"label":"Único","date":"2026-11-14","time":"15:00","reg":"19:10","levels":20,"rules":["","","1 entrada","X","X"]}],"flights":["Único"],"days":[],"date":"2026-11-14","time":"15:00"},{"id":"apt18","no":"Ev. 18","name":"Hyper Turbo Home Games - Red River Hold'em (If River is Red, keep betting and dealing until a black card comes)","buyIn":112.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-14","time":"21:00","reg":"22:25","levels":10,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-14","time":"21:00"},{"id":"apt20","no":"Ev. 20","name":"Hyper Turbo - High Roller","buyIn":962.0,"rake":10.38,"gtd":"","sched":[{"label":"Único","date":"2026-11-14","time":"22:15","reg":"23:40","levels":10,"rules":["","","","1 entrada","X"]}],"flights":["Único"],"days":[],"date":"2026-11-14","time":"22:15"},{"id":"apt21","no":"Ev. 21","name":"Super Hyper Turbo - NLH","buyIn":256.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-14","time":"23:00","reg":"23:40","levels":5,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-14","time":"23:00"},{"id":"apt1002","no":"Ev. 1002","name":"[Event 2] Mystery Bounty Championship - Two Total Entries Allowed - Sponsored by Natural8","buyIn":1122.0,"rake":15.11,"gtd":"TWD 15,000,000 GTD","sched":[{"label":"1A","date":"2026-11-15","time":"11:15","reg":"15:55","levels":25,"rules":["1 entrada","1 entrada","X","X","X"]},{"label":"1B","date":"2026-11-15","time":"17:00","reg":"20:50","levels":20,"rules":["1 entrada","1 entrada","X","X","X"]},{"label":"FT","date":"2026-11-16","time":"11:15","reg":"","levels":30,"rules":null}],"flights":["1A","1B"],"days":["FT"],"date":"2026-11-15","time":"11:15"},{"id":"apt24","no":"Ev. 24","name":"High Roller - Single Day","buyIn":5288.0,"rake":11.14,"gtd":"","sched":[{"label":"Único","date":"2026-11-15","time":"11:45","reg":"18:00","levels":25,"rules":["","","","1 entrada","X"]}],"flights":["Único"],"days":[],"date":"2026-11-15","time":"11:45"},{"id":"apt25","no":"Ev. 25","name":"Sunday Super Stack","buyIn":321.0,"rake":21.07,"gtd":"","sched":[{"label":"Único","date":"2026-11-15","time":"13:00","reg":"16:55","levels":20,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-15","time":"13:00"},{"id":"apt29","no":"Ev. 29","name":"Hyper Turbo Home Games - Super Hold'em (3 Hole Cards, use 0,1,2,3 cards)","buyIn":112.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-15","time":"21:00","reg":"22:25","levels":10,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-15","time":"21:00"},{"id":"apt31","no":"Ev. 31","name":"Super Hyper Turbo - NLH","buyIn":256.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-15","time":"23:00","reg":"23:40","levels":5,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-15","time":"23:00"},{"id":"apt1003","no":"Ev. 1003","name":"[Event 3] Ultra Stack Championship","buyIn":801.0,"rake":15.11,"gtd":"TWD 25,000,000 GTD","sched":[{"label":"1A","date":"2026-11-16","time":"11:00","reg":"15:40","levels":25,"rules":["X","X","X","X","X"]},{"label":"1B","date":"2026-11-16","time":"16:00","reg":"19:50","levels":20,"rules":["1 entrada","X","X","X","X"]},{"label":"1C","date":"2026-11-16","time":"20:00","reg":"22:45","levels":15,"rules":["","1 entrada","X","X","X"]},{"label":"1D","date":"2026-11-17","time":"11:00","reg":"15:40","levels":25,"rules":["X","X","X","X","X"]},{"label":"1E","date":"2026-11-17","time":"16:00","reg":"19:50","levels":20,"rules":["1 entrada","X","X","X","X"]},{"label":"1F","date":"2026-11-17","time":"20:00","reg":"22:45","levels":15,"rules":["","1 entrada","X","X","X"]},{"label":"FT","date":"2026-11-18","time":"11:15","reg":"","levels":30,"rules":null}],"flights":["1A","1B","1C","1D","1E","1F"],"days":["FT"],"date":"2026-11-16","time":"11:00"},{"id":"apt32","no":"Ev. 32","name":"Mind Sports Week - Chess / Poker","buyIn":160.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-16","time":"11:05","reg":"11:15","levels":20,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-16","time":"11:05"},{"id":"apt1004","no":"Ev. 1004","name":"[Event 4] 7-Max Championship - 1 Re-Entry","buyIn":2724.0,"rake":15.11,"gtd":"","sched":[{"label":"1","date":"2026-11-16","time":"12:00","reg":"22:05","levels":50,"rules":["","1 entrada","X","X","X"]},{"label":"FT","date":"2026-11-17","time":"11:15","reg":"","levels":40,"rules":null}],"flights":["1"],"days":["FT"],"date":"2026-11-16","time":"12:00"},{"id":"apt37","no":"Ev. 37","name":"NL - Hold'em - Freezeout (TWD 4,000 Bounty)","buyIn":481.0,"rake":20.36,"gtd":"","sched":[{"label":"Único","date":"2026-11-16","time":"17:00","reg":"20:50","levels":15,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-16","time":"17:00"},{"id":"apt39","no":"Ev. 39","name":"Hyper Turbo Home Games - 3-2-1 (3 Flops, 2 Turns, 1 River - 6 ways to win)","buyIn":112.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-16","time":"21:30","reg":"22:55","levels":10,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-16","time":"21:30"},{"id":"apt41","no":"Ev. 41","name":"Super Hyper Turbo - NLH","buyIn":256.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-16","time":"23:00","reg":"23:40","levels":5,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-16","time":"23:00"},{"id":"apt43","no":"Ev. 43","name":"Mind Sports Week - Backgammon / Poker","buyIn":160.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-17","time":"11:05","reg":"11:15","levels":20,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-17","time":"11:05"},{"id":"apt44","no":"Ev. 44","name":"Tuesday Towering Stack","buyIn":321.0,"rake":21.07,"gtd":"","sched":[{"label":"Único","date":"2026-11-17","time":"11:15","reg":"16:00","levels":20,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-17","time":"11:15"},{"id":"apt46","no":"Ev. 46","name":"Single Day High Roller - Mystery Bounty (TWD 50,000 Bounty)","buyIn":3846.0,"rake":15.11,"gtd":"","sched":[{"label":"Único","date":"2026-11-17","time":"11:45","reg":"18:00","levels":25,"rules":["","","1 entrada","X","X"]}],"flights":["Único"],"days":[],"date":"2026-11-17","time":"11:45"},{"id":"apt49","no":"Ev. 49","name":"Turbo - NLH","buyIn":353.0,"rake":21.07,"gtd":"","sched":[{"label":"Único","date":"2026-11-17","time":"19:00","reg":"21:00","levels":15,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-17","time":"19:00"},{"id":"apt52","no":"Ev. 52","name":"Hyper Turbo - High Roller","buyIn":962.0,"rake":10.38,"gtd":"","sched":[{"label":"Único","date":"2026-11-17","time":"22:00","reg":"23:25","levels":10,"rules":["","","","1 entrada","X"]}],"flights":["Único"],"days":[],"date":"2026-11-17","time":"22:00"},{"id":"apt53","no":"Ev. 53","name":"Super Hyper Turbo - NLH","buyIn":256.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-17","time":"23:00","reg":"23:40","levels":5,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-17","time":"23:00"},{"id":"apt54","no":"Ev. 54","name":"NL - Hold'em - Bounty (TWD 4,000 Bounty)","buyIn":481.0,"rake":20.36,"gtd":"","sched":[{"label":"Único","date":"2026-11-18","time":"11:00","reg":"15:40","levels":20,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-18","time":"11:00"},{"id":"apt57","no":"Ev. 57","name":"Turbo - High Roller","buyIn":1603.0,"rake":12.7,"gtd":"","sched":[{"label":"Único","date":"2026-11-18","time":"11:15","reg":"13:15","levels":15,"rules":["","","1 entrada","X","X"]}],"flights":["Único"],"days":[],"date":"2026-11-18","time":"11:15"},{"id":"apt1007","no":"Ev. 1007","name":"[Event 7] Natural8 Cup Championship Freezeout","buyIn":3300.0,"rake":15.11,"gtd":"TWD 35,000,000 GTD","sched":[{"label":"1","date":"2026-11-18","time":"15:00","reg":"23:45","levels":60,"rules":["1 entrada","X","X","X","X"]},{"label":"2","date":"2026-11-19","time":"11:15","reg":"13:30","levels":60,"rules":["","X","X","X","X"]},{"label":"3","date":"2026-11-20","time":"11:15","reg":"","levels":60,"rules":null},{"label":"FT","date":"2026-11-21","time":"11:15","reg":"","levels":60,"rules":null}],"flights":["1"],"days":["2","3","FT"],"date":"2026-11-18","time":"15:00"},{"id":"apt62","no":"Ev. 62","name":"NL - Hold'em - TWD 7,500 Bounty per player (Winner Take All - all remaining prize pool to 1st)","buyIn":321.0,"rake":21.07,"gtd":"","sched":[{"label":"Único","date":"2026-11-18","time":"17:00","reg":"20:50","levels":15,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-18","time":"17:00"},{"id":"apt64","no":"Ev. 64","name":"Hyper Turbo Home Games - NL Hold'em - Deuces Wild","buyIn":112.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-18","time":"21:00","reg":"22:25","levels":10,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-18","time":"21:00"},{"id":"apt65","no":"Ev. 65","name":"Hyper Turbo - NL 8-Game","buyIn":192.0,"rake":24.0,"gtd":"","sched":[{"label":"Único","date":"2026-11-18","time":"22:15","reg":"23:40","levels":10,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-18","time":"22:15"},{"id":"apt66","no":"Ev. 66","name":"Super Hyper Turbo - NLH","buyIn":256.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-18","time":"23:00","reg":"23:40","levels":5,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-18","time":"23:00"},{"id":"apt1008","no":"Ev. 1008","name":"[Event 8] Micro Main Event Championship","buyIn":513.0,"rake":23.99,"gtd":"","sched":[{"label":"1A","date":"2026-11-19","time":"11:00","reg":"15:40","levels":25,"rules":null},{"label":"1B","date":"2026-11-19","time":"16:30","reg":"20:20","levels":20,"rules":null},{"label":"1C","date":"2026-11-19","time":"20:30","reg":"23:15","levels":15,"rules":null},{"label":"1D","date":"2026-11-20","time":"11:00","reg":"15:40","levels":25,"rules":null},{"label":"1E","date":"2026-11-20","time":"16:30","reg":"20:20","levels":20,"rules":null},{"label":"1F","date":"2026-11-20","time":"20:30","reg":"23:15","levels":15,"rules":null},{"label":"FT","date":"2026-11-21","time":"11:15","reg":"","levels":30,"rules":null}],"flights":["1A","1B","1C","1D","1E","1F"],"days":["FT"],"date":"2026-11-19","time":"11:00"},{"id":"apt67","no":"Ev. 67","name":"Mind Sports - Go / Poker","buyIn":160.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-19","time":"11:05","reg":"11:15","levels":20,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-19","time":"11:05"},{"id":"apt1009","no":"Ev. 1009","name":"[Event 9] Single Day High Roller Championship","buyIn":10000.0,"rake":8.17,"gtd":"","sched":[{"label":"Único","date":"2026-11-19","time":"12:00","reg":"18:15","levels":25,"rules":["","","","1 entrada","X"]}],"flights":["Único"],"days":[],"date":"2026-11-19","time":"12:00"},{"id":"apt72","no":"Ev. 72","name":"Hyper Turbo - NLH","buyIn":321.0,"rake":21.07,"gtd":"","sched":[{"label":"Único","date":"2026-11-19","time":"21:30","reg":"22:55","levels":10,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-19","time":"21:30"},{"id":"apt74","no":"Ev. 74","name":"Super Hyper Turbo - NLH","buyIn":256.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-19","time":"23:00","reg":"23:40","levels":5,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-19","time":"23:00"},{"id":"apt75","no":"Ev. 75","name":"3 Seats GTD - Satellite to Mixed Games Championship (Win Your Seat @ 105,000)","buyIn":391.0,"rake":21.07,"gtd":"","sched":[{"label":"Único","date":"2026-11-20","time":"11:00","reg":"13:15","levels":15,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-20","time":"11:00"},{"id":"apt76","no":"Ev. 76","name":"High Roller - Ultra Stack","buyIn":2564.0,"rake":15.11,"gtd":"","sched":[{"label":"1","date":"2026-11-20","time":"11:15","reg":"22:10","levels":50,"rules":["","1 entrada","X","X","X"]},{"label":"FT","date":"2026-11-21","time":"11:15","reg":"","levels":40,"rules":null}],"flights":["1"],"days":["FT"],"date":"2026-11-20","time":"11:15"},{"id":"apt1011","no":"Ev. 1011","name":"[Event 11] Super High Roller Championship - Double Re-Entry","buyIn":25000.0,"rake":5.63,"gtd":"","sched":[{"label":"1","date":"2026-11-20","time":"12:00","reg":"00:00","levels":60,"rules":["","","","","1 entrada (total)"]},{"label":"2","date":"2026-11-21","time":"11:15","reg":"12:30","levels":60,"rules":["","","","","1 entrada (total)"]},{"label":"FT","date":"2026-11-22","time":"11:15","reg":"","levels":60,"rules":null}],"flights":["1"],"days":["2","FT"],"date":"2026-11-20","time":"12:00"},{"id":"apt82","no":"Ev. 82","name":"Super Hyper Turbo - NLH","buyIn":256.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-20","time":"23:00","reg":"23:40","levels":5,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-20","time":"23:00"},{"id":"apt83","no":"Ev. 83","name":"Hyper Turbo - Double Stack","buyIn":321.0,"rake":21.07,"gtd":"","sched":[{"label":"Único","date":"2026-11-21","time":"11:00","reg":"12:25","levels":10,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-21","time":"11:00"},{"id":"apt86","no":"Ev. 86","name":"High Roller - Single Day","buyIn":5288.0,"rake":11.14,"gtd":"","sched":[{"label":"Único","date":"2026-11-21","time":"11:45","reg":"18:00","levels":25,"rules":["","","","1 entrada","X"]}],"flights":["Único"],"days":[],"date":"2026-11-21","time":"11:45"},{"id":"apt90","no":"Ev. 90","name":"Turbo - High Roller","buyIn":1603.0,"rake":12.7,"gtd":"","sched":[{"label":"Único","date":"2026-11-21","time":"20:00","reg":"22:00","levels":15,"rules":["","","1 entrada","X","X"]}],"flights":["Único"],"days":[],"date":"2026-11-21","time":"20:00"},{"id":"apt92","no":"Ev. 92","name":"Hyper Turbo Home Games - NL Hold'em - Noah's Ark - 2x2x2 (Single Board, 2 card flop, 2 card turn, 2 card river)","buyIn":112.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-21","time":"21:00","reg":"22:25","levels":10,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-21","time":"21:00"},{"id":"apt94","no":"Ev. 94","name":"Super Hyper Turbo - NLH","buyIn":256.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-21","time":"23:00","reg":"23:40","levels":5,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-21","time":"23:00"},{"id":"apt95","no":"Ev. 95","name":"Sunday Super Stack - Bounty (TWD 5,000 Bounty)","buyIn":513.0,"rake":19.66,"gtd":"","sched":[{"label":"Único","date":"2026-11-22","time":"11:00","reg":"14:55","levels":20,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-22","time":"11:00"},{"id":"apt98","no":"Ev. 98","name":"Hyper Turbo - High Roller","buyIn":1122.0,"rake":10.38,"gtd":"","sched":[{"label":"Único","date":"2026-11-22","time":"11:15","reg":"12:40","levels":10,"rules":["","","","1 entrada","X"]}],"flights":["Único"],"days":[],"date":"2026-11-22","time":"11:15"},{"id":"apt101","no":"Ev. 101","name":"Hyper Turbo - NLH","buyIn":112.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-22","time":"11:45","reg":"13:10","levels":10,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-22","time":"11:45"},{"id":"apt1013","no":"Ev. 1013","name":"[Event 13] Superstar Championship - 1 Re-Entry","buyIn":50000.0,"rake":4.59,"gtd":"","sched":[{"label":"1","date":"2026-11-22","time":"12:00","reg":"21:20","levels":40,"rules":["","","","","1 entrada"]},{"label":"FT","date":"2026-11-23","time":"11:15","reg":"","levels":40,"rules":null}],"flights":["1"],"days":["FT"],"date":"2026-11-22","time":"12:00"},{"id":"apt105","no":"Ev. 105","name":"NL - Hold'em","buyIn":513.0,"rake":19.66,"gtd":"","sched":[{"label":"Único","date":"2026-11-22","time":"17:00","reg":"20:50","levels":15,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-22","time":"17:00"},{"id":"apt107","no":"Ev. 107","name":"Turbo - NL Courchevel Hi-Lo - 5 Card (First flop card is exposed preflop)","buyIn":321.0,"rake":21.07,"gtd":"","sched":[{"label":"Único","date":"2026-11-22","time":"20:15","reg":"22:15","levels":15,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-22","time":"20:15"},{"id":"apt109","no":"Ev. 109","name":"Hyper Turbo Home Games - Super Hold'em Oceans (3 Hole Cards, use 0,1,2,3 cards + 6th board card)","buyIn":112.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-22","time":"21:15","reg":"22:40","levels":10,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-22","time":"21:15"},{"id":"apt111","no":"Ev. 111","name":"Super Hyper Turbo - NLH","buyIn":256.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-22","time":"23:00","reg":"23:40","levels":5,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-22","time":"23:00"},{"id":"apt1014","no":"Ev. 1014","name":"[Event 14] APT Championship Main Event Freezeout","buyIn":10000.0,"rake":7.17,"gtd":"TWD 165,000,000 GTD","sched":[{"label":"1","date":"2026-11-23","time":"11:00","reg":"22:45","levels":75,"rules":["","X","X","X","X"]},{"label":"2","date":"2026-11-24","time":"11:00","reg":"13:45","levels":75,"rules":["","X","X","X","X"]},{"label":"3","date":"2026-11-25","time":"11:15","reg":"","levels":90,"rules":null},{"label":"4","date":"2026-11-26","time":"11:15","reg":"","levels":90,"rules":null},{"label":"FT","date":"2026-11-27","time":"11:15","reg":"","levels":90,"rules":null}],"flights":["1"],"days":["2","3","4","FT"],"date":"2026-11-23","time":"11:00"},{"id":"apt112","no":"Ev. 112","name":"NL - Hold'em - Freezeout","buyIn":513.0,"rake":19.66,"gtd":"","sched":[{"label":"Único","date":"2026-11-23","time":"11:15","reg":"15:55","levels":25,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-23","time":"11:15"},{"id":"apt116","no":"Ev. 116","name":"NL - Hold'em - 1 Re-Entry","buyIn":417.0,"rake":20.36,"gtd":"","sched":[{"label":"Único","date":"2026-11-23","time":"17:00","reg":"20:50","levels":15,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-23","time":"17:00"},{"id":"apt119","no":"Ev. 119","name":"Hyper Turbo Home Games - NL - Hold'em - Crazy Irish (Dealt four cards, discard two after flop betting)","buyIn":112.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-23","time":"21:15","reg":"22:40","levels":10,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-23","time":"21:15"},{"id":"apt121","no":"Ev. 121","name":"Super Hyper Turbo - NLH","buyIn":256.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-23","time":"23:00","reg":"23:40","levels":5,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-23","time":"23:00"},{"id":"apt122","no":"Ev. 122","name":"Tuesday Towering Stack - Freezeout","buyIn":513.0,"rake":19.66,"gtd":"","sched":[{"label":"Único","date":"2026-11-24","time":"11:00","reg":"15:45","levels":25,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-24","time":"11:00"},{"id":"apt123","no":"Ev. 123","name":"Mixed Games - Heads Up (32 Cap) - Best of 3 all rounds","buyIn":513.0,"rake":19.66,"gtd":"","sched":[{"label":"Único","date":"2026-11-24","time":"11:05","reg":"11:15","levels":10,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-24","time":"11:05"},{"id":"apt1015","no":"Ev. 1015","name":"[Event 15] Mini Main Event Championship","buyIn":1122.0,"rake":15.11,"gtd":"","sched":[{"label":"1A","date":"2026-11-24","time":"14:00","reg":"18:40","levels":25,"rules":["1 entrada","1 entrada","X","X","X"]},{"label":"1B","date":"2026-11-24","time":"20:30","reg":"23:15","levels":15,"rules":["","","1 entrada","X","X"]},{"label":"1C","date":"2026-11-25","time":"11:00","reg":"16:30","levels":30,"rules":["1 entrada","X","X","X","X"]},{"label":"1D","date":"2026-11-25","time":"20:30","reg":"23:15","levels":15,"rules":["","","1 entrada","X","X"]},{"label":"FT","date":"2026-11-26","time":"11:15","reg":"","levels":30,"rules":null}],"flights":["1A","1B","1C","1D"],"days":["FT"],"date":"2026-11-24","time":"14:00"},{"id":"apt125","no":"Ev. 125","name":"High Roller - Single Day","buyIn":5288.0,"rake":11.14,"gtd":"","sched":[{"label":"Único","date":"2026-11-24","time":"14:30","reg":"18:40","levels":20,"rules":["","","","1 entrada","X"]}],"flights":["Único"],"days":[],"date":"2026-11-24","time":"14:30"},{"id":"apt129","no":"Ev. 129","name":"Turbo - NL Courchevel High - 5 Card (First flop card is exposed preflop)","buyIn":321.0,"rake":21.07,"gtd":"","sched":[{"label":"Único","date":"2026-11-24","time":"20:00","reg":"22:00","levels":15,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-24","time":"20:00"},{"id":"apt132","no":"Ev. 132","name":"Super Hyper Turbo - NLH","buyIn":256.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-24","time":"23:00","reg":"23:40","levels":5,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-24","time":"23:00"},{"id":"apt133","no":"Ev. 133","name":"NL - Hold'em - Heads Up (64 Cap) - Best of 3 all rounds","buyIn":513.0,"rake":19.66,"gtd":"","sched":[{"label":"Único","date":"2026-11-25","time":"11:05","reg":"11:15","levels":10,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-25","time":"11:05"},{"id":"apt134","no":"Ev. 134","name":"NL - Hold'em - Freezeout - Sponsored by JOPT","buyIn":321.0,"rake":21.07,"gtd":"","sched":[{"label":"Único","date":"2026-11-25","time":"11:15","reg":"15:05","levels":20,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-25","time":"11:15"},{"id":"apt1016","no":"Ev. 1016","name":"[Event 16] Micro High Roller Championship","buyIn":5128.0,"rake":11.15,"gtd":"","sched":[{"label":"1","date":"2026-11-25","time":"12:00","reg":"23:10","levels":50,"rules":["","","1 entrada","X","X"]},{"label":"FT","date":"2026-11-26","time":"11:15","reg":"","levels":40,"rules":null}],"flights":["1"],"days":["FT"],"date":"2026-11-25","time":"12:00"},{"id":"apt138","no":"Ev. 138","name":"Masters - Home Games Deepstack","buyIn":321.0,"rake":21.07,"gtd":"","sched":[{"label":"Único","date":"2026-11-25","time":"16:30","reg":"20:20","levels":15,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-25","time":"16:30"},{"id":"apt141","no":"Ev. 141","name":"Hyper Turbo Home Games - NL Hold'em - 2nd Best Hold'em (2nd best hand wins)","buyIn":112.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-25","time":"21:15","reg":"22:40","levels":10,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-25","time":"21:15"},{"id":"apt143","no":"Ev. 143","name":"Super Hyper Turbo - NLH","buyIn":256.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-25","time":"23:00","reg":"23:40","levels":5,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-25","time":"23:00"},{"id":"apt1017","no":"Ev. 1017","name":"[Event 17] Teams Championship (TWD 70K Buy-In Per Team of 2 Players)","buyIn":1122.0,"rake":15.11,"gtd":"","sched":[{"label":"Único","date":"2026-11-26","time":"11:00","reg":"16:30","levels":30,"rules":["1 entrada","X","X","X","X"]}],"flights":["Único"],"days":[],"date":"2026-11-26","time":"11:00"},{"id":"apt145","no":"Ev. 145","name":"NL - Hold'em - Freezeout","buyIn":641.0,"rake":18.29,"gtd":"","sched":[{"label":"Único","date":"2026-11-26","time":"11:15","reg":"15:55","levels":20,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-26","time":"11:15"},{"id":"apt144","no":"Ev. 144","name":"High Roller - Ultra Stack","buyIn":2564.0,"rake":15.11,"gtd":"","sched":[{"label":"1","date":"2026-11-26","time":"11:15","reg":"22:10","levels":50,"rules":["","1 entrada","X","X","X"]},{"label":"FT","date":"2026-11-27","time":"11:15","reg":"","levels":40,"rules":null}],"flights":["1"],"days":["FT"],"date":"2026-11-26","time":"11:15"},{"id":"apt1018","no":"Ev. 1018","name":"[Event 18] High Roller Championship","buyIn":15000.0,"rake":6.17,"gtd":"","sched":[{"label":"1","date":"2026-11-26","time":"12:00","reg":"00:00","levels":60,"rules":["","","","1 entrada (total)","2 entradas (total)"]},{"label":"2","date":"2026-11-27","time":"11:15","reg":"12:30","levels":60,"rules":["","","","1 entrada (total)","2 entradas (total)"]},{"label":"FT","date":"2026-11-28","time":"23:15","reg":"","levels":60,"rules":null}],"flights":["1"],"days":["2","FT"],"date":"2026-11-26","time":"12:00"},{"id":"apt150","no":"Ev. 150","name":"NL - Hold'em - 1 Re-Entry","buyIn":417.0,"rake":20.36,"gtd":"","sched":[{"label":"Único","date":"2026-11-26","time":"16:30","reg":"20:20","levels":15,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-26","time":"16:30"},{"id":"apt153","no":"Ev. 153","name":"Hyper Turbo Home Games - NL Hold'em - Double Board - Two Winners - Red River Hold'em (If River is Red, keep betting and dealing until a black card comes)","buyIn":112.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-26","time":"21:30","reg":"22:55","levels":10,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-26","time":"21:30"},{"id":"apt155","no":"Ev. 155","name":"Super Hyper Turbo - NLH","buyIn":256.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-26","time":"23:00","reg":"23:40","levels":5,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-26","time":"23:00"},{"id":"apt1019","no":"Ev. 1019","name":"[Event 19] Freezeout Championship","buyIn":2083.0,"rake":15.11,"gtd":"","sched":[{"label":"1","date":"2026-11-27","time":"11:00","reg":"19:10","levels":40,"rules":["","1 entrada","X","X","X"]},{"label":"FT","date":"2026-11-28","time":"11:15","reg":"","levels":60,"rules":null}],"flights":["1"],"days":["FT"],"date":"2026-11-27","time":"11:00"},{"id":"apt156","no":"Ev. 156","name":"NL - Hold'em - Super Hold'em Deepstack (3 Hole Cards, use 0,1,2,3 cards)","buyIn":321.0,"rake":21.07,"gtd":"","sched":[{"label":"Único","date":"2026-11-27","time":"11:15","reg":"15:55","levels":25,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-27","time":"11:15"},{"id":"apt161","no":"Ev. 161","name":"NL - Hold'em - 1 Re-Entry","buyIn":513.0,"rake":19.66,"gtd":"","sched":[{"label":"Único","date":"2026-11-27","time":"17:00","reg":"20:50","levels":15,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-27","time":"17:00"},{"id":"apt1020","no":"Ev. 1020","name":"[Event 20] Mini High Roller Championship","buyIn":7500.0,"rake":10.38,"gtd":"","sched":[{"label":"1","date":"2026-11-27","time":"18:00","reg":"00:50","levels":40,"rules":["","","1 entrada","X","X"]},{"label":"2","date":"2026-11-28","time":"11:15","reg":"12:50","levels":40,"rules":["","","1 entrada","X","X"]},{"label":"FT","date":"2026-11-29","time":"11:15","reg":"","levels":40,"rules":null}],"flights":["1"],"days":["2","FT"],"date":"2026-11-27","time":"18:00"},{"id":"apt163","no":"Ev. 163","name":"Hyper Turbo Home Games - NL Hold'em - Cry Me A River (Triple Board, lowest River card kills its board, one winner per remaining board)","buyIn":112.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-27","time":"21:15","reg":"22:40","levels":10,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-27","time":"21:15"},{"id":"apt165","no":"Ev. 165","name":"Super Hyper Turbo - NLH","buyIn":256.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-27","time":"23:00","reg":"23:40","levels":5,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-27","time":"23:00"},{"id":"apt1021","no":"Ev. 1021","name":"[Event 21] Turbo Championship","buyIn":1122.0,"rake":15.11,"gtd":"","sched":[{"label":"Único","date":"2026-11-28","time":"11:00","reg":"14:50","levels":20,"rules":["","1 entrada","X","X","X"]}],"flights":["Único"],"days":[],"date":"2026-11-28","time":"11:00"},{"id":"apt166","no":"Ev. 166","name":"Saturday Super Stack - 1 Re-Entry","buyIn":417.0,"rake":20.36,"gtd":"","sched":[{"label":"Único","date":"2026-11-28","time":"11:15","reg":"16:00","levels":25,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-28","time":"11:15"},{"id":"apt169","no":"Ev. 169","name":"High Roller - Ultra Stack","buyIn":5288.0,"rake":11.14,"gtd":"","sched":[{"label":"1","date":"2026-11-28","time":"15:00","reg":"23:20","levels":40,"rules":["","","1 entrada","X","X"]},{"label":"FT","date":"2026-11-29","time":"11:15","reg":"","levels":30,"rules":null}],"flights":["1"],"days":["FT"],"date":"2026-11-28","time":"15:00"},{"id":"apt1022","no":"Ev. 1022","name":"[Event 22] Trip Saver Championship","buyIn":1603.0,"rake":15.11,"gtd":"TWD 5,000,000 GTD","sched":[{"label":"1","date":"2026-11-28","time":"16:30","reg":"23:40","levels":40,"rules":["1 entrada","X","X","X","X"]},{"label":"FT","date":"2026-11-29","time":"11:15","reg":"11:15","levels":30,"rules":["","X","X","X","X"]}],"flights":["1"],"days":["FT"],"date":"2026-11-28","time":"16:30"},{"id":"apt174","no":"Ev. 174","name":"Hyper Turbo Home Games - NL Hold'em - Bomb Pot - Double Board (2 winners) - All In or Fold!","buyIn":112.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-28","time":"21:15","reg":"22:40","levels":10,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-28","time":"21:15"},{"id":"apt176","no":"Ev. 176","name":"Super Hyper Turbo - NLH","buyIn":256.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-28","time":"23:00","reg":"23:40","levels":5,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-28","time":"23:00"},{"id":"apt177","no":"Ev. 177","name":"Sunday Super Stack","buyIn":481.0,"rake":20.36,"gtd":"","sched":[{"label":"Único","date":"2026-11-29","time":"11:00","reg":"14:55","levels":20,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-29","time":"11:00"},{"id":"apt178","no":"Ev. 178","name":"High Roller - Last Chance","buyIn":2564.0,"rake":15.11,"gtd":"","sched":[{"label":"Único","date":"2026-11-29","time":"11:15","reg":"15:25","levels":20,"rules":["","","1 entrada","2 entradas","X"]}],"flights":["Único"],"days":[],"date":"2026-11-29","time":"11:15"},{"id":"apt181","no":"Ev. 181","name":"Turbo - NLH","buyIn":321.0,"rake":21.07,"gtd":"","sched":[{"label":"Único","date":"2026-11-29","time":"16:00","reg":"18:00","levels":15,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-29","time":"16:00"},{"id":"apt182","no":"Ev. 182","name":"Turbo - High Roller","buyIn":1122.0,"rake":12.7,"gtd":"","sched":[{"label":"Único","date":"2026-11-29","time":"16:15","reg":"18:15","levels":15,"rules":["","","1 entrada","X","X"]}],"flights":["Único"],"days":[],"date":"2026-11-29","time":"16:15"},{"id":"apt185","no":"Ev. 185","name":"Hyper Turbo - NLH","buyIn":256.0,"rake":23.99,"gtd":"","sched":[{"label":"Único","date":"2026-11-29","time":"19:00","reg":"20:25","levels":10,"rules":null}],"flights":["Único"],"days":[],"date":"2026-11-29","time":"19:00"},{"id":"apt186","no":"Ev. 186","name":"Hyper Turbo - High Roller","buyIn":801.0,"rake":10.38,"gtd":"","sched":[{"label":"Único","date":"2026-11-29","time":"19:15","reg":"20:40","levels":10,"rules":["","","","1 entrada","X"]}],"flights":["Único"],"days":[],"date":"2026-11-29","time":"19:15"}];
+/* ---------------- catálogo ---------------- */
+const EPT_EVENTS=[
+  {id:'e1',no:'#1',name:'Estrellas Main Event',buyIn:1100,flights:['1A','1B'],days:['2','3','4','FT'],sched:[['1A','2026-08-12','12:00'],['1B','2026-08-13','12:00'],['2','2026-08-14','12:00'],['3','2026-08-15','12:00'],['4','2026-08-16','12:00'],['FT','2026-08-17','12:00']]},
+  {id:'e7',no:'#7',name:'EPT Main Event',buyIn:5300,flights:['1A','1B'],days:['2','3','4','5','FT'],sched:[['1A','2026-08-20','12:00'],['1B','2026-08-21','12:00'],['2','2026-08-22','12:00'],['3','2026-08-23','12:00'],['4','2026-08-24','12:00'],['5','2026-08-25','12:00'],['FT','2026-08-26','12:00']]},
+  {id:'e20',no:'#20',name:'Turbo',buyIn:220,flights:['Único'],days:[],sched:[['Único','2026-08-16','21:00']]},
+  {id:'e25',no:'#25',name:'Deepstack',buyIn:550,flights:['Único'],days:[],sched:[['Único','2026-08-16','11:00']]},
+  {id:'e27',no:'#27',name:'Estrellas 2-Day',buyIn:1100,flights:['1'],days:['2'],sched:[['1','2026-08-16','13:00'],['2','2026-08-17','13:00']]},
+  {id:'e31',no:'#31',name:'Side Event NLH',buyIn:330,flights:['Único'],days:[],sched:[['Único','2026-08-18','15:00']]},
+].map(e=>Object.assign(e,{date:e.sched[0][1],time:e.sched[0][2],sched:e.sched.map(([label,date,time])=>({label,date,time,rules:null}))}));
+const CATALOG=[
+  {id:'apt',name:'APT Taipei 2026',city:'Taipé',currency:'USD',dates:'12–29 nov',events:APT_EVENTS},
+  {id:'ept',name:'EPT Barcelona 2026 (exemplo)',city:'Barcelona',currency:'EUR',dates:'10–24 ago',events:EPT_EVENTS},
+];
+const ROOMS=[{id:'live_usd',name:'Live USD',currency:'USD',live:true},{id:'live_eur',name:'Live EUR',currency:'EUR',live:true},{id:'gg',name:'GGPoker USD',currency:'USD',live:false}];
+// Saldo inicial de cada sala que o jogador não usou no dia anterior (exemplo).
+const DEFAULT_BAL={live_usd:5000,live_eur:2500,gg:1200};
+const LEVELS=['5.5','6.1','6.5','7.1','7.5'];
+function findEvent(festId,eventId){const f=CATALOG.find(x=>x.id===festId);if(!f)return null;const e=f.events.find(x=>x.id===eventId);return e?{fest:f,ev:e}:null}
+function festRange(festId){const f=CATALOG.find(x=>x.id===festId);if(!f)return null;const ds=f.events.flatMap(e=>(e.sched||[]).map(s=>s.date)).sort();return ds.length?[ds[0],ds[ds.length-1]]:null}
+
+/* ---------------- utilitários ---------------- */
+let _n=0;const uid=p=>p+(++_n);
+const clone=o=>JSON.parse(JSON.stringify(o));
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// v8: o ponto e a vírgula são sempre o separador dos cêntimos (no máximo 2 algarismos depois);
+// os milhares escrevem-se sem separador ("18398,50"). Ao escrever, o ponto passa a vírgula.
+// Texto que não é número devolve NaN (para a validação distinguir "vazio" de "mal escrito").
+function num(v){if(v===null||v===undefined)return null;if(typeof v==='number')return v;const s=String(v).replace(/\s/g,'');if(s==='')return null;
+  return /^-?\d+([.,]\d{1,2})?$/.test(s)?Number(s.replace(',','.')):NaN}
+const isInt=v=>{if(typeof v==='number')return Number.isInteger(v)&&v>=0;return /^\d+$/.test(String(v??'').trim())};
+const intOr0=v=>isInt(v)?Number(String(v).trim()):0;
+// Limpeza enquanto se escreve. Valores: ponto → vírgula, uma vírgula só, 2 casas (só a escrever no fim).
+function cleanDec(v,paste,atEnd){let s=String(v).replace(/[$€]/g,'').replace(/\./g,',');if(paste)return s.trim();const i=s.indexOf(',');if(i<0)return s;
+  let a=s.slice(0,i),b=s.slice(i+1).replace(/,/g,'');if(atEnd){const m=b.match(/^\d*/)[0];if(m.length>2)b=m.slice(0,2)+b.slice(m.length)}return a+','+b}
+// Inteiros: só se tira o separador quando é claramente de milhares ("185.000" → 185000).
+function cleanInt(v){const s=String(v).replace(/\s/g,'');return /^\d{1,3}([.,]\d{3})+$/.test(s)?s.replace(/[.,]/g,''):String(v)}
+// Horas: escreve-se só os algarismos ("2130" → "21:30"); "21h30" e "21.30" também servem.
+function cleanTime(v){let s=String(v).replace(/[hH.,;\s]/g,':').replace(/[^\d:]/g,'');
+  if(s.includes(':')){const p=s.split(':');return p[0].slice(0,2)+':'+p.slice(1).join('').slice(0,2)}
+  if(s.length>=2&&Number(s.slice(0,2))>23)return s.slice(0,1)+':'+s.slice(1,3);
+  return s.length>2?s.slice(0,2)+':'+s.slice(2,4):s}
+function normTime(v){const s=String(v||'').trim();let m=s.match(/^(\d{1,2}):?$/);if(m&&+m[1]<24)return m[1].padStart(2,'0')+':00';m=s.match(/^(\d{1,2}):(\d{2})$/);return m?m[1].padStart(2,'0')+':'+m[2]:s}
+const hm=v=>/^([01]?\d|2[0-3]):[0-5]\d$/.test(String(v||'').trim());
+const toMin=t=>{const [h,m]=String(t).trim().split(':').map(Number);return h*60+m};
+const enough=s=>String(s||'').replace(/[\s.,;:!?\-_]/g,'').length>=10;
+const proofOk=p=>/^https?:\/\/\S+\.\S+/.test(String(p||'').trim())||/^foto: /.test(String(p||''));
+const NF=(()=>{try{return new Intl.NumberFormat('pt-PT',{minimumFractionDigits:0,maximumFractionDigits:0,useGrouping:'always'})}catch(e){return new Intl.NumberFormat('pt-PT',{maximumFractionDigits:0})}})();
+const NF2=(()=>{try{return new Intl.NumberFormat('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2,useGrouping:'always'})}catch(e){return new Intl.NumberFormat('pt-PT',{minimumFractionDigits:2,maximumFractionDigits:2})}})();
+function money(n,cur){if(n===null||n===undefined||isNaN(n))return '—';const a=Math.round(Math.abs(n)*100)/100;const s=Number.isInteger(a)?NF.format(a):NF2.format(a);const neg=n<0?'−':'';return cur==='EUR'?neg+s+' €':neg+'$'+s}
+function signed(n,cur){if(!n)return money(0,cur);return (n>0?'+':'')+money(n,cur)}
+const fmtDate=d=>{if(!d)return '';const p=d.split('-');return p[2]+'/'+p[1]};
+const fmtDateY=(d,ref)=>{if(!d)return '';return ref&&String(ref).slice(0,4)!==d.slice(0,4)?fmtDate(d)+'/'+d.slice(0,4):fmtDate(d)};
+const daysBetween=(a,b)=>Math.round((new Date(b)-new Date(a))/86400000);
+const addDays=(d,n)=>{const x=new Date(d+'T12:00:00Z');x.setUTCDate(x.getUTCDate()+n);return x.toISOString().slice(0,10)};
+const roomOf=id=>ROOMS.find(r=>r.id===id)||ROOMS[0];
+const dayName=d=>d==='Único'?'Único dia':d==='FT'?'Final Day':/^1[A-Z]$/.test(d)?'Flight '+d.slice(1):'Day '+d;
+const theDay=d=>d==='Único'?'Este torneio':'O '+dayName(d)+' deste torneio';
+function L(o){return Object.assign({lid:uid('l'),kind:'new',entryId:null,festId:'',eventId:'',manual:false,manualFest:'',manualDate:'',manualName:'',manualBuyIn:'',manualNo:'',notOther:false,day:'',bullets:'1',method:'direto',
+  endState:'',chips:'',left:'',inMoney:false,pos:'',entrants:'',prize:'',receivedIn:'live',wallet:'Luxon USD',walletBy:{},proof:'',picking:false,fl:null,planReason:'',paidBuyIn:null},o)}
+function F(o){return Object.assign({room:'live_usd',homeRoom:null,date:'',start:'',end:'',startBalance:0,declaredEnd:'',endSource:'typed',diffReason:'',diffFor:null,warmup:false,meditation:false,notes:'',lines:[]},o)}
+// Saldo inicial da sala escolhida: o da sala com que o dia abriu, ou o saldo próprio de cada outra sala.
+function startBal(f){if(!f.homeRoom||f.room===f.homeRoom)return num(f.startBalance)||0;return DEFAULT_BAL[f.room]||0}
+
+/* ---------------- motor ---------------- */
+function lineEvent(line,entries){
+  if(line.kind==='cont'){const e=entries[line.entryId];return e?e.info:null}
+  if(line.manual){const f=CATALOG.find(x=>x.id===line.manualFest);const bi=num(line.manualBuyIn);
+    return {name:String(line.manualName||'').trim()||'Torneio sem nome',no:line.manualNo?('Ev. '+line.manualNo):'',festName:(f?f.name:'')+' · provisório',festId:line.manualFest,eventId:null,buyIn:bi>0?bi:0,currency:f?f.currency:null,flights:['Único','1A','1B','1C'],days:['2','3','FT'],sched:[],manual:true}}
+  const r=findEvent(line.festId,line.eventId);if(!r)return null;
+  return Object.assign({festName:r.fest.name,festId:r.fest.id,eventId:r.ev.id,currency:r.fest.currency},r.ev);
+}
+function schedFor(ev,label){return ev&&ev.sched?ev.sched.find(s=>s.label===label):null}
+function lastDate(ev){return ev&&ev.sched&&ev.sched.length?ev.sched[ev.sched.length-1].date:null}
+function lastFlightDate(ev){if(!ev||!ev.sched)return null;const f=ev.sched.filter(s=>ev.flights.includes(s.label));return f.length?f[f.length-1].date:null}
+// Último dia do torneio (Final Day, ou o dia único). Pode continuar no dia seguinte: "Continua amanhã".
+function lastLabel(ev){if(!ev)return null;if(ev.days&&ev.days.length)return ev.days[ev.days.length-1];return ev.flights&&ev.flights.length===1?ev.flights[0]:null}
+const isLastDay=(ev,day)=>!!day&&!!ev&&!ev.manual&&day===lastLabel(ev);
+function contLast(e){return !!(e&&e.status==='open'&&e.last&&e.last.endState==='bagged'&&isLastDay(e.info,e.last.day))}
+function autoDay(ev,date,kind,status){if(!ev)return '';if(!ev.sched||!ev.sched.length)return ev.flights.length===1?ev.flights[0]:'';
+  const pool=kind==='new'||status==='reentry'?ev.flights:ev.days;const c=ev.sched.filter(s=>s.date===date&&pool.includes(s.label));
+  if(c.length)return c[0].label;if(ev.flights.length===1&&kind==='new')return ev.flights[0];return ''}
+function contDay(e,date){return contLast(e)?e.last.day:autoDay(e&&e.info,date,'cont',e&&e.status)}
+// Custo: só entradas válidas (inteiras) contam. Um torneio em falta ligado pela gestão mantém o buy-in que o jogador pagou.
+function lineCashCost(line,ev,method){if(!ev)return 0;const b=intOr0(line.bullets);const bi=line.paidBuyIn!=null&&num(line.paidBuyIn)>0?num(line.paidBuyIn):ev.buyIn;if(line.kind==='new'&&method!=='direto')return Math.max(0,b-1)*bi;return b*bi}
+function netPrize(line){const p=num(line.prize);return p>0?p:0}
+function flightsLeft(day,ev){if(!ev||day==='Único')return false;const i=ev.flights.indexOf(day);return i>=0&&i<ev.flights.length-1}
+function dayFlights(ev,date,played){if(!ev||!ev.sched)return [];return ev.sched.filter(s=>s.date===date&&ev.flights.includes(s.label)&&s.label!=='Único'&&!(played||[]).includes(s.label)).map(s=>s.label)}
+function isMulti(line,ev,date,status,played){if(!ev||line.manual)return false;if(line.kind==='cont'&&status!=='reentry')return false;return dayFlights(ev,date,played).length>1}
+// Vários flights no mesmo dia: uma sub-linha por flight. No máximo um "Passou";
+// os flights antes dele só podem ser "Eliminado" e os depois deixam de contar.
+function syncFlights(line,ev,date,status,played){
+  if(!isMulti(line,ev,date,status,played)){line._sel=null;return false}
+  const labels=dayFlights(ev,date,played);
+  if(!line.fl){line.fl={};if(line.day&&labels.includes(line.day))line.fl[line.day]={on:true,bul:line.bullets||'1',st:line.endState==='bagged'?'bagged':line.endState==='busted'?'busted':''}}
+  labels.forEach(l=>{if(!line.fl[l])line.fl[l]={on:false,bul:'1',st:''}});
+  const passed=labels.findIndex(l=>line.fl[l].on&&line.fl[l].st==='bagged');
+  labels.forEach((l,i)=>{const x=line.fl[l];if(passed>=0&&i<passed&&x.on&&!x.st)x.st='busted'});
+  const sel=labels.filter((l,i)=>line.fl[l].on&&(passed<0||i<=passed));line._sel=sel;line._passed=passed>=0?labels[passed]:null;
+  line.bullets=String(sel.reduce((a,l)=>a+intOr0(line.fl[l].bul),0));
+  line.day=sel.length?(passed>=0?labels[passed]:sel[sel.length-1]):'';
+  line.endState=passed>=0?'bagged':(sel.length&&sel.every(l=>line.fl[l].st==='busted')?'busted':'');
+  return true}
+// Escolher "Passou" num flight tira o "Passou" dos outros; desmarcar um flight limpa o resultado dele.
+function setFlightState(line,lab,v){if(!line.fl||!line.fl[lab])return;if(v==='bagged')Object.keys(line.fl).forEach(l=>{if(l!==lab&&line.fl[l].st==='bagged')line.fl[l].st=''});line.fl[lab].st=v}
+function setFlightOn(line,lab,on){if(!line.fl||!line.fl[lab])return;line.fl[lab].on=on;if(!on)line.fl[lab].st=''}
+function statusFrom(line,ev){if(line.endState==='bagged')return 'open';if(line.endState==='busted')return flightsLeft(line.day,ev)?'reentry':'closed';if(line.endState==='itm')return 'paid';return 'open'}
+function levelRule(ev,day,level){
+  if(!ev||!level||!ev.sched)return null;const s=schedFor(ev,day)||ev.sched[0];const r=s&&s.rules;if(!r)return null;
+  const t=r[LEVELS.indexOf(level)]||'';if(!t)return {out:true,txt:'fora do plano do nível '+level};
+  const m=t.match(/(\d)\s*entrada/);if(m)return {max:+m[1],txt:'nível '+level+': '+t};
+  return {ok:true,txt:'no plano do nível '+level};
+}
+// Torneio em falta: fora do plano se o buy-in passa o maior buy-in permitido nesse dia
+// e há um torneio desse dia, com buy-in igual ou menor, que está fora do plano do nível.
+function manualPlan(line,date,level){if(!level)return null;const f=CATALOG.find(x=>x.id===line.manualFest);const bi=num(line.manualBuyIn);if(!f||!(bi>0))return null;
+  const ruled=[];f.events.forEach(e=>(e.sched||[]).forEach(s=>{if(s.date===date&&e.flights.includes(s.label)&&s.rules)ruled.push({e,t:s.rules[LEVELS.indexOf(level)]||''})}));if(!ruled.length)return null;
+  const maxA=Math.max(0,...ruled.filter(r=>r.t).map(r=>r.e.buyIn));
+  if(bi>maxA+1&&ruled.some(r=>!r.t&&r.e.buyIn<=bi+1))return {out:true,manual:true,txt:'acima do plano do nível '+level+' neste dia'};return null}
+const STOP=new Set(['event','evento','events','championship','champion','tournament','torneio','series','poker','holdem','hold\'em','nlhe','flight','final','edition']);
+function suggestions(line,date){
+  const f=CATALOG.find(x=>x.id===line.manualFest);if(!f)return [];const d=date||line.manualDate;const bi=num(line.manualBuyIn);
+  const words=String(line.manualName||'').toLowerCase().split(/[^a-z0-9à-ú]+/).filter(w=>w.length>=4&&!STOP.has(w));
+  return f.events.filter(e=>(e.sched||[]).some(s=>s.date===d&&e.flights.includes(s.label))).filter(e=>(bi>0&&Math.abs(e.buyIn-bi)<=1)||words.some(w=>e.name.toLowerCase().includes(w))).slice(0,4);
+}
+function buildEntries(days){
+  const entries={};
+  days.forEach(d=>{const f=d.form;f.lines.forEach(line=>{
+    let e;
+    if(line.kind==='new'){const ev=lineEvent(line,entries);
+      e=entries[line.entryId]={id:line.entryId,info:ev,manual:!!line.manual,method:line.method,paidBuyIn:line.paidBuyIn,days:[],bullets:0,cost:0,status:'open',prize:0,proof:''};
+    } else e=entries[line.entryId];
+    if(!e||!e.info)return;
+    const ev=e.info;
+    const multi=syncFlights(line,ev,f.date,line.kind==='cont'?e.status:null,line.kind==='cont'?e.days.map(x=>x.day):[]);
+    if(multi)line._sel.forEach(l=>{const x=line.fl[l];e.days.push({date:f.date,day:l,endState:x.st,chips:x.st==='bagged'?line.chips:'',left:x.st==='bagged'?line.left:'',inMoney:false,bullets:intOr0(x.bul)})});
+    else e.days.push({date:f.date,day:line.day,endState:line.endState,chips:line.chips,left:line.left,inMoney:line.inMoney,bullets:intOr0(line.bullets),pos:line.pos,entrants:line.entrants,prize:line.prize,receivedIn:line.receivedIn,wallet:line.wallet,planReason:line.planReason});
+    if(line.planReason)e.planReason=line.planReason;
+    e.bullets+=intOr0(line.bullets);e.cost+=lineCashCost(line,ev,e.method);e.status=statusFrom(line,ev);
+    e.last={date:f.date,day:line.day,endState:line.endState,chips:line.chips,left:line.left,inMoney:line.inMoney};
+    if(line.endState==='itm'){e.prize=netPrize(line);e.pos=line.pos;e.entrants=line.entrants;e.receivedIn=line.receivedIn;e.wallet=line.wallet;e.proof=line.proof}
+  })});
+  return entries;
+}
+function isOpen(e,date){if(e.status==='open')return true;if(e.status==='reentry'){const lf=lastFlightDate(e.info);return !lf||lf>=date}return false}
+// Eliminado num flight e já sem flights por jogar: fica terminado sem prémio.
+function settle(entries,date){Object.values(entries).forEach(e=>{if(e.status==='reentry'&&!isOpen(e,date))e.status='closed'});return entries}
+function nextDayToday(e,date){if(!e.info||!e.info.sched)return null;const pool=e.status==='reentry'?e.info.flights:e.info.days;const s=e.info.sched.find(x=>x.date===date&&pool.includes(x.label));return s||null}
+const STATUS={open:['Em jogo','info'],reentry:['Eliminado, ainda há flights','warn'],closed:['Terminado sem prémio',''],paid:['Terminado nos prémios','ok']};
+
+function reconcile(form,entries,level){
+  const room=roomOf(form.room);const cur=room.currency;
+  const out={cost:0,bullets:0,prize:0,walletPrize:0,pending:[],errors:[],warns:[],timeWarns:[],errSel:{},perLine:{},live:room.live};
+  const E=(m,sel)=>{out.errors.push(m);if(sel)out.errSel[m]=sel};
+  const seen=new Set();const seenEv=new Set();const seenManual=new Set();
+  if(room.live&&!form.lines.length)E('Acrescenta pelo menos um torneio ou tira a sala Live.','#c-live');
+  if(!room.live&&form.lines.length)out.infos=[`${form.lines.length===1?'O torneio live só conta':'Os '+form.lines.length+' torneios live só contam'} com uma sala Live. ${form.lines.length===1?'Volta':'Voltam'} se escolheres Live USD ou Live EUR.`];
+  // data e horas
+  if(!form.date)E('Escreve a data da sessão.','#f-date');else if(!/^\d{4}-\d\d-\d\d$/.test(form.date))E('A data da sessão não é válida.','#f-date');
+  const st=String(form.start||'').trim(),en=String(form.end||'').trim();
+  if(!st)E('Escreve a hora de início.','#f-start');else if(!hm(st))E('Hora de início mal escrita: usa hh:mm (ex.: 21:30).','#f-start');
+  if(!en)E('Escreve a hora de fim.','#f-end');else if(!hm(en))E('Hora de fim mal escrita: usa hh:mm (ex.: 03:30).','#f-end');
+  if(hm(st)&&hm(en)){let d=toMin(en)-toMin(st);if(d===0)E('O início e o fim são iguais.','#f-end');else{if(d<0)d+=1440;if(d>16*60)out.timeWarns.push(`Sessão de ${Math.floor(d/60)} h${d%60?' '+(d%60)+' min':''}. Confirma as horas.`)}
+    if(toMin(st)<600&&form.date)out.timeWarns.push(`Começou antes das 10:00: conta como sessão do dia anterior. Se começaste de madrugada a ${fmtDate(form.date)}, a data certa é ${fmtDate(addDays(form.date,-1))}.`)}
+  (room.live?form.lines:[]).forEach(line=>{
+    const msgs=[];const ev=lineEvent(line,entries);const e=entries[line.entryId];const method=line.kind==='new'?line.method:(e?e.method:'direto');
+    const err=m=>msgs.push(['err',m]),warn=m=>msgs.push(['warn',m]);
+    const played=line.kind==='cont'&&e?e.days.map(x=>x.day):[];
+    const repeatLast=line.kind==='cont'&&contLast(e)&&line.day===e.last.day;
+    const multi=room.live&&syncFlights(line,ev,form.date,e?e.status:null,played);
+    const curOk=!(ev&&ev.currency&&ev.currency!==cur);
+    if(!multi&&line.fl&&!line.day){const on=Object.keys(line.fl).filter(l=>line.fl[l].on);if(on.length){line.day=on[on.length-1];line.endState=on.some(l=>line.fl[l].st==='bagged')?'bagged':'busted'}}
+    if(!ev)err(line.manual?'Escreve o nome e o buy-in do torneio em falta.':'Escolhe o torneio na lista.');
+    if(line.manual){
+      if(line.manualDate!==form.date)line.manualDate=form.date;
+      const nm=String(line.manualName||'').trim();const bi=num(line.manualBuyIn);const fest=CATALOG.find(x=>x.id===line.manualFest);
+      if(nm.replace(/[^A-Za-zÀ-ú0-9]/g,'').length<3)err('Escreve o nome do torneio (pelo menos 3 letras).');
+      if(line.manualBuyIn===''||line.manualBuyIn==null)err('Escreve o buy-in por entrada.');else if(isNaN(bi)||!(bi>0))err('O buy-in não é um número válido.');else if(bi<50)warn(`Buy-in de ${money(bi,cur)}? Confirma o valor.`);
+      const fr=festRange(line.manualFest);if(fr&&form.date&&(form.date<fr[0]||form.date>fr[1]))err(`A sessão é a ${fmtDateY(form.date,fr[0])} e a ${fest.name} é de ${fmtDate(fr[0])} a ${fmtDate(fr[1])}.`);
+      const sg=suggestions(line,form.date);if(sg.length&&!line.notOther)err('Confirma que não é nenhum dos torneios sugeridos.');
+      const inF=sg.find(x=>form.lines.some(o=>{if(o===line)return false;const oe=lineEvent(o,entries);return oe&&oe.festId===line.manualFest&&oe.eventId===x.id&&Math.abs(x.buyIn-(bi||0))<=1}));if(inF)err(`O ${inF.no} · ${inF.name} já está neste registo. Se é esse, remove esta linha.`);
+      const mk=nm.toLowerCase().replace(/[^a-z0-9à-ú]/g,'')+'|'+(bi||0);if(nm&&seenManual.has(mk))err('Já escreveste este torneio neste registo. Remove esta linha.');seenManual.add(mk)}
+    if(ev&&ev.currency&&ev.currency!==cur)err(`Este torneio é em ${ev.currency}. Regista-o na sala Live ${ev.currency}.`);
+    if(line.entryId&&seen.has(line.entryId))err('Este torneio já está neste registo.');seen.add(line.entryId||line.lid);
+    const evKey=ev&&ev.eventId?ev.festId+'|'+ev.eventId:null;if(evKey&&seenEv.has(evKey))err('Este torneio já está neste registo. Junta os flights na linha que já existe.');if(evKey)seenEv.add(evKey);
+    const b=intOr0(line.bullets);
+    if(!multi){if(line.bullets!==''&&!isInt(line.bullets))err('As entradas são um número inteiro (0, 1, 2…).');
+      else if(line.kind==='new'&&!(b>=1))err('Um torneio novo tem pelo menos 1 entrada paga.')}
+    if(ev&&b>4)warn(`${b} entradas num só torneio. Confirma.`);
+    if(ev&&line.kind==='cont'&&line.day&&!ev.flights.includes(line.day)&&b>0)err('Num dia seguinte não se pagam entradas. Põe 0.');
+    if(ev&&line.kind==='cont'&&line.day&&played.includes(line.day)&&!repeatLast)err(`Já registaste o ${dayName(line.day)} deste torneio noutra sessão.`);
+    if(repeatLast){if(form.date&&form.date<=e.last.date)err(`O ${dayName(line.day)} começou a ${fmtDate(e.last.date)}: a continuação é num dia depois.`)}
+    else{const sc=ev&&schedFor(ev,line.day);if(sc&&sc.date&&form.date&&sc.date!==form.date)err(`${theDay(line.day)} é a ${fmtDateY(sc.date,form.date)}, e a sessão é a ${fmtDateY(form.date,sc.date)}. Confirma a data.`)}
+    if(multi){const labels=line._sel;if(!labels.length)err('Marca os flights que jogaste hoje.');
+      labels.forEach(l=>{const x=line.fl[l];if(!isInt(x.bul)||intOr0(x.bul)<1)err(`As entradas do ${dayName(l)} são um número inteiro, pelo menos 1.`);if(!x.st)err(`Diz como acabou o ${dayName(l)}.`)})}
+    else{if(ev&&!line.day)err('Escolhe o dia ou flight.');
+      if(ev&&!line.endState)err('Diz como acabou o dia neste torneio.')}
+    const prevLeft=line.kind==='cont'&&e&&e.last?num(e.last.left):null;
+    if(line.kind==='cont'&&e&&e.last&&e.last.inMoney&&line.endState==='busted')err('No dia anterior já estavas nos prémios. Escolhe "Terminou nos prémios" e escreve o prémio.');
+    if(line.endState==='bagged'){if(!(isInt(line.chips)&&intOr0(line.chips)>0))err('Escreve as fichas com que ensacaste (número inteiro).');
+      if(line.left!==''){if(!isInt(line.left))err('Os jogadores restantes são um número inteiro.');else if(intOr0(line.left)<1)err('Se passaste, resta pelo menos 1 jogador (tu).');else if(prevLeft&&intOr0(line.left)>prevLeft)warn(`Ontem restavam ${prevLeft} jogadores e hoje ${intOr0(line.left)}. Confirma.`)}}
+    if(line.endState==='itm'){const p=num(line.prize);
+      if(!(isInt(line.pos)&&intOr0(line.pos)>=1))err('Escreve a posição (número inteiro).');
+      if(line.prize===''||line.prize==null)err('Escreve o prémio.');else if(isNaN(p))err('O prémio está mal escrito. Usa só algarismos e uma vírgula para os cêntimos (ex.: 9200,50).');else if(!(p>0))err('O prémio tem de ser maior que 0.');
+      if(line.entrants!==''){if(!isInt(line.entrants)||intOr0(line.entrants)<1)err('Os inscritos são um número inteiro, pelo menos 1.');else if(isInt(line.pos)&&intOr0(line.pos)>intOr0(line.entrants))err('A posição não pode ser maior que o nº de inscritos.')}
+      if(prevLeft&&isInt(line.pos)&&intOr0(line.pos)>prevLeft)warn(`Ontem restavam ${prevLeft} jogadores e acabaste em ${intOr0(line.pos)}.º. Confirma.`);
+      if(ev&&ev.buyIn&&p>0&&p>=30*ev.buyIn)warn(`O prémio é ${Math.round(p/ev.buyIn)}× o buy-in. Confirma que está em ${cur}.`);
+      if(p>=1000&&!proofOk(line.proof))warn(String(line.proof||'').trim()?'A prova tem de ser um link (https://…) ou uma foto.':'Junta a prova do prémio (foto do recibo ou link dos resultados).')}
+    const lr=line.manual?manualPlan(line,form.date,level):levelRule(ev,line.day,level);const total=(e?e.bullets:0)+b;const over=!!(lr&&lr.max&&total>lr.max);const needPlan=!!(lr&&(lr.out||over));
+    if(lr&&lr.out)warn(lr.manual?`Pelo buy-in, este torneio fica fora do plano do teu nível (${level}) neste dia.`:`Este torneio não está no plano do teu nível (${level}) para esta série.`);
+    if(over)warn(`O plano do teu nível é ${lr.max} ${lr.max===1?'entrada':'entradas'} neste torneio, e esta já é a ${total}.ª.`);
+    if(needPlan){if(!String(line.planReason||'').trim())err('Explica porque jogaste este torneio fora do plano do teu nível.');else if(!enough(line.planReason))err('A explicação do plano é curta demais: escreve pelo menos 10 letras.')}
+    if(line.kind==='new'&&line.method!=='direto')msgs.push(['info','O satélite onde ganhaste o lugar regista-se como torneio próprio, no dia em que o jogaste.']);
+    const c=curOk?lineCashCost(line,ev,method):0;out.cost+=c;out.bullets+=ev&&curOk?b:0;
+    if(line.endState==='itm'&&curOk){const np=netPrize(line);if(line.receivedIn==='live')out.prize+=np;else{out.walletPrize+=np;out.pending.push(`O prémio de ${money(np,cur)} (${ev?esc(ev.name):''}) entra já na ${esc(line.wallet)}. Não conta no saldo do Live.`)}}
+    out.perLine[line.lid]={msgs,ev,cost:c,lr,needPlan,multi,repeatLast};msgs.forEach(m=>{(m[0]==='err'?out.errors:out.warns).push(m[1])});
+  });
+  if(room.live)Object.values(entries).forEach(e=>{if(isOpen(e,form.date)){const s=nextDayToday(e,form.date);if(s&&!form.lines.some(l=>l.entryId===e.id))out.warns.push(`O ${dayName(s.label)} do ${e.info.name} é hoje. Não o jogaste?`)}});
+  const sb=startBal(form);out.start=sb;out.declared=num(form.declaredEnd);const dOk=out.declared!==null&&!isNaN(out.declared);
+  if(room.live){out.expected=sb-out.cost+out.prize;out.diff=dOk?Math.round((out.declared-out.expected)*100)/100:null;
+    if(out.expected<0)out.warns.push('As contas dão um saldo negativo. Confirma as entradas e os buy-ins.')}
+  else{out.expected=null;out.diff=null}
+  out.sessPnl=dOk?out.declared-sb+out.walletPrize:null;
+  if(out.declared===null)E('Escreve o saldo final.','#f-end-bal');
+  else if(isNaN(out.declared))E('O saldo final está mal escrito. Usa só algarismos e uma vírgula para os cêntimos (ex.: 18398,50).','#f-end-bal');
+  else if(out.declared<0)E('O saldo final não pode ser negativo.','#f-end-bal');
+  else if(out.diff){const rs=String(form.diffReason||'').trim();
+    if(!rs)E('Explica a diferença de saldo.','#f-diff');else if(!enough(rs))E('A explicação da diferença é curta demais: escreve pelo menos 10 letras.','#f-diff');
+    else if(form.diffFor!=null&&Math.abs(form.diffFor-out.diff)>0.004)E(`Explicaste uma diferença de ${signed(form.diffFor,cur)}; agora são ${signed(out.diff,cur)}. Revê a explicação.`,'#f-diff')}
+  return out;
+}
+
+/* ---------------- filtros do catálogo ---------------- */
+let PF={q:'',fest:'apt',band:'all',min:'',max:'',date:'all',sort:'time'};
+try{const s=JSON.parse(localStorage.getItem('registo-live-filtros-v4')||'null');if(s){PF.band=s.band||'all';PF.sort=s.sort||'time'}}catch(e){}
+function savePF(){try{localStorage.setItem('registo-live-filtros-v4',JSON.stringify({band:PF.band,sort:PF.sort}))}catch(e){}}
+const BANDS=[['all','Todos',0,Infinity],['b1','até 500',0,500],['b2','500–1 500',500.01,1500],['b3','1 500–5 000',1500.01,5000],['b4','acima de 5 000',5000.01,Infinity]];
+function openPickerDefaults(form){
+  const cur=roomOf(form.room).currency;const entries=entriesNow();
+  const used=[...form.lines.map(l=>l.festId||l.manualFest),...Object.values(entries).map(e=>e.info&&e.info.festId)].filter(Boolean);
+  const fest=used.find(id=>(CATALOG.find(f=>f.id===id)||{}).currency===cur)||(CATALOG.find(f=>f.currency===cur)||{}).id||'all';
+  PF.fest=fest;const f=CATALOG.find(x=>x.id===fest);PF.date=f&&f.events.some(e=>(e.sched||[]).some(s=>s.date===form.date))?form.date:'all';PF.q='';PF.min='';PF.max='';
+}
+function catalogRows(currency){
+  const rows=[];CATALOG.filter(f=>f.currency===currency&&(PF.fest==='all'||f.id===PF.fest)).forEach(f=>f.events.forEach(e=>{
+    (e.sched||[]).forEach(s=>{if(e.flights.includes(s.label)&&(PF.date==='all'||s.date===PF.date))rows.push({f,e,s})})}));
+  const band=BANDS.find(b=>b[0]===PF.band)||BANDS[0];const mn=num(PF.min),mx=num(PF.max);const q=PF.q.trim().toLowerCase();
+  let out=rows.filter(({f,e})=>e.buyIn>=band[2]&&e.buyIn<=band[3]&&(!(mn>0)||e.buyIn>=mn)&&(!(mx>0)||e.buyIn<=mx)&&(!q||(e.no+' '+e.name).toLowerCase().includes(q)));
+  if(PF.date==='all'){const seen=new Set();out=out.filter(r=>{if(seen.has(r.e.id))return false;seen.add(r.e.id);return true})}
+  out.sort((a,b)=>PF.sort==='buyin'?a.e.buyIn-b.e.buyIn:(a.s.date+a.s.time).localeCompare(b.s.date+b.s.time));
+  return out;
+}
+
+/* ---------------- simulação APT (Jogador A, nível 6.5) ---------------- */
+const SCEN={player:'Jogador A',level:'6.5',days:[
+ {title:'Segunda 16/11 · primeiro dia na APT',
+  empty:F({date:'2026-11-16',start:'10:45',end:'23:30',startBalance:20000,lines:[L({lid:'s0n',entryId:'S1',picking:true})]}),
+  form:F({date:'2026-11-16',start:'10:45',end:'23:30',startBalance:20000,declaredEnd:'18398',lines:[
+    L({lid:'s0a',entryId:'S1',festId:'apt',eventId:'apt1003',fl:{'1A':{on:true,bul:'1',st:'busted'},'1B':{on:true,bul:'1',st:'bagged'}},chips:'185000',left:'612'})]})},
+ {title:'Terça 17/11 · um torneio novo',
+  empty:F({date:'2026-11-17',start:'11:30',end:'20:10',startBalance:18398,lines:[]}),
+  form:F({date:'2026-11-17',start:'11:30',end:'20:10',startBalance:18398,declaredEnd:'23712',diffReason:'$40 de diferença no câmbio TWD → USD no casino.',diffFor:-40,lines:[
+    L({lid:'s1a',entryId:'S2',festId:'apt',eventId:'apt46',day:'Único',bullets:'1',endState:'itm',pos:'14',entrants:'212',prize:'9200',receivedIn:'live',proof:'foto: recibo-ev46.jpg'})]})},
+ {title:'Quarta 18/11 · Final Day e um torneio novo',
+  empty:F({date:'2026-11-18',start:'11:00',end:'00:40',startBalance:23712,lines:[]}),
+  form:F({date:'2026-11-18',start:'11:00',end:'00:40',startBalance:23712,declaredEnd:'24762',lines:[
+    L({lid:'s2a',kind:'cont',entryId:'S1',day:'FT',bullets:'0',endState:'itm',pos:'23',entrants:'1480',prize:'4350',receivedIn:'live',proof:'foto: recibo-ev1003.jpg'}),
+    L({lid:'s2b',entryId:'S3',festId:'apt',eventId:'apt1007',day:'1',bullets:'1',endState:'bagged',chips:'142000',left:'390'})]})},
+ {title:'Quinta 19/11 · Day 2 e um torneio fora do plano',
+  level:F({date:'2026-11-19',start:'11:00',end:'23:55',startBalance:24762,lines:[
+    L({lid:'s3x',kind:'cont',entryId:'S3',day:'2',bullets:'0'}),
+    L({lid:'s3y',entryId:'S9',festId:'apt',eventId:'apt1009',day:'Único',bullets:'1'})]}),
+  missing:F({date:'2026-11-19',start:'11:00',end:'23:55',startBalance:24762,lines:[
+    L({lid:'s3m',entryId:'S8',manual:true,manualFest:'apt',manualDate:'2026-11-19',manualName:'Hyper Turbo',manualBuyIn:'321',bullets:'1'})]}),
+  form:F({date:'2026-11-19',start:'11:00',end:'23:55',startBalance:24762,declaredEnd:'24441',lines:[
+    L({lid:'s3a',kind:'cont',entryId:'S3',day:'2',bullets:'0',endState:'bagged',chips:'610000',left:'88',inMoney:true}),
+    L({lid:'s3b',entryId:'S4',festId:'apt',eventId:'apt72',day:'Único',bullets:'1',endState:'busted'})]})},
+ {title:'Sexta 20/11 · Day 3 e prémio por transferência',
+  form:F({date:'2026-11-20',start:'11:15',end:'22:30',startBalance:24441,declaredEnd:'24441',lines:[
+    L({lid:'s4a',kind:'cont',entryId:'S3',day:'3',bullets:'0',endState:'itm',pos:'31',entrants:'1264',prize:'6800',receivedIn:'transfer',wallet:'Luxon USD',proof:'https://results.example/apt-taipei-ev7'})]})},
+]};
+SCEN.days.forEach(d=>{if(!d.empty)d.empty=d.form});
+
+/* ---------------- casos para o IT (EPT, EUR) ---------------- */
+const CASES=[
+ {id:'A',title:'Um torneio em vários dias',story:'Estrellas Main Event: saco no Day 1A, um dia de folga, Day 2 já nos prémios, 38.º no Day 3.',
+  proves:['A mesma inscrição em três sessões; o dia de folga não precisa de registo.','O Day 2 não conta para o nº de torneios.'],
+  days:[{form:F({room:'live_eur',date:'2026-08-12',start:'11:45',end:'23:50',startBalance:6000,declaredEnd:'4900',lines:[L({lid:'a1',entryId:'A1',festId:'ept',eventId:'e1',day:'1A',bullets:'1',endState:'bagged',chips:'87500'})]})},
+   {gapBefore:'13/08 — dia de folga.',form:F({room:'live_eur',date:'2026-08-14',start:'11:50',end:'23:40',startBalance:4900,declaredEnd:'4900',lines:[L({lid:'a2',kind:'cont',entryId:'A1',day:'2',bullets:'0',endState:'bagged',chips:'245000',inMoney:true})]})},
+   {form:F({room:'live_eur',date:'2026-08-15',start:'11:50',end:'19:20',startBalance:4900,declaredEnd:'13350',lines:[L({lid:'a3',kind:'cont',entryId:'A1',day:'3',bullets:'0',endState:'itm',pos:'38',entrants:'1842',prize:'8450',proof:'https://results.example/ept-estrellas'})]})}]},
+ {id:'B',title:'Três torneios no mesmo dia',story:'Deepstack (eliminado), Estrellas 2-Day no Day 1 (saco) e Turbo com re-entrada (eliminado). Menos 60 € do que as contas dão.',
+  proves:['Três inscrições numa sessão.','Nº de torneios = 4.','Diferença avisa e pede explicação.'],
+  days:[{form:F({room:'live_eur',date:'2026-08-16',start:'10:50',end:'23:55',startBalance:4000,declaredEnd:'1850',diffReason:'60 € de diferença no câmbio.',diffFor:-60,lines:[
+    L({lid:'b1',entryId:'B1',festId:'ept',eventId:'e25',day:'Único',bullets:'1',endState:'busted'}),
+    L({lid:'b2',entryId:'B2',festId:'ept',eventId:'e27',day:'1',bullets:'1',endState:'bagged',chips:'64000'}),
+    L({lid:'b3',entryId:'B3',festId:'ept',eventId:'e20',day:'Único',bullets:'2',endState:'busted'})]})}]},
+ {id:'D',title:'Re-entrada noutro flight e prémio por transferência',story:'EPT Main: eliminado no 1A (fica em aberto sozinho), re-entra no 1B, passa o Day 2, 9.º no Day 3, prémio pago por transferência.',
+  proves:['Sem pergunta de re-entrada: o 1A deixa a inscrição em aberto.','O prémio por transferência entra na carteira (Luxon EUR) e não no saldo do Live: o Live fica em 1 400 € e o resultado da sessão é +64 300 €.'],
+  days:[{form:F({room:'live_eur',date:'2026-08-20',start:'11:45',end:'17:30',startBalance:12000,declaredEnd:'6700',lines:[L({lid:'d1',entryId:'D1',festId:'ept',eventId:'e7',day:'1A',bullets:'1',endState:'busted'})]})},
+   {form:F({room:'live_eur',date:'2026-08-21',start:'11:45',end:'23:50',startBalance:6700,declaredEnd:'1400',lines:[L({lid:'d2',kind:'cont',entryId:'D1',day:'1B',bullets:'1',endState:'bagged',chips:'142000'})]})},
+   {form:F({room:'live_eur',date:'2026-08-22',start:'11:50',end:'23:30',startBalance:1400,declaredEnd:'1400',lines:[L({lid:'d3',kind:'cont',entryId:'D1',day:'2',bullets:'0',endState:'bagged',chips:'410000'})]})},
+   {form:F({room:'live_eur',date:'2026-08-23',start:'11:50',end:'22:10',startBalance:1400,declaredEnd:'1400',lines:[L({lid:'d4',kind:'cont',entryId:'D1',day:'3',bullets:'0',endState:'itm',pos:'9',entrants:'1120',prize:'64300',receivedIn:'transfer',wallet:'Luxon EUR',proof:'https://results.example/ept-main'})]})}]},
+ {id:'E',title:'Último dia que continua no dia seguinte',story:'Estrellas 2-Day: saco no Day 1; o Day 2 (o último) não acaba e continua a 18/08, onde termina em 2.º.',
+  proves:['No último dia o botão é "Continua amanhã".','No dia seguinte repete-se o mesmo Day 2 (continues_previous_day), sem erro de data nem de dia repetido.'],
+  days:[{form:F({room:'live_eur',date:'2026-08-16',start:'12:40',end:'23:50',startBalance:3000,declaredEnd:'1900',lines:[L({lid:'e1',entryId:'E1',festId:'ept',eventId:'e27',day:'1',bullets:'1',endState:'bagged',chips:'95000'})]})},
+   {form:F({room:'live_eur',date:'2026-08-17',start:'12:50',end:'03:10',startBalance:1900,declaredEnd:'1900',lines:[L({lid:'e2',kind:'cont',entryId:'E1',day:'2',bullets:'0',endState:'bagged',chips:'1200000',left:'4',inMoney:true})]})},
+   {form:F({room:'live_eur',date:'2026-08-18',start:'14:00',end:'18:30',startBalance:1900,declaredEnd:'22900',lines:[L({lid:'e3',kind:'cont',entryId:'E1',day:'2',bullets:'0',endState:'itm',pos:'2',entrants:'310',prize:'21000',proof:'https://results.example/ept-2day'})]})}]},
+];
+
+/* ---------------- estado ---------------- */
+// drafts: o que o jogador mudou em cada dia da simulação fica guardado até carregar em Repor.
+let S={src:'scen',di:0,variant:'empty',ci:0,level:SCEN.level,player:SCEN.player,form:null,touched:{},submitted:false,removed:[],resetArm:0,matchArm:false,drafts:{},dirty:false,focusTo:null};
+function freshUI(){S.touched={};S.submitted=false;S.removed=[];S.resetArm=0;S.matchArm=false}
+function priorDays(){if(S.src==='scen')return SCEN.days.slice(0,S.di).map(d=>({form:d.form}));if(S.src==='case')return CASES[S.ci].days.slice(0,S.di);return []}
+function entriesNow(){return buildEntries(priorDays())}
+function draftKey(){return S.src==='scen'?'scen|'+S.di+'|'+S.variant:S.src==='case'?'case|'+S.ci+'|'+S.di:'blank'}
+function keepDraft(){if(S.form&&S.dirty)S.drafts[draftKey()]=S.form}
+function takeDraft(fresh,make){const k=draftKey();if(fresh)delete S.drafts[k];const d=S.drafts[k];S.form=d||make();S.dirty=!!d;if(!S.form.homeRoom)S.form.homeRoom=S.form.room}
+function loadScen(di,variant,fresh){keepDraft();freshUI();S.src='scen';S.di=di;S.variant=variant||'form';S.level=SCEN.level;S.player=SCEN.player;takeDraft(fresh,()=>clone(SCEN.days[di][S.variant]||SCEN.days[di].form));afterLoad();render()}
+function loadCase(ci,di,fresh){keepDraft();freshUI();S.src='case';S.ci=ci;S.di=di;S.level=null;S.player='Caso '+CASES[ci].id;takeDraft(fresh,()=>clone(CASES[ci].days[di].form));afterLoad();render()}
+function loadBlank(fresh){keepDraft();freshUI();S.src='blank';S.level=SCEN.level;S.player='Jogador A';takeDraft(fresh,()=>F({date:'2026-11-16',start:'11:00',startBalance:20000,lines:[L({lid:uid('n'),entryId:uid('E'),picking:true})]}));afterLoad();render()}
+function afterLoad(){if(S.form.lines.some(l=>l.picking))openPickerDefaults(S.form)}
+
+/* ---------------- render jogador ---------------- */
+function renderLoader(){
+  let h='<span class="ls" style="margin-right:4px">Dias da simulação:</span>';
+  SCEN.days.forEach((d,di)=>{const on=S.src==='scen'&&S.di===di;const dr=(on&&S.dirty)||Object.keys(S.drafts).some(k=>k.startsWith('scen|'+di+'|'));
+    h+=`<button type="button" class="btn sm daybtn" data-act="loadScen" data-di="${di}" aria-pressed="${on}" title="${esc(d.title)}${dr?' · com alterações tuas':''}">${fmtDate(d.form.date)}${dr?' •':''}</button>`});
+  const bd=(S.src==='blank'&&S.dirty)||!!S.drafts.blank;
+  h+=`<span style="width:6px"></span><button type="button" class="btn sm daybtn" data-act="blank" aria-pressed="${S.src==='blank'}">Em branco${bd?' •':''}</button>`;
+  if(Object.keys(S.drafts).length||S.dirty)h+=`<span class="ls" style="margin-left:6px">• tem alterações tuas (ficam até Repor)</span>`;
+  document.getElementById('loader').innerHTML=h;
+}
+function opt(v,label,sel){return `<option value="${esc(v)}"${String(v)===String(sel)?' selected':''}>${esc(label)}</option>`}
+function renderForm(){
+  const f=S.form;const room=roomOf(f.room);const entries=entriesNow();const cur=room.currency;
+  let h='';
+  const ctx=S.src==='scen'?`${esc(SCEN.player)} · nível ${SCEN.level} · APT Taipei 2026 · dia ${S.di+1} de ${SCEN.days.length}<div class="lt">${esc(SCEN.days[S.di].title)}</div>`:S.src==='case'?`Caso ${CASES[S.ci].id} (para o IT)<div class="lt">${esc(CASES[S.ci].title)}</div>`:`Jogador A · nível 6.5<div class="lt">Registo em branco, 16/11, APT Taipei</div>`;
+  h+=`<div class="card" style="background:var(--primary-soft);border-color:var(--primary)"><div class="ls">${ctx}</div></div>`;
+  h+=`<div class="card stack" id="c-time"><div class="row c3">
+      <div><label class="l" for="f-date">Data da sessão</label><input class="i" id="f-date" type="date" min="2020-01-01" max="2030-12-31" value="${esc(f.date)}" data-f="f.date"></div>
+      <div><label class="l" for="f-start">Início</label><input class="i" id="f-start" value="${esc(f.start)}" data-f="f.start" data-kind="time" placeholder="hh:mm" inputmode="numeric" maxlength="5" autocomplete="off"></div>
+      <div><label class="l" for="f-end">Fim</label><input class="i" id="f-end" value="${esc(f.end)}" data-f="f.end" data-kind="time" placeholder="hh:mm" inputmode="numeric" maxlength="5" autocomplete="off"></div></div><div class="msgs" id="timeHint"></div></div>`;
+  h+=`<div class="card stack" id="c-rooms">
+    <div class="row c2" id="c-room">
+      <div><label class="l" for="f-room">Sala</label><select class="i" id="f-room" data-f="f.room">${ROOMS.map(r=>opt(r.id,r.name,f.room)).join('')}</select></div>
+      <div><span class="l">Saldo inicial</span><div class="amt" id="f-sb" style="padding:7px 0">${money(startBal(f),cur)}</div></div>
+    </div>`;
+  h+=room.live?renderLive(f,entries,cur):'';
+  h+=`</div>`;
+  h+=`<div class="card stack" id="c-endcard"><div id="c-endbal"><label class="l" for="f-end-bal">Saldo final ${room.live?'do Live':'na sala'} <span class="req">*</span></label>
+      <input class="i num" id="f-end-bal" value="${esc(f.declaredEnd)}" data-f="f.declaredEnd" data-kind="dec" inputmode="decimal" placeholder="Quanto tens agora?" autocomplete="off">
+      <div class="hint" id="expHint"></div><div id="matchBox"></div></div>
+    <div id="diffBox" hidden><label class="l" for="f-diff">Porque não bate? <span class="req">*</span></label><textarea class="i" id="f-diff" rows="2" data-f="f.diffReason" placeholder="Ex.: diferença no câmbio">${esc(f.diffReason)}</textarea></div></div>`;
+  h+=`<div class="card"><span class="l">Preparação</span><div class="row c2">
+       <label class="btn" style="justify-content:flex-start"><input type="checkbox" id="f-wu" data-f="f.warmup" ${f.warmup?'checked':''}> Warm-up</label>
+       <label class="btn" style="justify-content:flex-start"><input type="checkbox" id="f-md" data-f="f.meditation" ${f.meditation?'checked':''}> Meditação</label></div></div>
+    <div id="errBox" class="msgs"></div><div id="undoBox"></div><div id="submitMsg"></div>
+    <div class="sbar" id="stickyBar"><div class="barinfo" id="barInfo"></div><div style="display:flex;gap:8px"><button type="button" class="btn sm ghost" data-act="reset" id="btnReset">${S.resetArm?'Confirmar reposição':'Repor'}</button><button type="submit" class="btn p" id="btnSubmit">Registar</button></div></div>`;
+  document.getElementById('form').innerHTML=h;
+  f.lines.forEach(l=>{if(l.kind==='new'&&l.picking)renderPickList(l.lid)});
+  if(S.removed.length){const x=S.removed[S.removed.length-1];document.getElementById('undoBox').innerHTML=`<div class="msg info" style="display:flex;justify-content:space-between;align-items:center;gap:8px">Removido: ${esc(x.name)}${S.removed.length>1?` (e mais ${S.removed.length-1})`:''}.<button type="button" class="btn sm" data-act="undoRm">Desfazer</button></div>`}
+}
+function renderLive(f,entries,cur){
+  const open=Object.values(entries).filter(e=>isOpen(e,f.date));const inForm=new Set(f.lines.map(l=>l.entryId));
+  let h=`<div class="live" id="c-live"><div class="hd"><div><h3>Torneios live de hoje</h3></div><span class="chip y">${f.lines.length} ${f.lines.length===1?'torneio':'torneios'}</span></div><div class="bd">`;
+  if(open.length){
+    h+=`<div class="open" id="c-open"><div class="ls" style="font-weight:600">Torneios a decorrer</div>`;
+    open.forEach(e=>{const st=STATUS[e.status];const last=e.last;const today=nextDayToday(e,f.date);const cl=contLast(e);
+      const lastTxt=e.status==='reentry'?`eliminado no ${dayName(last.day)} a ${fmtDate(last.date)} · flights até ${fmtDate(lastFlightDate(e.info))}`:`${dayName(last.day)} a ${fmtDate(last.date)}: saco de ${NF.format(intOr0(last.chips))}${last.left?' · restam '+esc(last.left):''}${last.inMoney?' · já nos prémios':''}`;
+      const nxt=e.info.sched?e.info.sched.find(s=>s.date>=f.date&&(e.status==='reentry'?e.info.flights:e.info.days).includes(s.label)):null;
+      const chip=today?` <span class="chip y">${dayName(today.label)} é hoje</span>`:cl?` <span class="chip">${dayName(last.day)} continua</span>`:nxt?` <span class="chip">${dayName(nxt.label)} a ${fmtDate(nxt.date)}</span>`:'';
+      h+=`<div class="openrow" id="op-${esc(e.id)}"><div><div class="lt">${esc(e.info.name)} <span class="chip ${st[1]}">${st[0]}</span>${chip}</div><div class="ls">${esc(e.info.festName)} · ${lastTxt}</div></div>
+      <button type="button" class="btn sm ${inForm.has(e.id)?'':'p'}" data-act="cont" data-eid="${esc(e.id)}" ${inForm.has(e.id)?'disabled':''}>${inForm.has(e.id)?'Já está em baixo':'Joguei hoje'}</button></div>`});
+    h+=`</div>`;
+  } else h+=`<div class="hint">Sem torneios a decorrer.</div>`;
+  f.lines.forEach(line=>{h+=renderLine(line,entries,cur,f)});
+  h+=`<div><button type="button" class="btn" data-act="addNew" id="btnAddNew">+ Torneio novo</button></div></div></div>`;
+  return h;
+}
+function renderPicker(line,f){
+  const k=line.lid;const cur=roomOf(f.room).currency;const fests=CATALOG.filter(x=>x.currency===cur);
+  const fest=CATALOG.find(x=>x.id===PF.fest);const dates=fest?[...new Set(fest.events.flatMap(e=>(e.sched||[]).map(s=>s.date)))].sort():[];
+  return `<div class="picker" id="pk-${k}"><div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><span class="l" style="margin:0">Escolhe o torneio no catálogo</span><span class="ls" id="pcount-${k}"></span></div>
+    <div class="filters">
+      <select class="i" id="pf-${k}" data-pf="fest" data-lid="${k}" aria-label="Série">${fests.map(x=>opt(x.id,x.name,PF.fest)).join('')}</select>
+      <select class="i" id="pd-${k}" data-pf="date" data-lid="${k}" aria-label="Dia">${opt('all','Todos os dias',PF.date)}${dates.map(d=>opt(d,fmtDate(d)+(d===f.date?' (hoje)':''),PF.date)).join('')}</select>
+    </div>
+    <input class="i" id="pq-${k}" value="${esc(PF.q)}" data-pf="q" data-lid="${k}" placeholder="Procurar por nome ou nº (ex.: Ultra, 1007, Hyper)" aria-label="Procurar">
+    <details class="fmore"><summary>Mais filtros</summary><div class="filters" style="margin-top:6px"><select class="i" id="ps-${k}" data-pf="sort" data-lid="${k}" aria-label="Ordenar">${opt('time','Ordenar por hora',PF.sort)}${opt('buyin','Ordenar por buy-in',PF.sort)}</select><span class="ls">Buy-in</span><div class="chips">${BANDS.map(b=>`<button type="button" class="chipbtn" data-act="band" data-v="${b[0]}" data-lid="${k}" aria-pressed="${PF.band===b[0]}">${b[1]}</button>`).join('')}</div>
+      <input class="i num" id="pmin-${k}" value="${esc(PF.min)}" data-pf="min" data-lid="${k}" data-kind="dec" placeholder="mín." style="width:76px" inputmode="decimal" aria-label="Buy-in mínimo">
+      <input class="i num" id="pmax-${k}" value="${esc(PF.max)}" data-pf="max" data-lid="${k}" data-kind="dec" placeholder="máx." style="width:76px" inputmode="decimal" aria-label="Buy-in máximo"></div></details>
+    <div class="plist" id="plist-${k}"></div>
+    <div id="pmiss-${k}"></div></div>`;
+}
+function renderPickList(lid){
+  const el=document.getElementById('plist-'+lid);if(!el)return;const rows=catalogRows(roomOf(S.form.room).currency);
+  const cnt=document.getElementById('pcount-'+lid);if(cnt)cnt.textContent=rows.length+(rows.length===1?' torneio':' torneios');
+  const ents=entriesNow();const inForm={};S.form.lines.forEach(l=>{if(l.lid===lid)return;const ev=lineEvent(l,ents);if(ev&&ev.eventId)inForm[ev.festId+'|'+ev.eventId]=l.lid});
+  const bag={};Object.values(ents).forEach(x=>{if(x.info&&x.status==='open')bag[x.info.festId+'|'+x.info.eventId]=x});
+  el.innerHTML=rows.length?rows.map(({f,e,s})=>{const lr=levelRule(e,s.label,S.level);const key=f.id+'|'+e.id;const dup=inForm[key];const bg=!dup&&bag[key];
+    return `<button type="button" class="tour" data-act="${dup?'gotoLine':bg?'gotoOpen':'pickEv'}" data-target="${dup||(bg?esc(bg.id):'')}" data-lid="${lid}" data-fest="${f.id}" data-ev="${e.id}" data-day="${esc(s.label)}">
+    <span class="tm">${fmtDate(s.date)}<br><span class="ls">${esc(s.time)}</span></span>
+    <span><span class="lt" style="display:block">${esc(e.no)} · ${esc(e.name)}</span><span class="ls">${dayName(s.label)}${s.reg?' · registo até '+esc(s.reg):''}${e.gtd?' · '+esc(e.gtd):''}${lr?` · <span class="chip ${lr.out?'warn':lr.max?'info':'ok'}" style="padding:0 6px">${esc(lr.txt)}</span>`:''}</span></span>
+    ${dup?'<span class="chip ok">já está neste registo</span>':bg?`<span class="chip info">tens saco desde ${fmtDate(bg.last.date)}</span>`:`<span class="amt">${money(e.buyIn,f.currency)}</span>`}</button>`}).join(''):'<p class="hint">Nenhum torneio com estes filtros.</p>';
+  const m=document.getElementById('pmiss-'+lid);const fest=CATALOG.find(x=>x.id===PF.fest);
+  if(m)m.innerHTML=fest?`<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:8px"><span class="ls">Não encontras o torneio?</span><button type="button" class="btn sm" data-act="missing" data-lid="${lid}">Falta um torneio de ${fmtDate(S.form.date)}</button></div>`:`<p class="hint">Escolhe a série para dizer que falta um torneio.</p>`;
+}
+function renderLine(line,entries,cur,f){
+  const ev=lineEvent(line,entries);const isNew=line.kind==='new';const e=entries[line.entryId];const k=line.lid;
+  const title=ev?`${ev.no?esc(ev.no)+' · ':''}${esc(ev.name)}`:(line.manual?'Torneio em falta':'Torneio novo');
+  const sub=ev?`${esc(ev.festName)} · buy-in ${money(ev.buyIn,ev.currency||cur)}${ev.rake?' · rake '+NF2.format(ev.rake)+'%':''}`:'Escolhe na lista';
+  let h=`<div class="line" id="ln-${k}"><div class="lh"><div><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="chip ${isNew?(line.manual?'warn':'y'):'info'}">${isNew?(line.manual?'Provisório':'Novo'):'Dia seguinte'}</span><span class="lt">${title}</span>${isNew&&!line.picking?`<button type="button" class="btn ghost sm" data-act="repick" data-lid="${k}">Trocar torneio</button>`:''}</div><div class="ls">${sub}${!isNew&&e?` · ${e.days.length} ${e.days.length===1?'dia jogado':'dias jogados'}, ${e.bullets} ${e.bullets===1?'entrada':'entradas'}`:''}</div></div>
+    <button type="button" class="btn sm rmbtn" data-act="rm" data-lid="${k}" aria-label="Remover este torneio">Remover</button></div><div class="lb">`;
+  if(isNew&&line.picking)h+=renderPicker(line,f);
+  if(isNew&&line.manual){const fest=CATALOG.find(x=>x.id===line.manualFest);const sug=suggestions(line,f.date);
+    h+=`<div class="ls">Série <b>${esc(fest?fest.name:'')}</b> · dia <b>${fmtDate(f.date)}</b> (o da sessão)</div>
+    <div class="row c3"><div><label class="l" for="${k}-mn">Nome do torneio <span class="req">*</span></label><input class="i" id="${k}-mn" value="${esc(line.manualName)}" data-f="l.${k}.manualName" data-sug="${k}" autocomplete="off"></div>
+      <div><label class="l" for="${k}-mb">Buy-in <span class="req">*</span></label><input class="i num" id="${k}-mb" value="${esc(line.manualBuyIn)}" data-f="l.${k}.manualBuyIn" data-sug="${k}" data-kind="dec" inputmode="decimal" autocomplete="off"><div class="hint" id="rd-${k}-mb"></div></div>
+      <div><label class="l" for="${k}-mo">Nº do evento</label><input class="i" id="${k}-mo" value="${esc(line.manualNo)}" data-f="l.${k}.manualNo" placeholder="opcional" autocomplete="off"></div></div>
+    <div id="sug-${k}">${renderSug(line,sug)}</div>`}
+  if(ev&&!(isNew&&line.picking)){
+    if(line.receivedIn==='transfer'&&!walletsFor(cur).includes(line.wallet))line.wallet=(line.walletBy||{})[cur]||walletsFor(cur)[0];
+    const status=e?e.status:null;const played=!isNew&&e?e.days.map(x=>x.day):[];const multi=syncFlights(line,ev,f.date,status,played);const lr=line.manual?manualPlan(line,f.date,S.level):levelRule(ev,line.day,S.level);
+    const satBox=isNew?`<label class="btn" style="justify-content:flex-start"><input type="checkbox" id="${k}-sat" data-f="l.${k}.satellite" ${line.method!=='direto'?'checked':''}> Entrei com satélite/ticket</label>`:'';
+    const planChip=lr&&(isNew||ev.flights.includes(line.day))?`<span class="ls">Plano da série: <span class="chip ${lr.out?'warn':lr.max?'info':'ok'}">${esc(lr.txt)}</span></span>`:'';
+    if(multi){
+      const labels=dayFlights(ev,f.date,played);const passed=labels.indexOf(line._passed);
+      h+=`<div id="fl-${k}"><span class="l">Que flights jogaste hoje? <span class="req">*</span></span><div class="stack" style="gap:6px">${labels.map((l,i)=>{const x=line.fl[l];const sc=schedFor(ev,l);const off=passed>=0&&i>passed;
+        if(off)return `<div style="display:flex;gap:8px;align-items:center;border:1px dashed var(--border);border-radius:6px;padding:6px 8px;opacity:.6"><input type="checkbox" disabled aria-label="${dayName(l)} (não conta)"> <b>${dayName(l)}</b> <span class="ls">${sc?esc(sc.time):''} · não conta: passaste no ${dayName(labels[passed])}</span></div>`;
+        return `<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:1px solid var(--border);border-radius:6px;padding:6px 8px;background:var(--card)">
+          <label style="display:flex;gap:8px;align-items:center;min-width:150px;min-height:36px;cursor:pointer"><input type="checkbox" data-fl="${k}|${l}|on" ${x.on?'checked':''}> <b>${dayName(l)}</b> <span class="ls">${sc?esc(sc.time):''}</span></label>
+          ${x.on?`<span style="display:flex;gap:4px;align-items:center"><input class="i num" style="width:60px" data-fl="${k}|${l}|bul" value="${esc(x.bul)}" inputmode="numeric" aria-label="Entradas no ${dayName(l)}" autocomplete="off"><span class="ls">entradas</span></span>
+          <div class="seg two" role="group" aria-label="Como acabou o ${dayName(l)}">${[['busted','Eliminado'],['bagged','Passou']].map(([v,t])=>`<button type="button" data-act="flst" data-lid="${k}" data-flab="${l}" data-v="${v}" aria-pressed="${x.st===v}">${t}</button>`).join('')}</div>`:''}</div>`}).join('')}</div>
+        <div class="ls" id="fltot-${k}"></div></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">${satBox}${planChip}</div>`;
+    } else {
+      const cl=!isNew&&contLast(e);
+      const lastIdx=Math.max(-1,...played.map(p=>ev.flights.concat(ev.days).indexOf(p)));
+      const dayOpts=isNew?ev.flights:cl?[e.last.day]:(status==='reentry'?ev.flights:ev.days).filter(d=>ev.flights.concat(ev.days).indexOf(d)>lastIdx);
+      h+=`<div class="row c3">
+        <div><label class="l" for="${k}-day">Dia / flight <span class="req">*</span></label><select class="i" id="${k}-day" data-f="l.${k}.day">${opt('','Escolhe…',line.day)}${dayOpts.map(d=>{const sc=schedFor(ev,d);return opt(d,dayName(d)+(cl?' (continua)':sc?' · '+fmtDate(sc.date):''),line.day)}).join('')}</select></div>
+        <div><label class="l" for="${k}-bul">Entradas pagas hoje <span class="req">*</span></label><input class="i num" id="${k}-bul" value="${esc(line.bullets)}" data-f="l.${k}.bullets" data-kind="int" inputmode="numeric" autocomplete="off"></div>
+        <div>${isNew?`<span class="l">&nbsp;</span>${satBox}`:`<span class="l">Custo hoje</span><div class="amt" style="padding:7px 0" id="cost-${k}"></div>`}</div></div>
+        ${planChip?`<div>${planChip}</div>`:''}
+        <div><span class="l">Como acabou o dia? <span class="req">*</span></span><div class="seg" role="group" id="st-${k}">
+        ${[['busted','Eliminado sem prémio'],['bagged',isLastDay(ev,line.day)?'Continua amanhã':'Passou ao dia seguinte'],['itm','Terminou nos prémios']].map(([v,t])=>`<button type="button" data-act="state" data-lid="${k}" data-v="${v}" aria-pressed="${line.endState===v}">${t}</button>`).join('')}</div>
+        ${line.endState==='busted'&&flightsLeft(line.day,ev)?`<div class="hint">Ainda há flights até ${fmtDate(lastFlightDate(ev))}: o torneio fica em aberto, caso re-entres.</div>`:''}</div>`;
+    }
+    h+=`<div id="plan-${k}" hidden><label class="l" for="${k}-plan">Porque jogaste fora do plano do teu nível? <span class="req">*</span></label><textarea class="i" id="${k}-plan" rows="2" data-f="l.${k}.planReason" placeholder="Ex.: autorizado pelo coach no grupo da série">${esc(line.planReason)}</textarea></div>`;
+    if(line.endState==='bagged')h+=`<div class="row c3"><div><label class="l" for="${k}-ch">Fichas no saco <span class="req">*</span></label><input class="i num" id="${k}-ch" value="${esc(line.chips)}" data-f="l.${k}.chips" data-kind="int" inputmode="numeric" autocomplete="off"></div>
+        <div><label class="l" for="${k}-lf">Jogadores restantes</label><input class="i num" id="${k}-lf" value="${esc(line.left)}" data-f="l.${k}.left" data-kind="int" inputmode="numeric" autocomplete="off"></div>
+        <div><span class="l">&nbsp;</span><label class="btn" style="justify-content:flex-start;width:100%"><input type="checkbox" id="${k}-im" data-f="l.${k}.inMoney" ${line.inMoney?'checked':''}> Já nos prémios</label></div></div>`;
+    if(line.endState==='itm')h+=`<div class="row c3">
+        <div><label class="l" for="${k}-pos">Posição <span class="req">*</span></label><input class="i num" id="${k}-pos" value="${esc(line.pos)}" data-f="l.${k}.pos" data-kind="int" inputmode="numeric" autocomplete="off"></div>
+        <div><label class="l" for="${k}-ent">Inscritos</label><input class="i num" id="${k}-ent" value="${esc(line.entrants)}" data-f="l.${k}.entrants" data-kind="int" inputmode="numeric" autocomplete="off"></div>
+        <div><label class="l" for="${k}-pr">Prémio recebido, com bounties <span class="req">*</span></label><input class="i num" id="${k}-pr" value="${esc(line.prize)}" data-f="l.${k}.prize" data-kind="dec" inputmode="decimal" autocomplete="off"><div class="hint" id="rd-${k}-pr"></div></div></div>
+       <div class="row c2"><div><span class="l">Como recebeste o prémio?</span><div class="seg two" role="group">
+          <button type="button" data-act="recv" data-lid="${k}" data-v="live" aria-pressed="${line.receivedIn==='live'}">Em dinheiro</button>
+          <button type="button" data-act="recv" data-lid="${k}" data-v="transfer" aria-pressed="${line.receivedIn==='transfer'}">Transferência</button></div>
+          ${line.receivedIn==='transfer'?`<div style="margin-top:8px"><label class="l" for="${k}-wal">Para que carteira?</label><select class="i" id="${k}-wal" data-f="l.${k}.wallet">${walletsFor(cur).map(w=>opt(w,w,line.wallet)).join('')}</select><div class="hint">Entra já nesta carteira, e não no saldo do Live.</div></div>`:''}</div>
+        <div><label class="l" for="${k}-pf">Prova (link ou foto)</label><div style="display:flex;gap:6px"><input class="i" id="${k}-pf" value="${esc(line.proof)}" data-f="l.${k}.proof" placeholder="https://…" autocomplete="off"><label class="btn sm" style="white-space:nowrap">Foto<input type="file" accept="image/*" data-photo="${k}" hidden></label></div></div></div>`;
+  }
+  h+=`</div><div class="msgs" id="msgs-${k}"></div></div>`;return h;
+}
+const WALLETS={USD:['Luxon USD','Skrill USD'],EUR:['Luxon EUR','Skrill EUR']};
+function walletsFor(cur){return WALLETS[cur]||WALLETS.USD}
+function renderSug(line,sug){
+  const fest=CATALOG.find(x=>x.id===line.manualFest);const fc=fest?fest.currency:'USD';
+  if(!sug.length)return (String(line.manualName||'').trim()||line.manualBuyIn)?'<div class="msg info">Não há nada parecido no catálogo deste dia. A linha fica provisória e a gestão acrescenta o torneio ao catálogo.</div>':'';
+  const ents=entriesNow();const inForm=id=>S.form.lines.find(o=>{if(o===line)return false;const oe=lineEvent(o,ents);return oe&&oe.festId===line.manualFest&&oe.eventId===id});
+  return `<div class="sug"><b>Será um destes?</b>${sug.map(e=>{const s=e.sched.find(x=>x.date===S.form.date&&e.flights.includes(x.label));const dup=inForm(e.id);return `<div class="openrow"><span>${esc(e.no)} · ${esc(e.name)} · ${s?esc(s.time):''} · <b>${money(e.buyIn,fc)}</b></span>${dup?`<button type="button" class="btn sm" data-act="gotoLine" data-lid="${line.lid}" data-target="${dup.lid}">Já está neste registo</button>`:`<button type="button" class="btn sm p" data-act="pickSug" data-lid="${line.lid}" data-ev="${e.id}" data-day="${s?esc(s.label):''}">É este</button>`}</div>`}).join('')}
+   <label class="btn sm" style="align-self:flex-start"><input type="checkbox" id="${line.lid}-no" data-f="l.${line.lid}.notOther" ${line.notOther?'checked':''}> Não, é outro torneio</label></div>`;
+}
+function updateDerived(){
+  const f=S.form;const room=roomOf(f.room);const cur=room.currency;const entries=entriesNow();const r=reconcile(f,entries,S.level);
+  const show=lid=>S.submitted||S.touched[lid];
+  const dOk=r.declared!==null&&!isNaN(r.declared);
+  const th=document.getElementById('timeHint');if(th)th.innerHTML=r.timeWarns.map(w=>`<div class="msg warn">${esc(w)}</div>`).join('');
+  const hint=document.getElementById('expHint');if(hint)hint.innerHTML=dOk?`lido como <b>${money(r.declared,cur)}</b>`:(room.live?'Conta o dinheiro que tens.':'');
+  const linesOk=room.live&&f.lines.length&&f.lines.every(l=>r.perLine[l.lid]&&!r.perLine[l.lid].msgs.some(m=>m[0]==='err'));
+  const mb=document.getElementById('matchBox');
+  if(mb){if(!(linesOk&&String(f.declaredEnd||'').trim()==='')){mb.innerHTML='';S.matchArm=false}
+    else mb.innerHTML=S.matchArm?`<div class="msg warn" style="margin-top:6px">Contaste o dinheiro? As contas dão <b>${money(r.expected,cur)}</b>.<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap"><button type="button" class="btn sm p" data-act="matchYes">Sim, contei e tenho ${money(r.expected,cur)}</button><button type="button" class="btn sm" data-act="matchNo">Não, vou contar</button></div></div>`:`<button type="button" class="btn sm" data-act="match" id="btnMatch" style="margin-top:6px">Bate certo com as contas</button>`}
+  const diffBox=document.getElementById('diffBox');if(diffBox)diffBox.hidden=!r.diff;
+  const lineErr=[];
+  f.lines.forEach(line=>{const pl=r.perLine[line.lid];if(!pl)return;const box=document.getElementById('msgs-'+line.lid);
+    const ms=pl.msgs.filter(m=>m[0]!=='err'||show(line.lid));pl.msgs.filter(m=>m[0]==='err').forEach(m=>lineErr.push([line.lid,m[1]]));
+    if(box)box.innerHTML=ms.length&&!line.picking?`<div class="msgs" style="padding:0 12px 12px">${ms.map(m=>`<div class="msg ${m[0]}">${m[1]}</div>`).join('')}</div>`:'';
+    const c=document.getElementById('cost-'+line.lid);if(c)c.textContent=money(pl.cost,cur);
+    const pb=document.getElementById('plan-'+line.lid);if(pb)pb.hidden=!pl.needPlan;
+    [['pr',line.prize],['mb',line.manualBuyIn]].forEach(([s,v])=>{const el=document.getElementById('rd-'+line.lid+'-'+s);if(el){const n=num(v);el.innerHTML=n>0?'lido como <b>'+money(n,cur)+'</b>':''}});
+    const ft=document.getElementById('fltot-'+line.lid);if(ft)ft.innerHTML=`Total hoje: <b>${line.bullets}</b> ${num(line.bullets)===1?'entrada':'entradas'} · ${money(pl.cost,cur)}`});
+  const lineMsgs=new Set(lineErr.map(x=>x[1]));const globalErr=r.errors.filter(x=>!lineMsgs.has(x));
+  const nErr=lineErr.length+globalErr.length;
+  const lineWarn=new Set();f.lines.forEach(l=>{const pl=r.perLine[l.lid];if(pl)pl.msgs.forEach(m=>{if(m[0]==='warn')lineWarn.add(m[1])})});
+  const gWarns=[...new Set(r.warns.filter(w=>!lineWarn.has(w)).concat(r.infos||[]))];
+  const nWarn=gWarns.length+lineWarn.size+r.timeWarns.length;
+  let st;if(!dOk||!room.live)st='';else if(!r.diff)st=`<div class="bigstate ok">Bate com os torneios.</div>`;else st=`<div class="bigstate warn">${money(Math.abs(r.diff),cur)} ${r.diff<0?'abaixo':'acima'} do esperado.</div>`;
+  const eb=document.getElementById('errBox');
+  if(eb)eb.innerHTML=gWarns.map(w=>`<div class="msg warn">${esc(w)}</div>`).join('')+(S.submitted&&nErr?`<div class="msg err"><b>Falta:</b><ul style="margin:4px 0 0;padding-left:18px">${globalErr.map(x=>`<li>${r.errSel[x]?`<button type="button" class="errlink" data-act="goField" data-sel="${esc(r.errSel[x])}">${esc(x)}</button>`:esc(x)}</li>`).join('')}${lineErr.map(([lid,m])=>`<li><button type="button" class="errlink" data-act="goErr" data-target="${lid}">${m}</button></li>`).join('')}</ul></div>`:'');
+  const bagged=f.lines.some(l=>l.endState==='bagged');
+  document.getElementById('summary').innerHTML=room.live?`<h3>Contas do dia</h3>
+   <div class="rec" style="margin-top:8px" id="c-rec">
+    <div class="r"><span class="k">Saldo inicial</span><span>${money(r.start,cur)}</span></div>
+    <div class="r"><span class="k">Entradas pagas (${r.bullets})</span><span>${signed(-r.cost,cur)}</span></div>
+    <div class="r"><span class="k">Prémios em dinheiro</span><span>${signed(r.prize,cur)}</span></div>
+    <div class="r tot"><span>Saldo esperado</span><span>${money(r.expected,cur)}</span></div>
+    <div class="r"><span class="k">Saldo final</span><span>${dOk?money(r.declared,cur):'—'}</span></div>
+    <div class="r"><span class="k">Diferença</span><span>${r.diff===null?'—':signed(r.diff,cur)}</span></div></div>${st}
+   <div class="rec" style="margin-top:12px">${r.walletPrize?`<div class="r"><span class="k">Prémios para carteira</span><span>${signed(r.walletPrize,cur)}</span></div>`:''}<div class="r tot"><span>Resultado da sessão</span><span>${dOk?signed(r.sessPnl,cur):'—'}</span></div><div class="r"><span class="k">Nº de torneios</span><span>${r.bullets}</span></div></div>
+   ${bagged?'<div class="ls" style="margin-top:6px">Os sacos ainda não contam: só entram no resultado quando o torneio acabar.</div>':''}
+   ${r.pending.length?`<div style="margin-top:10px" class="ls">${r.pending.join('<br>')}</div>`:''}`
+   :`<h3>Contas do dia</h3><p class="hint">Sala online: sem saldo esperado nem diferença.</p><div class="rec" style="margin-top:8px"><div class="r"><span class="k">Saldo inicial</span><span>${money(r.start,cur)}</span></div><div class="r"><span class="k">Saldo final</span><span>${dOk?money(r.declared,cur):'—'}</span></div><div class="r tot"><span>Resultado da sessão</span><span>${dOk?signed(r.sessPnl,cur):'—'}</span></div></div>`;
+  const chipErr=nErr?`<button type="button" class="chip ${S.submitted?'err':''} barbtn" data-act="goErrs">falta ${nErr}</button>`:`<span class="chip ok">pronto</span>`;
+  const chipWarn=nWarn?` <button type="button" class="chip warn barbtn" data-act="goWarns">${nWarn} ${nWarn===1?'aviso':'avisos'}</button>`:'';
+  const bi=document.getElementById('barInfo');if(bi)bi.innerHTML=room.live?`<span>Esperado <b>${money(r.expected,cur)}</b></span><span>Diferença <b>${r.diff===null?'—':signed(r.diff,cur)}</b></span>${chipErr}${chipWarn}`:`<span>Resultado <b>${dOk?signed(r.sessPnl,cur):'—'}</b></span>${chipErr}${chipWarn}`;
+  renderMyEntries();
+  document.getElementById('payload').textContent=JSON.stringify(buildPayload(f,entries,r),null,2);
+}
+function renderMyEntries(){
+  const box=document.getElementById('myEntries');const after=settle(buildEntries(priorDays().concat([{form:S.form}])),S.form.date);const list=Object.values(after).filter(e=>e.info);const cur=roomOf(S.form.room).currency;
+  const fin=list.filter(e=>['paid','closed'].includes(e.status));const res=fin.reduce((a,e)=>a+(e.prize||0)-e.cost,0);
+  box.innerHTML=`<h3>As minhas inscrições live</h3>${fin.length?`<p class="hint" style="margin-top:2px">Resultado dos terminados: <b>${signed(res,cur)}</b></p>`:''}${list.length?`<div class="stack" style="gap:8px;margin-top:8px">${list.map(e=>{const st=STATUS[e.status]||['',''];
+    return `<div style="font-size:13px"><div style="display:flex;justify-content:space-between;gap:8px"><span class="lt">${esc(e.info.name)}</span><span class="chip ${st[1]}">${st[0]}</span></div><div class="ls">${e.days.filter(d=>d.day).map(d=>dayName(d.day)).join(' → ')||'—'} · ${e.bullets} ${e.bullets===1?'entrada':'entradas'} · ${['paid','closed'].includes(e.status)?'resultado '+signed((e.prize||0)-e.cost,cur):'custo '+money(e.cost,cur)}</div></div>`}).join('')}</div>`:'<p class="hint">Ainda sem inscrições.</p>'}`;
+}
+function buildPayload(f,entries,r){
+  const room=roomOf(f.room);const dOk=r.declared!==null&&!isNaN(r.declared);
+  const p={session:{session_date:f.date||null,start_time:hm(f.start)?normTime(f.start):null,end_time:hm(f.end)?normTime(f.end):null,number_events:r.bullets,warm_up:!!f.warmup,meditation:!!f.meditation,
+    notes:[f.notes,room.live&&r.diff&&String(f.diffReason||'').trim()?`[Live] diferença ${signed(r.diff,room.currency)}: ${String(f.diffReason).trim()}`:''].filter(Boolean).join(' · ')||null,
+    rooms:[{room:room.name,starting_balance:startBal(f),ending_balance:dOk?r.declared:null,ending_balance_source:f.endSource||'typed'}]}};
+  if(!room.live)return p;
+  p.live={expected_ending_balance:r.expected,difference:r.diff,difference_reason:r.diff?String(f.diffReason||'').trim()||null:null,days:f.lines.map(line=>{const ev=lineEvent(line,entries);const pl=r.perLine[line.lid]||{};
+    const d={kind:line.kind==='new'?'new_entry':'next_day',schedule_label:line.day||null};
+    if(pl.repeatLast)d.continues_previous_day=true;
+    if(pl.multi&&line._sel){d.flights=line._sel.map(l=>({schedule_label:l,bullets_paid:isInt(line.fl[l].bul)?intOr0(line.fl[l].bul):null,end_state:({busted:'busted',bagged:'bagged'})[line.fl[l].st]||null}));d.bullets_paid_total=intOr0(line.bullets)}
+    else d.bullets_paid=isInt(line.bullets)?intOr0(line.bullets):null;
+    d.via_satellite=line.method!=='direto';d.end_state=({busted:'busted',bagged:'bagged',itm:'in_prizes'})[line.endState]||null;
+    if(line.kind==='new')d.entry=line.manual?{provisional:true,series:line.manualFest,date:f.date||null,typed_name:String(line.manualName||'').trim(),typed_buy_in:num(line.manualBuyIn)>0?num(line.manualBuyIn):null,typed_event_no:line.manualNo||null,confirmed_not_suggested:!!line.notOther}:{series_id:ev?ev.festId:null,catalog_event_id:ev?ev.id:null,action_purchase_id:null};
+    else d.entry_id=line.entryId;
+    if(line.endState==='bagged')Object.assign(d,{chips:isInt(line.chips)?intOr0(line.chips):null,players_left:isInt(line.left)?intOr0(line.left):null,in_the_money:!!line.inMoney});
+    if(line.endState==='itm')Object.assign(d,{final_position:isInt(line.pos)?intOr0(line.pos):null,entrants:isInt(line.entrants)?intOr0(line.entrants):null,prize_received:num(line.prize)>0?num(line.prize):null,prize_paid_in:line.receivedIn==='live'?'live_cash':'wallet',prize_wallet:line.receivedIn==='live'?null:line.wallet,proof_url:proofOk(line.proof)?line.proof:null});
+    if(pl.needPlan&&String(line.planReason||'').trim())d.plan_reason=String(line.planReason).trim();
+    return d})};
+  return p;
+}
+const cssEsc=s=>(window.CSS&&CSS.escape)?CSS.escape(s):String(s).replace(/["\\]/g,'\\$&');
+// O formulário volta a ser desenhado a cada escolha: o foco volta ao mesmo campo ou botão.
+function focusSel(el){if(!el||el===document.body||!el.closest||!el.closest('#form,#loader'))return null;if(el.id)return '#'+cssEsc(el.id);
+  const ks=['data-act','data-lid','data-v','data-flab','data-fl','data-eid','data-di','data-f','data-pf'];const p=ks.filter(k=>el.hasAttribute(k)).map(k=>`[${k}="${cssEsc(el.getAttribute(k))}"]`);return p.length?el.tagName.toLowerCase()+p.join(''):null}
+function render(){const ae=document.activeElement;const sel=S.focusTo||focusSel(ae);let caret=null;try{if(!S.focusTo&&ae&&typeof ae.selectionStart==='number')caret=[ae.selectionStart,ae.selectionEnd]}catch(x){}S.focusTo=null;
+  renderLoader();renderForm();updateDerived();
+  if(sel){let el=null;try{el=document.querySelector(sel)}catch(x){}
+    if(el&&!el.matches('input,select,textarea,button,a,summary'))el=el.querySelector('input:not([disabled]):not([type=file]),select,textarea,button:not([disabled])');
+    if(el){try{el.focus({preventScroll:true});if(caret&&el.setSelectionRange)el.setSelectionRange(caret[0],caret[1])}catch(x){}}}}
+function scrollToEl(id){const el=document.getElementById(id);if(el)el.scrollIntoView({block:'center'})}
+function clearDone(){const b=document.getElementById('submitMsg');if(b&&b.innerHTML)b.innerHTML=''}
+function disarmReset(){if(S.resetArm){S.resetArm=0;const br=document.getElementById('btnReset');if(br)br.textContent='Repor'}}
+
+/* ---------------- eventos jogador ---------------- */
+function findLine(lid){return S.form.lines.find(l=>l.lid===lid)}
+function setField(key,val){const [scope,a,b]=key.split('.');
+  if(scope==='f'){S.form[a]=val;if(a==='date')S.form.lines.forEach(l=>{if(l.manual)l.manualDate=val});if(a==='declaredEnd')S.form.endSource='typed';return}
+  if(scope==='l'){const line=findLine(a);if(!line)return;if(b==='satellite'){line.method=val?'satelite':'direto';return}
+    if(b==='wallet'){line.walletBy=Object.assign({},line.walletBy,{[roomOf(S.form.room).currency]:val})}line[b]=val}}
+const form=document.getElementById('form');
+form.addEventListener('keydown',e=>{const t=e.target;if(e.key==='Enter'&&t.tagName==='INPUT'&&!['checkbox','radio','button','submit','file'].includes(t.type))e.preventDefault()});
+form.addEventListener('input',e=>{const el=e.target;clearDone();disarmReset();S.dirty=true;
+  const kind=el.dataset.kind||(el.dataset.fl&&el.dataset.fl.endsWith('|bul')?'int':null);
+  if(kind){const before=el.value;const paste=/^insertFrom/.test(e.inputType||'');let atEnd=true;try{atEnd=el.selectionStart===before.length}catch(x){}
+    const v=kind==='dec'?cleanDec(before,paste,atEnd):kind==='int'?cleanInt(before):cleanTime(before);
+    if(v!==before){let pos=before.length;try{pos=el.selectionStart}catch(x){}el.value=v;try{const p=Math.max(0,Math.min(v.length,pos+(v.length-before.length)));el.setSelectionRange(p,p)}catch(x){}}}
+  {const t=el.dataset.fl?el.dataset.fl.split('|')[0]:el.dataset.f&&el.dataset.f.startsWith('l.')?el.dataset.f.split('.')[1]:null;if(t)S.touched[t]=true}
+  if(el.dataset.fl){const [lid,lab,fld]=el.dataset.fl.split('|');const line=findLine(lid);if(line&&fld==='bul'){line.fl[lab].bul=el.value;updateDerived()}return}
+  if(el.dataset.pf){if(el.tagName==='SELECT')return;PF[el.dataset.pf]=el.value;if(el.dataset.pf==='min'||el.dataset.pf==='max'){PF.band='all';document.querySelectorAll('[data-act="band"]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v==='all')))}renderPickList(el.dataset.lid);return}
+  if(!el.dataset.f||el.tagName==='SELECT'||el.type==='checkbox'||el.type==='file')return;setField(el.dataset.f,el.value);
+  if(el.dataset.f==='f.diffReason'){S.form.diffFor=reconcile(S.form,entriesNow(),S.level).diff}
+  if(el.dataset.sug){const line=findLine(el.dataset.sug);const box=document.getElementById('sug-'+el.dataset.sug);if(line){line.notOther=false;if(box)box.innerHTML=renderSug(line,suggestions(line,S.form.date))}}
+  updateDerived()});
+form.addEventListener('change',e=>{const el=e.target;clearDone();S.dirty=true;
+  if(el.dataset.photo){const line=findLine(el.dataset.photo);const fl=el.files&&el.files[0];if(line){line.proof='foto: '+(fl?fl.name:'foto.jpg');S.touched[line.lid]=true;S.focusTo='#'+cssEsc(line.lid)+'-pf';render()}return}
+  if(el.dataset.fl){const [lid,lab,fld]=el.dataset.fl.split('|');const line=findLine(lid);if(line&&fld==='on'){setFlightOn(line,lab,el.checked);render()}return}
+  if(el.dataset.pf&&el.tagName==='SELECT'){PF[el.dataset.pf]=el.value;savePF();if(el.dataset.pf==='fest'){PF.date='all'}render();return}
+  if(!el.dataset.f)return;
+  if(el.tagName==='SELECT'){setField(el.dataset.f,el.value);if(el.dataset.f==='f.room'&&S.form.lines.some(l=>l.picking))openPickerDefaults(S.form);render()}
+  else if(el.type==='checkbox'){setField(el.dataset.f,el.checked);if(el.dataset.f.endsWith('satellite'))render();else updateDerived()}
+});
+document.addEventListener('change',e=>{if(e.target.id==='gPlayer'){GS.player=e.target.value;renderGestao()}});
+form.addEventListener('focusin',e=>{if(e.target.id==='f-date')S.dateAtFocus=S.form.date});
+form.addEventListener('focusout',e=>{const el=e.target;
+  if(el.dataset&&el.dataset.kind==='time'){const v=normTime(el.value);if(v!==el.value){el.value=v;setField(el.dataset.f,v);updateDerived()}}
+  if(el.id==='f-date'&&S.form.date!==S.dateAtFocus){setTimeout(()=>{if(S.form.lines.some(l=>l.picking))openPickerDefaults(S.form);render()},0)}});
+form.addEventListener('submit',e=>{e.preventDefault();S.submitted=true;disarmReset();updateDerived();const r=reconcile(S.form,entriesNow(),S.level);const box=document.getElementById('submitMsg');
+  if(r.errors.length){box.innerHTML='';scrollToEl('errBox')}
+  else box.innerHTML=`<div class="msg" style="background:var(--ok-bg);color:var(--ok)">Sessão registada (simulação). Nada foi gravado.</div>`});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;const f=S.form;
+  if(b.closest('#form')&&!['goErr','goErrs','goWarns','goField','reset','gotoLine','gotoOpen'].includes(a)){S.dirty=true;clearDone()}
+  if(b.dataset.lid&&S.touched)S.touched[b.dataset.lid]=true;
+  if(a!=='reset')disarmReset();
+  if(a==='match'){S.matchArm=true;updateDerived();const y=document.querySelector('[data-act="matchYes"]');if(y)y.focus({preventScroll:true});return}
+  if(a==='matchNo'){S.matchArm=false;updateDerived();const i=document.getElementById('f-end-bal');if(i)i.focus();return}
+  if(a==='matchYes'){const r=reconcile(f,entriesNow(),S.level);f.declaredEnd=String(Math.round(r.expected*100)/100).replace('.',',');f.endSource='match_button';S.matchArm=false;S.focusTo='#f-end-bal';render();return}
+  if(a==='goErrs'){S.submitted=true;updateDerived();scrollToEl('errBox');return}
+  if(a==='goWarns'){scrollToEl('errBox');return}
+  if(a==='goField'){let el=null;try{el=document.querySelector(b.dataset.sel)}catch(x){}if(el){el.scrollIntoView({block:'center'});if(el.matches('input,select,textarea'))el.focus({preventScroll:true})}return}
+  if(a==='goErr'){const ln=document.getElementById('ln-'+b.dataset.target);const el=document.getElementById('msgs-'+b.dataset.target)||ln;if(ln){ln.classList.add('hl');setTimeout(()=>ln.classList.remove('hl'),2000)}if(el)el.scrollIntoView({block:'center'});return}
+  if(a==='undoRm'){const x=S.removed.pop();if(x){f.lines.splice(Math.min(x.idx,f.lines.length),0,x.line);S.focusTo='#ln-'+cssEsc(x.line.lid);render()}return}
+  if(a==='gtile'){const v=b.dataset.v;if(['open','alert','today'].includes(v)){GS.filter=v;renderGestao();const el=document.getElementById('gListCard');if(el)el.scrollIntoView({block:'start'})}else{const el=document.getElementById(v);if(el)el.scrollIntoView({block:'center'})}return}
+  if(a==='gpl'){GS.player=b.dataset.v;GS.filter='all';renderGestao();const el=document.getElementById('gListCard');if(el)el.scrollIntoView({block:'start'});return}
+  if(a==='gconf'){const k=b.dataset.key;if(GS.confirmed[k])delete GS.confirmed[k];else GS.confirmed[k]={by:'admin',at:fmtDate(G_TODAY)};renderGestao();return}
+  if(a==='tourStart'){tourGo(0);return}
+  if(a==='tourNext'){tourGo(T.i+1);return}
+  if(a==='tourPrev'){tourGo(T.i-1);return}
+  if(a==='tourEnd'){tourEnd();return}
+  if(a==='tourMin'){const g=document.getElementById('guide');g.classList.toggle('min');b.textContent=g.classList.contains('min')?'Abrir':'Encolher';return}
+  if(a==='loadScen'){loadScen(+b.dataset.di,'form');return}
+  if(a==='blank'){loadBlank();return}
+  if(a==='reset'){const now=Date.now();if(!S.resetArm||now-S.resetArm>5000){S.resetArm=now;b.textContent='Confirmar reposição';setTimeout(()=>{if(S.resetArm===now)disarmReset()},5000);return}
+    if(now-S.resetArm<600)return;S.src==='scen'?loadScen(S.di,S.variant,true):S.src==='case'?loadCase(S.ci,S.di,true):loadBlank(true);return}
+  if(a==='open'){setView('jogador');loadCase(+b.dataset.ci,+b.dataset.di);window.scrollTo({top:0});return}
+  if(a==='addNew'){const nl=L({lid:uid('n'),entryId:uid('E'),picking:true});f.lines.push(nl);openPickerDefaults(f);if(matchMedia('(min-width: 641px)').matches)S.focusTo='#pq-'+cssEsc(nl.lid);render();const pk=document.getElementById('pk-'+nl.lid);if(pk)pk.scrollIntoView({block:'start'});return}
+  if(a==='cont'){const e2=entriesNow()[b.dataset.eid];const nl=L({lid:uid('k'),kind:'cont',entryId:b.dataset.eid,bullets:e2&&e2.status==='reentry'?'1':'0',day:contDay(e2,f.date)});f.lines.push(nl);S.focusTo='#ln-'+cssEsc(nl.lid)+' .lb';render();const ln=document.getElementById('ln-'+nl.lid);if(ln)ln.scrollIntoView({block:'start'});return}
+  if(a==='rm'){const idx=f.lines.findIndex(l=>l.lid===b.dataset.lid);if(idx>=0){const ev=lineEvent(f.lines[idx],entriesNow());S.removed.push({idx,line:f.lines[idx],name:ev?ev.name:'linha sem torneio'});f.lines.splice(idx,1)}S.focusTo='#btnAddNew';render();return}
+  if(a==='gf'){GS.filter=b.dataset.v;renderGestao();return}
+  if(a==='gsel'){GS.sel=b.dataset.key;renderGestao();return}
+  if(a==='resolve'){const k=b.dataset.key;if(b.dataset.how==='link'){GS.pending[k]=(document.getElementById('rs-'+k)||{}).value}else{const g=gLine(k);GS.resolved[k]={how:'add',snap:clone(g.line)}}renderGestao();return}
+  if(a==='resolveCancel'){delete GS.pending[b.dataset.key];renderGestao();return}
+  if(a==='resolveOk'){const k=b.dataset.key;const g=gLine(k);const evId=GS.pending[k];GS.resolved[k]={how:'link',snap:clone(g.line)};
+    const pe=findEvent('apt',evId);Object.assign(g.line,{manual:false,festId:'apt',eventId:evId,fl:null,paidBuyIn:g.line.manualBuyIn,day:autoDay(Object.assign({festId:'apt'},pe.ev),g.line.manualDate,'new')||pe.ev.flights[0]});delete GS.pending[k];renderGestao();return}
+  if(a==='unresolve'){const k=b.dataset.key;const g=gLine(k);const res=GS.resolved[k];if(g&&res){Object.keys(g.line).forEach(x=>delete g.line[x]);Object.assign(g.line,res.snap)}delete GS.resolved[k];renderGestao();return}
+  if(a==='gotoLine'){const cur=findLine(b.dataset.lid);if(cur&&cur.picking&&!cur.eventId)f.lines=f.lines.filter(l=>l.lid!==cur.lid);S.focusTo='#ln-'+cssEsc(b.dataset.target);render();const el=document.getElementById('ln-'+b.dataset.target);if(el){el.classList.add('hl');el.scrollIntoView({block:'center'});setTimeout(()=>el.classList.remove('hl'),2500)}return}
+  if(a==='gotoOpen'){const el=document.getElementById('op-'+b.dataset.target);if(el){el.classList.add('hl');el.scrollIntoView({block:'center'});const bt=el.querySelector('button:not([disabled])');if(bt)bt.focus({preventScroll:true});setTimeout(()=>el.classList.remove('hl'),2500)}return}
+  if(a==='band'){PF.band=b.dataset.v;PF.min='';PF.max='';savePF();document.querySelectorAll('[data-act="band"]').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.v===PF.band)));['pmin-','pmax-'].forEach(p=>{const i=document.getElementById(p+b.dataset.lid);if(i)i.value=''});renderPickList(b.dataset.lid);return}
+  const line=f&&findLine(b.dataset.lid);if(!line)return;
+  if(a==='pickEv'||a==='pickSug'){const fest=b.dataset.fest||line.manualFest||'apt';const evId=b.dataset.ev;const ents=entriesNow();
+    const dupL=f.lines.find(o=>{if(o===line)return false;const oe=lineEvent(o,ents);return oe&&oe.festId===fest&&oe.eventId===evId});
+    if(dupL){f.lines=f.lines.filter(o=>o!==line);S.focusTo='#ln-'+cssEsc(dupL.lid);render();const el=document.getElementById('ln-'+dupL.lid);if(el){el.classList.add('hl');el.scrollIntoView({block:'center'})}return}
+    const open=Object.values(ents).find(x=>x.info&&x.info.festId===fest&&x.info.eventId===evId&&isOpen(x,f.date));
+    if(open){Object.assign(line,{kind:'cont',entryId:open.id,picking:false,manual:false,fl:null,bullets:open.status==='reentry'?'1':'0'});line.day=open.status==='reentry'&&b.dataset.day?b.dataset.day:contDay(open,f.date)}
+    else{Object.assign(line,{kind:'new',festId:fest,eventId:evId,manual:false,picking:false,fl:null,bullets:'1',notOther:false});const ev=lineEvent(line,{});line.day=b.dataset.day||autoDay(ev,f.date,'new')}
+    S.focusTo='#ln-'+cssEsc(line.lid)+' .lb';render();{const el=document.getElementById('ln-'+line.lid);if(el)el.scrollIntoView({block:'start'})}}
+  if(a==='repick'){line.kind='new';line.picking=true;line.manual=false;openPickerDefaults(f);S.focusTo='#pk-'+cssEsc(line.lid);render()}
+  if(a==='missing'){const fest=PF.fest!=='all'?PF.fest:(CATALOG.find(x=>x.currency===roomOf(f.room).currency)||{}).id;Object.assign(line,{manual:true,picking:false,manualFest:fest,manualDate:f.date,festId:'',eventId:'',day:'Único',notOther:false});S.focusTo='#'+cssEsc(line.lid)+'-mn';render()}
+  if(a==='state'){line.endState=b.dataset.v;render()}
+  if(a==='flst'){setFlightState(line,b.dataset.flab,b.dataset.v);render()}
+  if(a==='recv'&&b.dataset.v==='transfer'&&!walletsFor(roomOf(f.room).currency).includes(line.wallet))line.wallet=(line.walletBy||{})[roomOf(f.room).currency]||walletsFor(roomOf(f.room).currency)[0];
+  if(a==='recv'){line.receivedIn=b.dataset.v;render()}
+});
+
+/* ---------------- gestão (APT, "hoje" = 21/11) ---------------- */
+const G_TODAY='2026-11-21';
+const GDATA=[
+ {player:'Jogador A',level:'6.5',days:SCEN.days.map(d=>({form:d.form}))},
+ {player:'Jogador B',level:'6.1',days:[
+   {form:F({date:'2026-11-16',startBalance:12000,declaredEnd:'11199',lines:[L({lid:'gb1',entryId:'GB1',festId:'apt',eventId:'apt1003',day:'1C',bullets:'1',endState:'bagged',chips:'98000'})]})},
+   {form:F({date:'2026-11-17',startBalance:11199,declaredEnd:'7353',lines:[L({lid:'gb2',entryId:'GB2',manual:true,manualFest:'apt',manualDate:'2026-11-17',manualName:'Mistery Bounty High Roller',manualBuyIn:'3846',notOther:true,day:'Único',bullets:'1',endState:'busted'})]})},
+   {form:F({date:'2026-11-18',startBalance:7353,declaredEnd:'7353',lines:[L({lid:'gb3',kind:'cont',entryId:'GB1',day:'FT',bullets:'0',endState:'busted'})]})}]},
+ {player:'Jogador C',level:'6.1',days:[
+   {form:F({date:'2026-11-13',startBalance:8000,declaredEnd:'7487',lines:[L({lid:'gc1',entryId:'GC1',festId:'apt',eventId:'apt1001',day:'1A',bullets:'1',endState:'bagged',chips:'76000'})]})},
+   {form:F({date:'2026-11-17',startBalance:7487,declaredEnd:'3641',lines:[L({lid:'gc2',entryId:'GC2',festId:'apt',eventId:'apt46',day:'Único',bullets:'1',endState:'busted',planReason:'Autorizado pelo coach no grupo da série.'})]})},
+   {form:F({date:'2026-11-19',startBalance:3641,declaredEnd:'5170',lines:[L({lid:'gc3',entryId:'GC3',festId:'apt',eventId:'apt72',day:'Único',bullets:'1',endState:'itm',pos:'2',entrants:'96',prize:'1850',receivedIn:'live'})]})}]},
+ {player:'Jogador D',level:'7.5',days:[
+   {form:F({date:'2026-11-19',startBalance:30000,declaredEnd:'19500',diffReason:'500 $ guardados no cofre do hotel.',diffFor:-500,lines:[L({lid:'gd1',entryId:'GD1',festId:'apt',eventId:'apt1009',day:'Único',bullets:'1',endState:'busted'})]})},
+   {form:F({date:'2026-11-20',startBalance:19500,declaredEnd:'19500',lines:[L({lid:'gd2',entryId:'GD2',festId:'apt',eventId:'apt1011',day:'1',bullets:'1',method:'satelite',endState:'bagged',chips:'310000'})]})}]},
+];
+let GS={filter:'all',sel:null,resolved:{},pending:{},player:'all',confirmed:{}};
+function gAll(){
+  const out=[];const diffs=[];const plans=[];const lastReg={};
+  GDATA.forEach(src=>{src.days.forEach((d,i)=>{const r=reconcile(d.form,buildEntries(src.days.slice(0,i)),src.level);if(r.diff)diffs.push({player:src.player,date:d.form.date,expected:r.expected,declared:r.declared,diff:r.diff,reason:d.form.diffReason});
+      if(!lastReg[src.player]||d.form.date>lastReg[src.player])lastReg[src.player]=d.form.date;
+      d.form.lines.forEach(l=>{const pl=r.perLine[l.lid];if(pl&&pl.needPlan)plans.push({player:src.player,level:src.level,date:d.form.date,name:pl.ev?pl.ev.name:'',rule:pl.lr?pl.lr.txt:'',reason:l.planReason})})});
+    Object.values(settle(buildEntries(src.days),G_TODAY)).forEach(e=>{if(!e.info)return;const key=src.player+'|'+e.id;const res=GS.resolved[key];
+      out.push(Object.assign({key,player:src.player,level:src.level,src,resolved:res},e))})});
+  return {entries:out,diffs,plans,lastReg};
+}
+const ALERT_MARGIN_DAYS=3;
+function gLine(key){const [pl,id]=key.split('|');const src=GDATA.find(g=>g.player===pl);return src?{src,line:src.days.flatMap(d=>d.form.lines).find(l=>l.entryId===id)}:null}
+function gAlert(e){if(e.status!=='open')return '';
+  {const ld=lastDate(e.info);if(ld&&daysBetween(ld,G_TODAY)>ALERT_MARGIN_DAYS)return `${dayName(e.info.days[e.info.days.length-1]||'FT')} foi a ${fmtDate(ld)}: ainda a jogar ou esqueceu-se de registar?`;const idle=daysBetween(e.last.date,G_TODAY);if(idle>10)return `Sem dias novos há ${idle} dias.`}
+  return ''}
+function gToday(e){return e.status==='open'||e.status==='reentry'?nextDayToday(e,G_TODAY):null}
+function renderGestao(){
+  const {entries,diffs,plans,lastReg}=gAll();const cur='USD';
+  const open=entries.filter(e=>e.status==='open'||e.status==='reentry');
+  const missing=entries.filter(e=>e.manual&&!e.resolved);const alerts=entries.filter(e=>gAlert(e));
+  const today=entries.filter(e=>gToday(e));const todayPl=[...new Set(today.map(e=>e.player))];
+  const players=[...new Set(entries.map(e=>e.player))];const quiet=players.filter(p=>daysBetween(lastReg[p],G_TODAY)>=2);
+  const trans=[],noProof=[];entries.forEach(e=>e.days.forEach(d=>{if(d.endState==='itm'){if(d.receivedIn==='transfer')trans.push({e,d});if((num(d.prize)||0)>=1000&&!proofOk(e.proof))noProof.push({e,d})}}));
+  const toConfirm=trans.filter(({e})=>!GS.confirmed[e.key]);
+  let month='';try{month=new Date(G_TODAY+'T12:00:00Z').toLocaleString('pt-PT',{month:'long',timeZone:'UTC'})}catch(x){}
+  const tile=(id,v,k,val,sub,alert)=>`<div class="tile ${alert?'alert':''}" id="${id}" data-act="gtile" data-v="${v}" style="cursor:pointer" role="button" tabindex="0"><div class="k">${k}</div><div class="v">${val}</div><div class="ls">${sub}</div></div>`;
+  document.getElementById('gTiles').innerHTML=
+    tile('t-open','open','Inscrições em aberto',open.length,alerts.length?`<button type="button" class="errlink" data-act="gtile" data-v="alert">${alerts.length} com alerta</button>`:'sem alertas',alerts.length)+
+    tile('t-today','today','Jogam hoje',todayPl.length,todayPl.length?esc(todayPl.join(', ')):'ninguém',false)+
+    tile('t-quiet','gSum','Sem registo há 2+ dias',quiet.length,quiet.length?esc(quiet.map(p=>p+' ('+fmtDate(lastReg[p])+')').join(', ')):'todos em dia',quiet.length)+
+    tile('t-plan','gPlan','Fora do plano do nível',plans.length,plans.every(p=>p.reason)?'todos com explicação':plans.filter(p=>!p.reason).length+' sem explicação',plans.some(p=>!p.reason))+
+    tile('t-diff','gDiffs',`Diferenças de saldo${month?' ('+month+')':''}`,diffs.length,`${signed(diffs.reduce((a,d)=>a+d.diff,0),cur)} · ${diffs.every(d=>d.reason)?'todas explicadas':diffs.filter(d=>!d.reason).length+' sem explicação'}`,diffs.some(d=>!d.reason))+
+    tile('t-miss','gMissing','Torneios em falta',missing.length,'escritos à mão, por resolver',missing.length)+
+    tile('t-trans','gTrans','Prémios por confirmar',toConfirm.length,`transferências · ${noProof.length} sem prova`,toConfirm.length||noProof.length);
+  const FL=[['all','Todas'],['open','Em aberto'],['today','Jogam hoje'],['closed','Terminadas'],['alert','Com alerta']];
+  document.getElementById('gFilters').innerHTML=`<select class="i" id="gPlayer" style="width:auto" aria-label="Jogador">${opt('all','Todos os jogadores',GS.player)}${players.map(p=>opt(p,p,GS.player)).join('')}</select><div class="seg" role="group">${FL.map(([v,l])=>`<button type="button" data-act="gf" data-v="${v}" aria-pressed="${GS.filter===v}">${l}</button>`).join('')}</div>`;
+  const list=entries.filter(e=>GS.player==='all'||e.player===GS.player).filter(e=>GS.filter==='all'||(GS.filter==='open'?open.includes(e):GS.filter==='today'?!!gToday(e):GS.filter==='closed'?['closed','paid'].includes(e.status):!!gAlert(e))).sort((a,b)=>(b.last?b.last.date:'').localeCompare(a.last?a.last.date:''));
+  if(!GS.sel||!list.find(x=>x.key===GS.sel))GS.sel=list.length?list[0].key:null;
+  const tags=e=>`${e.manual&&!e.resolved?'<span class="chip warn" style="padding:0 6px">provisório</span>':esc(e.info.no||'')}${e.method!=='direto'?' <span class="chip" style="padding:0 6px">satélite</span>':''}${e.paidBuyIn!=null&&num(e.paidBuyIn)!==e.info.buyIn?` <span class="chip warn" style="padding:0 6px">pagou ${money(num(e.paidBuyIn),cur)}</span>`:''}`;
+  const alertTxt=e=>{const al=gAlert(e);const td=gToday(e);return al?`<span class="chip warn">${esc(al)}</span>`:td?`<span class="chip info">${dayName(td.label)} é hoje</span>`:''};
+  const daysTxt=e=>e.days.map(d=>dayName(d.day)).join(' → ');
+  const resTxt=e=>['paid','closed'].includes(e.status)?signed((e.prize||0)-e.cost,cur):'—';
+  document.getElementById('gTable').innerHTML=`<div class="scroll gtable"><table class="t"><thead><tr><th>Jogador</th><th>Torneio</th><th>Dias</th><th class="n">Entradas</th><th class="n hide-sm">Custo</th><th class="n hide-sm">Prémio</th><th class="n">Resultado</th><th>Estado</th><th class="hide-sm">Último dia</th><th>Alerta</th></tr></thead><tbody>${list.map(e=>{const st=STATUS[e.status];
+    return `<tr class="click ${GS.sel===e.key?'sel':''}" data-act="gsel" data-key="${esc(e.key)}"><td>${esc(e.player)}<div class="ls">nível ${esc(e.level)}</div></td><td>${esc(e.info.name)}<div class="ls">${tags(e)}</div></td><td>${daysTxt(e)}</td><td class="n">${e.bullets}</td><td class="n hide-sm">${money(e.cost,cur)}</td><td class="n hide-sm">${e.prize?money(e.prize,cur):'—'}</td><td class="n">${resTxt(e)}</td><td><span class="chip ${st[1]}">${st[0]}</span></td><td class="hide-sm">${e.last?fmtDate(e.last.date):''}</td><td>${alertTxt(e)}</td></tr>`}).join('')||'<tr><td colspan="10" class="hint">Nada neste filtro.</td></tr>'}</tbody></table></div>
+    <div class="gcards">${list.map(e=>{const st=STATUS[e.status];return `<button type="button" class="tour" style="grid-template-columns:minmax(0,1fr) auto;${GS.sel===e.key?'border-color:var(--primary)':''}" data-act="gsel" data-key="${esc(e.key)}"><span><span class="lt" style="display:block">${esc(e.info.name)}</span><span class="ls">${esc(e.player)} · nível ${esc(e.level)} · ${daysTxt(e)} · ${e.bullets} ${e.bullets===1?'entrada':'entradas'}</span><span style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px"><span class="chip ${st[1]}">${st[0]}</span>${tags(e)}${alertTxt(e)}</span></span><span class="amt">${resTxt(e)}</span></button>`}).join('')||'<p class="hint">Nada neste filtro.</p>'}</div>`;
+  const e=entries.find(x=>x.key===GS.sel);const dbox=document.getElementById('gDetail');
+  if(!e)dbox.innerHTML='<p class="hint">Escolhe uma inscrição.</p>';
+  else{const st=STATUS[e.status];
+    dbox.innerHTML=`<div><div class="ls">${esc(e.player)} · nível ${esc(e.level)} · ${esc(e.info.festName||'')}</div><h3>${esc(e.info.name)} <span class="chip ${st[1]}">${st[0]}</span></h3><div class="ls">Buy-in ${money(e.info.buyIn,cur)}${e.paidBuyIn!=null&&num(e.paidBuyIn)!==e.info.buyIn?` (o jogador pagou ${money(num(e.paidBuyIn),cur)})`:''} · ${e.bullets} ${e.bullets===1?'entrada':'entradas'} · custo ${money(e.cost,cur)}${e.method!=='direto'?' · entrou com satélite/ticket':''}</div></div>
+      <div class="tl">${e.days.map(d=>`<div class="ev"><div><b>${fmtDate(d.date)}</b> · ${dayName(d.day)}${d.bullets?` · ${d.bullets} ${d.bullets===1?'entrada':'entradas'}`:''}</div><div class="ls">${d.endState==='bagged'?`passou com ${NF.format(intOr0(d.chips))}${d.left?' · restam '+esc(d.left):''}${d.inMoney?' · já nos prémios':''}`:d.endState==='busted'?'eliminado sem prémio':`${esc(d.pos)}.º${d.entrants?' de '+esc(d.entrants):''} · prémio ${money(num(d.prize),cur)}${d.receivedIn==='transfer'?' na '+esc(d.wallet||'carteira'):' em dinheiro'}`}</div></div>`).join('')}</div>
+      ${e.planReason?`<div class="msg info">Fora do plano do nível. Explicação: ${esc(e.planReason)}</div>`:''}
+      ${e.method!=='direto'?'<div class="msg info">Entrou com satélite/ticket: confirmar que o satélite está registado.</div>':''}
+      ${gAlert(e)?`<div class="msg warn">Alerta: ${esc(gAlert(e))} Confirmar com o jogador.</div>`:''}
+      ${e.proof?`<div class="ls">Prova: ${esc(e.proof)}${proofOk(e.proof)?'':' <span class="chip warn">não é link nem foto</span>'}</div>`:''}`}
+  document.getElementById('gPlan').innerHTML=`<h3>Fora do plano do nível</h3><p class="hint" style="margin:0">Torneios jogados fora do plano da série para o nível do jogador, com a explicação que ele deu.</p>
+   <div class="scroll"><table class="t"><thead><tr><th>Dia</th><th>Jogador</th><th>Torneio</th><th>Plano</th><th>Explicação</th></tr></thead><tbody>${plans.map(p=>`<tr><td>${fmtDate(p.date)}</td><td>${esc(p.player)}<div class="ls">nível ${esc(p.level)}</div></td><td>${esc(p.name)}</td><td><span class="chip warn">${esc(p.rule)}</span></td><td>${esc(p.reason||'—')}</td></tr>`).join('')||'<tr><td colspan="5" class="hint">Nenhum.</td></tr>'}</tbody></table></div>`;
+  const byP={};players.forEach(p=>byP[p]={n:0,ent:0,cost:0,prize:0,res:0,diff:0});entries.forEach(e=>{const x=byP[e.player];x.n++;x.ent+=e.bullets;x.cost+=e.cost;x.prize+=e.prize||0;if(['paid','closed'].includes(e.status))x.res+=(e.prize||0)-e.cost});diffs.forEach(d=>{byP[d.player].diff+=d.diff});
+  document.getElementById('gSum').innerHTML=`<h3>Resumo por jogador · APT Taipei 2026</h3><p class="hint" style="margin:0">O resultado é o dos torneios terminados. As diferenças de saldo estão à parte.</p><div class="scroll"><table class="t"><thead><tr><th>Jogador</th><th class="n">Inscrições</th><th class="n">Entradas</th><th class="n">Custo</th><th class="n">Prémios</th><th class="n">Resultado</th><th class="n">Dif. de saldo</th><th>Último registo</th></tr></thead><tbody>${Object.entries(byP).map(([p,x])=>{const idle=daysBetween(lastReg[p],G_TODAY);return `<tr class="click" data-act="gpl" data-v="${esc(p)}"><td>${esc(p)}${todayPl.includes(p)?' <span class="chip info" style="padding:0 6px">joga hoje</span>':''}</td><td class="n">${x.n}</td><td class="n">${x.ent}</td><td class="n">${money(x.cost,cur)}</td><td class="n">${money(x.prize,cur)}</td><td class="n">${signed(x.res,cur)}</td><td class="n">${x.diff?signed(x.diff,cur):'—'}</td><td>${fmtDate(lastReg[p])}${idle>=2?` <span class="chip warn" style="padding:0 6px">há ${idle} dias</span>`:''}</td></tr>`}).join('')}</tbody></table></div>`;
+  document.getElementById('gTrans').innerHTML=`<h3>Prémios por transferência</h3><p class="hint" style="margin:0">Entram logo na carteira no registo. Confirma-se aqui quando o dinheiro chega mesmo.</p>${trans.map(({e,d})=>{const c=GS.confirmed[e.key];return `<div class="openrow" style="border-top:1px solid var(--border);padding-top:6px"><span>${esc(e.player)} · ${esc(e.info.name)} · <b>${money(num(d.prize),cur)}</b> → ${esc(d.wallet||'carteira')} · ${fmtDate(d.date)}${c?`<br><span class="ls">Chegou · confirmado por ${esc(c.by)} a ${esc(c.at)}</span>`:''}</span><button type="button" class="btn sm ${c?'':'p'}" data-act="gconf" data-key="${esc(e.key)}">${c?'Desfazer':'Confirmar que chegou'}</button></div>`}).join('')||'<p class="hint">Nenhum.</p>'}
+   <h3 style="margin-top:10px">Prémios de 1 000 ou mais sem prova</h3><p class="hint" style="margin:0">Conta como prova um link (https://…) ou uma foto.</p>${noProof.map(({e,d})=>`<div class="ls">${esc(e.player)} · ${esc(e.info.name)} · ${money(num(d.prize),cur)} · ${fmtDate(d.date)}</div>`).join('')||'<p class="hint">Nenhum.</p>'}`;
+  // torneios em falta
+  const mm=entries.filter(x=>x.manual||GS.resolved[x.key]);
+  const byPlayer={};mm.forEach(x=>{const p=byPlayer[x.player]||(byPlayer[x.player]={n:0,inList:0});p.n++;const res=GS.resolved[x.key];const line=res?res.snap:x.src.days.flatMap(d=>d.form.lines).find(l=>l.entryId===x.id);if(line&&suggestions(line).length)p.inList++});
+  document.getElementById('gMissing').innerHTML=`<h3>Torneios em falta</h3><p class="hint" style="margin:0">Linhas provisórias escritas pelos jogadores. Liga-se a um evento do catálogo ou acrescenta-se o torneio. O nome fica normalizado para todos; o custo fica o que o jogador pagou.</p>
+   ${mm.map(x=>{const line=x.src.days.flatMap(d=>d.form.lines).find(l=>l.entryId===x.id);const sug=line&&line.manual?suggestions(line):[];
+     const res=GS.resolved[x.key];if(res)return `<div class="msg" style="background:var(--ok-bg);color:var(--ok);display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><span>${esc(x.player)} · "${esc(res.snap.manualName)}" → ${res.how==='add'?'acrescentado ao catálogo':'ligado a '+esc(x.info.no+' · '+x.info.name)}</span><button type="button" class="btn sm" data-act="unresolve" data-key="${esc(x.key)}">Desfazer</button></div>`;
+     const pend=GS.pending[x.key];if(pend){const pe=findEvent('apt',pend);const has=entries.some(o=>o.player===x.player&&o.key!==x.key&&o.info&&o.info.eventId===pend);
+       const day=autoDay(Object.assign({festId:'apt'},pe.ev),line.manualDate,'new')||pe.ev.flights[0];const lr=levelRule(pe.ev,day,x.level);const paid=num(line.manualBuyIn)||0;
+       return `<div class="stack" style="gap:6px;border:1px solid var(--warn);border-radius:6px;padding:10px"><div><b>Ligar "${esc(line.manualName)}" a ${esc(pe.ev.no)} · ${esc(pe.ev.name)}?</b></div>
+        ${Math.abs(pe.ev.buyIn-paid)>1?`<div class="msg warn">O jogador escreveu ${money(paid,cur)} e este evento tem buy-in de ${money(pe.ev.buyIn,cur)}. O custo e o saldo dele não mudam: fica o que pagou, com a marca "pagou ${money(paid,cur)}" para rever.</div>`:''}
+        ${lr&&lr.out?`<div class="msg warn">Este evento está fora do plano do nível ${esc(x.level)}, e o jogador não explicou. Vai aparecer em "Fora do plano".</div>`:''}
+        ${has?`<div class="msg warn">O ${esc(x.player)} já tem uma inscrição neste evento. Confirma que não é o mesmo torneio duas vezes.</div>`:''}
+        <div style="display:flex;gap:8px"><button type="button" class="btn sm p" data-act="resolveOk" data-key="${esc(x.key)}">Ligar</button><button type="button" class="btn sm" data-act="resolveCancel" data-key="${esc(x.key)}">Cancelar</button></div></div>`}
+     const dd=line?line.manualDate:'';const onDay=ev=>(ev.sched||[]).some(s=>s.date===dd&&ev.flights.includes(s.label));
+     return `<div class="stack" style="gap:6px;border:1px solid var(--border);border-radius:6px;padding:10px"><div><b>${esc(x.player)}</b> escreveu "${esc(line?line.manualName:'')}" · ${money(num(line?line.manualBuyIn:0),cur)} · ${fmtDate(dd)}</div>
+      ${sug.length?`<div class="msg warn">O tracker sugeriu ${esc(sug[0].no)} · ${esc(sug[0].name)} (${money(sug[0].buyIn,cur)}) e o jogador respondeu "não, é outro".</div>`:''}
+      <div class="filters"><select class="i" id="rs-${esc(x.key)}" style="flex:1;min-width:200px" aria-label="Evento do catálogo">${sug.map(s=>opt(s.id,s.no+' · '+s.name,'')).join('')}${APT_EVENTS.filter(ev=>!sug.includes(ev)&&onDay(ev)).map(ev=>opt(ev.id,ev.no+' · '+ev.name,'')).join('')}</select>
+       <button type="button" class="btn sm p" data-act="resolve" data-how="link" data-key="${esc(x.key)}">Ligar a este evento</button><button type="button" class="btn sm" data-act="resolve" data-how="add" data-key="${esc(x.key)}">Acrescentar ao catálogo</button></div></div>`}).join('')||'<p class="hint">Nenhum.</p>'}
+   ${Object.keys(byPlayer).length?`<div class="scroll"><table class="t"><thead><tr><th>Jogador</th><th class="n">Escritos à mão</th><th class="n">Estavam na lista</th></tr></thead><tbody>${Object.entries(byPlayer).map(([p,v])=>`<tr><td>${esc(p)}</td><td class="n">${v.n}</td><td class="n">${v.inList}${v.inList?' <span class="chip warn">falar com ele</span>':''}</td></tr>`).join('')}</tbody></table></div>`:''}`;
+  document.getElementById('gDiffs').innerHTML=`<h3>Diferenças de saldo</h3>
+   <div class="scroll"><table class="t"><thead><tr><th>Dia</th><th>Jogador</th><th class="n">Esperado</th><th class="n">Declarado</th><th class="n">Diferença</th><th>Explicação</th></tr></thead><tbody>${diffs.map(d=>`<tr><td>${fmtDate(d.date)}</td><td>${esc(d.player)}</td><td class="n">${money(d.expected,cur)}</td><td class="n">${money(d.declared,cur)}</td><td class="n">${signed(d.diff,cur)}</td><td>${esc(d.reason)}</td></tr>`).join('')||'<tr><td colspan="6" class="hint">Nenhuma.</td></tr>'}</tbody></table></div>`;
+}
+
+/* ---------------- casos (IT) ---------------- */
+function renderCases(){
+  let h='';
+  CASES.forEach((c,ci)=>{const cur='EUR';let rows='';
+    c.days.forEach((d,di)=>{const entries=buildEntries(c.days.slice(0,di));const r=reconcile(d.form,entries,null);
+      if(d.gapBefore)rows+=`<tr><td colspan="7" class="gap">${esc(d.gapBefore)}</td></tr>`;
+      const lines=d.form.lines.map(l=>{const ev=lineEvent(l,entries);const st={busted:'eliminado sem prémio',bagged:'passou'+(l.chips?' com '+NF.format(num(l.chips)):''),itm:(l.pos?l.pos+'.º':'')+' · prémio '+money(num(l.prize),cur)+(l.receivedIn==='transfer'?' (transferência)':'')}[l.endState];
+        return `<div><span class="chip ${l.kind==='new'?'y':'info'}">${l.kind==='new'?'Novo':'Dia seguinte'}</span> ${esc(ev?ev.name:'')} · ${dayName(l.day)} · ${num(l.bullets)||0} ${num(l.bullets)===1?'entrada':'entradas'} · ${st}</div>`}).join('');
+      rows+=`<tr><td>${fmtDate(d.form.date)}</td><td>${lines}</td><td class="n">${r.bullets}</td><td class="n">${money(d.form.startBalance,cur)}</td><td class="n">${money(r.expected,cur)}</td><td class="n">${money(r.declared,cur)} ${r.diff?`<span class="chip warn">${signed(r.diff,cur)}</span>`:'<span class="chip ok">bate</span>'}</td><td><button type="button" class="btn sm" data-act="open" data-ci="${ci}" data-di="${di}">Abrir</button></td></tr>`});
+    const all=buildEntries(c.days);
+    h+=`<div class="card case"><div class="ch"><div><div class="ls">Caso ${c.id}</div><h2>${esc(c.title)}</h2></div></div><p style="margin:0;max-width:75ch">${esc(c.story)}</p><ul class="proves">${c.proves.map(p=>`<li>${esc(p)}</li>`).join('')}</ul>
+      <div class="scroll"><table class="t"><thead><tr><th>Dia</th><th>Torneios</th><th class="n">Nº torn.</th><th class="n">Saldo inicial</th><th class="n">Esperado</th><th class="n">Declarado</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
+      <div class="ls" style="margin-top:8px">No fim: ${Object.values(all).map(e=>`${esc(e.info.name)} — ${STATUS[e.status][0]}`).join(' · ')}</div></div>`});
+  document.getElementById('cases').innerHTML=h;
+}
+
+/* ---------------- simulação guiada ---------------- */
+const TOUR=[
+ {role:'Jogador',v:'jogador',st:[0,'empty'],hl:'#c-room',t:'O cenário',b:`Estás na pele do <b>Jogador A</b>, nível 6.5, na <b>APT Taipei 2026</b>. Levaste $20 000 e vais registar cinco dias, de 16 a 20/11, com o catálogo real da série.<br><br>Segunda, 16/11, fim do dia: abres o registo de sessão e escolhes a sala <b>Live USD</b>.`},
+ {role:'Jogador',v:'jogador',st:[0,'empty'],hl:'.picker',t:'O catálogo abre no dia certo',b:`O catálogo abre já <b>na APT e no dia 16/11</b>: só os eventos desse dia, com hora, fim do registo, buy-in e <b>plano do teu nível</b>.<br><br>Experimenta os atalhos de buy-in ou escreve "Ultra".`},
+ {role:'Jogador',v:'jogador',st:[0,'form'],hl:'#ln-s0a',t:'Vários flights no mesmo dia',b:`O <b>Ultra Stack</b> ($801) tem três flights a 16/11, por isso a linha pergunta <b>"Que flights jogaste hoje?"</b>.<br><br>Flight A: 1 entrada, <b>Eliminado</b>. Flight B: 1 entrada, <b>Passou</b> com 185 000. O Flight C fica à vista mas inativo: só se pode passar uma vez.`},
+ {role:'Jogador',v:'jogador',st:[0,'form'],hl:'#c-endcard',t:'O saldo final, no fim',b:`$20 000 − 2 × $801 = <b>$18 398</b>. Bate. O saldo final escreve-se no fim, depois de contares o dinheiro. A barra fixa mostra sempre o esperado, a diferença e o Registar.`},
+ {role:'Jogador',v:'jogador',st:[1,'empty'],hl:'#c-open',t:'Terça 17/11: o saco aparece sozinho',b:`O Ultra Stack aparece em <b>"Torneios a decorrer"</b> com o saco de ontem e o Final Day a 18/11. Como não é hoje, não tens de fazer nada.<br><br>Ainda não dá para registar: uma sala Live sem torneios não se regista.`},
+ {role:'Jogador',v:'jogador',st:[1,'form'],hl:'#ln-s1a',t:'Um torneio novo, nos prémios',b:`<b>Single Day High Roller · Mystery Bounty</b> ($3 846). O plano diz que o nível 6.5 pode, com <b>1 entrada</b>.<br><br><b>14.º de 212</b>, $9 200 em dinheiro. O prémio é um campo só: o que recebeste, com bounties.`},
+ {role:'Jogador',v:'jogador',st:[1,'form'],hl:'#diffBox',t:'Uma diferença de $40',b:`As contas dão $23 752 e tens <b>$23 712</b>: $40 perdidos no <b>câmbio TWD → USD</b> no casino.<br><br>O formulário avisa sem bloquear e pede a explicação, que vai para as notas da sessão e para a gestão.`},
+ {role:'Jogador',v:'jogador',st:[2,'empty'],hl:'#c-open',t:'Quarta 18/11: "Final Day é hoje"',b:`O catálogo sabe que o Final Day do Ultra Stack é <b>hoje</b>. Enquanto não o acrescentares, há um aviso nas contas do dia.<br><br>Carregas em <b>"Joguei hoje"</b>.`},
+ {role:'Jogador',v:'jogador',st:[2,'form'],hl:'#c-live',t:'Final Day e um torneio novo',b:`• <b>Dia seguinte</b> do Ultra Stack: 23.º de 1 480, $4 350 em dinheiro.<br>• <b>Novo</b>: Natural8 Cup Day 1 ($3 300), passaste com 142 000.<br><br>Se tentares acrescentar outra vez o Natural8, o catálogo diz "já está neste registo".`},
+ {role:'Jogador',v:'jogador',st:[3,'level'],hl:'#ln-s3y',t:'Quinta 19/11: fora do plano',b:`O <b>Single Day High Roller</b> de $10 000 só está no plano dos níveis 7.1 e 7.5.<br><br>O tracker <b>avisa e pede uma explicação</b>: sem ela, a sessão não se regista. A gestão vê-a numa lista própria.`},
+ {role:'Jogador',v:'jogador',st:[3,'missing'],hl:'#ln-s3m',t:'"Falta um torneio"',b:`No fim da lista do dia há <b>"Falta um torneio"</b>. A série e o dia vêm do catálogo, e o jogador escreve só o nome e o buy-in.<br><br>Escreveu "Hyper Turbo", $321, e o tracker pergunta <b>"Será um destes?"</b>: entre as sugestões está o Ev. 72 · $321. Para seguir com o que escreveu, tinha de carregar em "Não, é outro torneio".`},
+ {role:'Jogador',v:'jogador',st:[3,'form'],hl:'#c-live',t:'O dia como ficou',b:`Era o Ev. 72: carregou em <b>"É este"</b>.<br><br>O dia ficou com o Natural8 <b>Day 2</b> (610 000, já nos prémios) e o Hyper Turbo (eliminado sem prémio).`},
+ {role:'Jogador',v:'jogador',st:[4,'form'],hl:'#summary',t:'Sexta 20/11: prémio para a carteira',b:`Day 3 do Natural8: <b>31.º de 1 264</b>, $6 800 por <b>transferência para a Luxon USD</b>.<br><br>O prémio entra já na Luxon e não no saldo do Live: o Live fica em $24 441, e o resultado da sessão é <b>+$6 800</b>.`},
+ {role:'Jogador',v:'jogador',st:[4,'form'],hl:'#myEntries',t:'As tuas inscrições da semana',b:`O resumo: quatro inscrições, os flights e dias de cada uma, e o resultado.<br><br>Agora a mesma semana do lado da gestão.`},
+ {role:'Gestão',v:'gestao',hl:'#gTiles',t:'A página da gestão',b:`Só admin e manager. "Hoje" é 21/11. Os indicadores levam à lista certa quando se carrega neles. Há um resumo por jogador, os prémios por transferência para confirmar e os prémios sem prova.`},
+ {role:'Gestão',v:'gestao',fn:()=>{GS.filter='alert';GS.sel='Jogador C|GC1'},hl:'#gListCard',t:'Alerta: Final Day sem resultado',b:`O <b>Jogador C</b> ensacou no National Cup a 13/11. O Final Day foi a 15/11, e passaram mais de 3 dias sem resultado.<br><br>O alerta pergunta "ainda a jogar ou esqueceu-se?". Um Final Day pode durar vários dias, por isso nunca bloqueia o registo.`},
+ {role:'Gestão',v:'gestao',fn:()=>{GS.filter='all'},hl:'#gPlan',t:'Fora do plano do nível',b:`O Jogador C (nível 6.1) jogou o Mystery Bounty High Roller, que não está no plano dele, e explicou: <b>"Autorizado pelo coach no grupo da série."</b>`},
+ {role:'Gestão',v:'gestao',fn:()=>{GS.filter='all'},hl:'#gMissing',t:'Torneios em falta',b:`O <b>Jogador B</b> escreveu "Mistery Bounty High Roller", $3 846. O tracker sugeriu o <b>Ev. 46</b> e ele respondeu "não, é outro".<br><br>A gestão liga-o num clique, e o indicador mostra que "estava na lista".`},
+ {role:'Gestão',v:'gestao',hl:'#gDiffs',t:'Diferenças de saldo',b:`As sessões em que o saldo não bateu, com a explicação. Os $40 do câmbio do Jogador A estão aqui.`},
+ {role:'Fim',v:'jogador',fn:()=>loadBlank(true),hl:'#c-live',t:'Agora experimenta tu',b:`Registo em branco a 16/11. Escolhe o Ultra Stack e marca flights, tenta passar em dois, acrescenta o mesmo torneio duas vezes, escolhe um torneio fora do plano…<br><br>Quando acabares, escreve o que te confundiu ou falhou.`},
+];
+let T={i:-1};
+function tourGo(i){if(i<0||i>=TOUR.length)return;T.i=i;const s=TOUR[i];
+  document.querySelectorAll('.hl').forEach(x=>x.classList.remove('hl'));
+  if(s.st)loadScen(s.st[0],s.st[1],true);
+  if(s.fn)s.fn();
+  setView(s.v);
+  const g=document.getElementById('guide');g.hidden=false;
+  g.innerHTML=`<div class="gh"><span class="role">${esc(s.role)} · passo ${i+1} de ${TOUR.length}</span><span style="display:flex;gap:4px"><button type="button" class="btn ghost sm" data-act="tourMin" style="color:#000">${g.classList.contains('min')?'Abrir':'Encolher'}</button><button type="button" class="btn ghost sm" data-act="tourEnd" style="color:#000" aria-label="Fechar a simulação">✕</button></span></div>
+   <div class="gb"><div class="bar"><span style="width:${Math.round((i+1)/TOUR.length*100)}%"></span></div><h3>${esc(s.t)}</h3><p>${s.b}</p></div>
+   <div class="gf"><button type="button" class="btn sm" data-act="tourPrev" ${i===0?'disabled':''}>← Anterior</button>${i<TOUR.length-1?`<button type="button" class="btn sm p" data-act="tourNext">Seguinte →</button>`:`<button type="button" class="btn sm p" data-act="tourEnd">Terminar</button>`}</div>`;
+  requestAnimationFrame(()=>{const el=s.hl&&document.querySelector(s.hl);if(el){el.classList.add('hl');el.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'})}});
+}
+function tourEnd(){T.i=-1;document.getElementById('guide').hidden=true;document.querySelectorAll('.hl').forEach(x=>x.classList.remove('hl'))}
+
+/* ---------------- vistas, sub-separadores e tema ---------------- */
+const HINTS={jogador:'O que o jogador vê ao registar a sessão.',gestao:'Página nova, só para admin e manager.',it:'Casos, especificação, modelo de dados, decisões e payload.'};
+function setView(v){document.querySelectorAll('#viewSw button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===v)));
+  document.querySelectorAll('[data-view-panel]').forEach(p=>p.hidden=p.dataset.viewPanel!==v);
+  document.getElementById('viewHint').textContent=HINTS[v];if(v==='gestao')renderGestao();try{history.replaceState(null,'','#'+v)}catch(e){}}
+document.querySelectorAll('#viewSw button').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+function setIt(t){document.querySelectorAll('#itTabs button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.it===t)));document.querySelectorAll('[data-it-panel]').forEach(p=>p.hidden=p.dataset.itPanel!==t)}
+document.querySelectorAll('#itTabs button').forEach(b=>b.addEventListener('click',()=>setIt(b.dataset.it)));
+const themeBtn=document.getElementById('themeBtn');
+function currentTheme(){const t=document.documentElement.getAttribute('data-theme');if(t==='light'||t==='dark')return t;return matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+function applyTheme(t,keep){document.documentElement.setAttribute('data-theme',t);themeBtn.textContent=t==='dark'?'☀ Claro':'☾ Escuro';if(keep)try{localStorage.setItem('registo-live-theme',t)}catch(e){}}
+(()=>{let s=null;try{s=localStorage.getItem('registo-live-theme')}catch(e){}if(s==='light'||s==='dark')applyTheme(s);else{document.documentElement.removeAttribute('data-theme');themeBtn.textContent=currentTheme()==='dark'?'☀ Claro':'☾ Escuro'}})();
+themeBtn.addEventListener('click',()=>applyTheme(currentTheme()==='dark'?'light':'dark',true));
+document.addEventListener('keydown',e=>{const t=e.target;if((e.key==='Enter'||e.key===' ')&&t.matches&&t.matches('[role=button][data-act]')){e.preventDefault();t.click()}});
+
+renderCases();
+loadScen(0,'empty');
+const hv=(location.hash||'').slice(1);setView(['jogador','gestao'].includes(hv)?hv:'jogador');
+</script>
