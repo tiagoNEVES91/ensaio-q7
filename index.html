@@ -222,7 +222,7 @@ tr.sel td{background:var(--primary-soft)}
 </header>
 
 <div class="card startcard" style="margin-bottom:14px">
-  <div><div class="lt">Simulação guiada · APT Taipei 2026</div><div class="ls">Cinco dias de um jogador de nível 6.5, com o catálogo real da série (99 eventos), e depois a mesma semana vista pela gestão. Cerca de 10 minutos. A v10 corrige os dois testes da v9: satélite com nome e dia, plano por flight, torneios à mão com o limite do dia, sala online sem torneios live e horas mais seguras.</div></div>
+  <div><div class="lt">Simulação guiada · APT Taipei 2026</div><div class="ls">Cinco dias de um jogador de nível 6.5, com o catálogo real da série (99 eventos), e depois a mesma semana vista pela gestão. Cerca de 10 minutos. A v10 corrige os dois testes da v9: satélite com nome e dia, plano por flight, torneios à mão com o limite do dia e horas mais seguras. Só mostra as salas Live.</div></div>
   <button type="button" class="btn p" data-act="tourStart">▶ Começar a simulação</button>
 </div>
 
@@ -289,7 +289,7 @@ const CATALOG=[
   {id:'apt',name:'APT Taipei 2026',city:'Taipé',currency:'USD',dates:'12–29 nov',events:APT_EVENTS},
   {id:'ept',name:'EPT Barcelona 2026 (exemplo)',city:'Barcelona',currency:'EUR',dates:'10–24 ago',events:EPT_EVENTS},
 ];
-const ROOMS=[{id:'live_usd',name:'Live USD',currency:'USD',live:true},{id:'live_eur',name:'Live EUR',currency:'EUR',live:true},{id:'gg',name:'GGPoker USD',currency:'USD',live:false}];
+const ROOMS=[{id:'live_usd',name:'Live USD',currency:'USD',live:true},{id:'live_eur',name:'Live EUR',currency:'EUR',live:true}];
 // Saldo inicial de cada sala que o jogador não usou no dia anterior (exemplo).
 const DEFAULT_BAL={live_usd:5000,live_eur:2500,gg:1200};
 const LEVELS=['5.5','6.1','6.5','7.1','7.5'];
