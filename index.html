@@ -247,6 +247,7 @@ tr.sel td{background:var(--primary-soft)}
 .tk .tk-h{font-size:11px;letter-spacing:.08em;color:var(--muted-fg)}
 .ph-tkres{margin-top:10px}
 .ph-ctx{text-align:center;max-width:520px}
+@media (max-width:640px){header.top .sub,.startcard .ls,#viewHint{display:none}.startcard{padding:10px 12px}}
 @media (max-width:640px){
  .phone{width:100%;height:auto;min-height:0;border:0;border-radius:0;box-shadow:none;overflow:visible}
  .ph-body{overflow:visible;padding:12px 2px 16px}
@@ -703,7 +704,7 @@ const CASES=[
 /* ---------------- estado ---------------- */
 // drafts: o que o jogador mudou em cada dia da simulação fica guardado até carregar em Repor.
 let S={src:'scen',di:0,variant:'empty',ci:0,level:SCEN.level,player:SCEN.player,form:null,touched:{},submitted:false,removed:[],resetArm:0,matchArm:false,drafts:{},dirty:false,focusTo:null,blurred:{},roomUndo:null,matchCleared:false,timeDel:{},pickMsg:{},photoMsg:{}};
-function freshUI(){S.touched={};S.submitted=false;S.removed=[];S.resetArm=0;S.matchArm=false;S.blurred={};S.roomUndo=null;S.matchCleared=false;S.timeDel={};S.pickMsg={};S.photoMsg={};PH.step='hoje';PH.done=false;PH.tk=null;PH.repick=null}
+function freshUI(){S.touched={};S.submitted=false;S.removed=[];S.resetArm=0;S.matchArm=false;S.blurred={};S.roomUndo=null;S.matchCleared=false;S.timeDel={};S.pickMsg={};S.photoMsg={};PH.step='hoje';PH.done=false;PH.tk=null;PH.repick=null;PH.tried={}}
 function priorDays(){if(S.src==='scen')return SCEN.days.slice(0,S.di).map(d=>({form:d.form}));if(S.src==='case')return CASES[S.ci].days.slice(0,S.di);return []}
 function entriesNow(){return buildEntries(priorDays())}
 // Um rascunho por dia (seja qual for a variante com que o dia abriu).
@@ -895,7 +896,7 @@ function updateDerived(){
   setH(document.getElementById('expHint'),dOk?`lido como <b>${money(r.declared,cur)}</b>`:(r.fix['f|declaredEnd']?'':room.live?'Conta o dinheiro que tens.':''));
   setH(document.getElementById('endErr'),(r.fix['f|declaredEnd']?`<div class="msg warn">Os milhares escrevem-se sem ponto. Querias ${money(num(r.fix['f|declaredEnd']),cur)}? ${fixBtn('f|declaredEnd',r.fix['f|declaredEnd'],cur)}</div>`:fieldErr('#f-end-bal').map(x=>`<div class="msg err">${esc(x)}</div>`).join(''))+(S.matchCleared?'<div class="msg info">As contas mudaram depois do "Bate certo": escreve o saldo outra vez.</div>':''));
   setH(document.getElementById('roomUndo'),S.roomUndo?`<div class="msg info" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">Saldo final apagado: é outra sala.<button type="button" class="btn sm" data-act="undoRoom">Desfazer</button></div>`:'');
-  const linesOk=room.live&&f.lines.length&&r.expected>=0&&f.lines.every(l=>r.perLine[l.lid]&&!r.perLine[l.lid].msgs.some(m=>m[0]==='err'||m[0]==='warn'));
+  const linesOk=room.live&&f.lines.length&&r.expected>=0&&f.lines.every(l=>r.perLine[l.lid]&&!r.perLine[l.lid].msgs.some(m=>m[0]==='err'||(m[0]==='warn'&&!/A prova|prova do prémio|botão Foto/.test(m[1]))));
   const mb=document.getElementById('matchBox');
   if(mb){if(!(linesOk&&String(f.declaredEnd||'').trim()==='')){setH(mb,'');S.matchArm=false}
     else setH(mb,S.matchArm?`<div class="msg warn" style="margin-top:6px">Contaste o dinheiro? As contas dão:<div class="rec" style="margin:6px 0"><div class="r"><span class="k">Saldo inicial</span><span>${money(r.start,cur)}</span></div><div class="r"><span class="k">Entradas pagas (${r.bullets})</span><span>${signed(-r.cost,cur)}</span></div><div class="r"><span class="k">Prémios em dinheiro</span><span>${signed(r.prize,cur)}</span></div><div class="r tot"><span>Saldo esperado</span><span>${money(r.expected,cur)}</span></div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn sm p" data-act="matchYes">Sim, contei e tenho ${money(r.expected,cur)}</button><button type="button" class="btn sm" data-act="matchNo">Não, vou contar</button></div></div>`:`<button type="button" class="btn sm" data-act="match" id="btnMatch" style="margin-top:6px">Bate certo com as contas</button>`)}
@@ -969,11 +970,17 @@ const cssEsc=s=>(window.CSS&&CSS.escape)?CSS.escape(s):String(s).replace(/["\\]/
 // O formulário volta a ser desenhado a cada escolha: o foco volta ao mesmo campo ou botão.
 function focusSel(el){if(!el||el===document.body||!el.closest||!el.closest('#form,#loader,#loader2,#phone'))return null;if(el.id)return '#'+cssEsc(el.id);
   const ks=['data-act','data-lid','data-v','data-flab','data-fl','data-eid','data-di','data-f','data-pf'];const p=ks.filter(k=>el.hasAttribute(k)).map(k=>`[${k}="${cssEsc(el.getAttribute(k))}"]`);return p.length?el.tagName.toLowerCase()+p.join(''):null}
-function render(){pendingRender=false;pendingDerived=false;const ae=document.activeElement;const sel=S.focusTo||focusSel(ae);let caret=null;try{if(!S.focusTo&&ae&&typeof ae.selectionStart==='number')caret=[ae.selectionStart,ae.selectionEnd]}catch(x){}S.focusTo=null;
+function render(){pendingRender=false;pendingDerived=false;const anc=S.anchor;S.anchor=null;const pb0=document.getElementById('ph-body');const pst=pb0?pb0.scrollTop:0;const pad0=pb0?pb0.style.paddingBottom:'';const pstep=typeof PH!=='undefined'?PH.step:null;const ae=document.activeElement;const sel=S.focusTo||focusSel(ae);let caret=null;try{if(!S.focusTo&&ae&&typeof ae.selectionStart==='number')caret=[ae.selectionStart,ae.selectionEnd]}catch(x){}S.focusTo=null;
   renderLoader();renderForm();updateDerived();if(isPhoneView())renderPhone();
   if(sel){let el=null;try{el=document.querySelector(sel)}catch(x){}
     if(el&&!el.matches('input,select,textarea,button,a,summary'))el=el.querySelector('input:not([disabled]):not([type=file]),select,textarea,button:not([disabled])');
-    if(el){try{el.focus({preventScroll:true});if(caret&&el.setSelectionRange)el.setSelectionRange(caret[0],caret[1])}catch(x){}}}}
+    if(el){try{el.focus({preventScroll:true});if(caret&&el.setSelectionRange)el.setSelectionRange(caret[0],caret[1])}catch(x){}}}
+  if(isPhoneView()&&PH.step===pstep){const pb=document.getElementById('ph-body');if(pb){if(pad0)pb.style.paddingBottom=pad0;pb.scrollTop=pst}
+    if(anc&&anc.sel&&pb){let e2=null;try{e2=document.querySelector(anc.sel)}catch(x){}if(e2){const d=e2.getBoundingClientRect().top-anc.top;if(Math.abs(d)>1){
+      // se o ecrã encolheu por baixo, acrescenta espaço no fim para o botão tocado poder ficar onde estava
+      const inner=pb.scrollHeight>pb.clientHeight+1&&getComputedStyle(pb).overflowY!=='visible';const sc=inner?pb:document.scrollingElement;
+      const room=sc.scrollHeight-(inner?pb.clientHeight:innerHeight)-(inner?pb.scrollTop:scrollY);if(d>room)pb.style.paddingBottom=(parseFloat(getComputedStyle(pb).paddingBottom)+d-room+1)+'px';
+      if(inner)pb.scrollTop+=d;else window.scrollBy(0,d)}}}}}
 function scrollToEl(id){const el=document.getElementById(id);if(el)el.scrollIntoView({block:'center'})}
 function clearDone(){const b=document.getElementById('submitMsg');if(b&&b.innerHTML)b.innerHTML=''}
 function disarmReset(){if(S.resetArm){S.resetArm=0;const br=document.getElementById('btnReset');if(br)br.textContent='Repor'}}
@@ -1009,7 +1016,7 @@ document.addEventListener('input',e=>{const el=e.target;if(!el.closest||!el.clos
   if(el.dataset.f==='f.declaredEnd'){S.matchCleared=false;S.roomUndo=null}
   // a explicação fica presa à diferença; só uma explicação nova (não um espaço a mais) a liga à diferença de agora
   if(el.dataset.f==='f.diffReason'){const nz=t=>String(t||'').toLowerCase().replace(/[^a-zà-úç0-9]/g,'');if(nz(el.value)!==nz(S.form.diffReasonAt)){S.form.diffFor=reconcile(S.form,entriesNow(),S.level).diff;S.form.diffReasonAt=el.value}}
-  if(el.dataset.sug){const line=findLine(el.dataset.sug);const box=document.getElementById('sug-'+el.dataset.sug);if(line){line.notOther=false;if(box)box.innerHTML=renderSug(line,suggestions(line,S.form.date));const pbx=document.getElementById('p-sug');if(pbx)pbx.innerHTML=renderSug(line,suggestions(line,S.form.date));
+  if(el.dataset.sug){const line=findLine(el.dataset.sug);const box=document.getElementById('sug-'+el.dataset.sug);if(line){line.notOther=false;if(box)box.innerHTML=renderSug(line,suggestions(line,S.form.date));const pbx=document.getElementById('p-sug');if(pbx)pbx.innerHTML=renderSug(line,suggestions(line,S.form.date));const pt=document.querySelector('#phone .ph-title');if(pt){const ev0=lineEvent(line,{});if(ev0)pt.textContent=shortName(ev0.name)}
     const ev=lineEvent(line,{});const t=document.getElementById('ttl-'+line.lid);if(t&&ev)t.textContent=(ev.no?ev.no+' · ':'')+ev.name;const sb=document.getElementById('sub-'+line.lid);if(sb&&ev)sb.textContent=ev.festName+' · buy-in '+money(ev.buyIn,ev.currency||'USD')}}
   updateDerived()});
 document.addEventListener('change',e=>{const el=e.target;if(!el.closest||!el.closest('#form,#phone'))return;if(el.dataset.tk&&el.files&&el.files[0]){tkReadFile(el.files[0]);el.value='';return}clearDone();S.dirty=true;
@@ -1035,6 +1042,7 @@ form.addEventListener('submit',e=>{e.preventDefault();S.submitted=true;disarmRes
   if(r.errors.length){box.innerHTML='';scrollToEl('errBox')}
   else box.innerHTML=`<div class="msg" style="background:var(--ok-bg);color:var(--ok)">Sessão registada (simulação). Nada foi gravado.</div>`});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;const f=S.form;
+  if(b.closest('#phone'))S.anchor={sel:focusSel(b),top:b.getBoundingClientRect().top};
   if(a.startsWith('ph')){if(phAction(a,b))return}
   if(b.closest('#form,#phone')&&!['goErr','goErrs','goWarns','goField','reset','gotoLine','gotoOpen'].includes(a)){S.dirty=true;clearDone()}
   if(b.dataset.lid&&S.touched&&!['pickEv','pickSug','pickOpen','gotoOpen','repick','missing','gotoLine','band'].includes(a))S.touched[b.dataset.lid]=true;
@@ -1104,7 +1112,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
 /* ---------------- telemóvel do jogador: um ecrã por passo ---------------- */
 // Hoje → Torneios (cada torneio no seu ecrã; Foto do ticket ou Escolher da lista) → Fecho → Resumo.
 // Usa o mesmo estado (S.form) e o mesmo motor (reconcile) que a vista de computador.
-const PH={step:'hoje',tk:null,repick:null,done:false,more:false};
+const PH={step:'hoje',tk:null,repick:null,done:false,more:false,tried:{}};
 let SAMPLE=null,SAMPLE_IMG=false;
 // Leitura da foto: no claude.ai o Claude lê a imagem (com autorização de quem testa); fora dele, só tickets de exemplo.
 (async()=>{try{if(window.claude&&claude.use){const s=await claude.use('sample');if(s){SAMPLE=s;const lim=await s.limits().catch(()=>null);SAMPLE_IMG=!!(lim&&lim.images);if(isPhoneView())renderPhone()}}}catch(e){}})();
@@ -1157,8 +1165,9 @@ function renderPhone(){
       const when=today?`<span class="chip y">${dayName(today.label)} é hoje</span>`:cl?`<span class="chip">${dayName(e.last.day)} continua</span>`:'';
       h+=`<div class="ph-card"><div class="lt">${esc(shortName(e.info.name))}</div><div class="ls">${sub} ${when}</div>${alert}<button type="button" class="btn ${today||cl||e.status==='reentry'?'p':''} ph-big" data-act="cont" data-eid="${esc(e.id)}">Joguei hoje</button></div>`})}
     const ls=phLines();
+    if(S.removed.length){const x=S.removed[S.removed.length-1];h+=`<div class="msg info" style="display:flex;justify-content:space-between;align-items:center;gap:8px">Removido: ${esc(shortName((lineEvent(x.line,entriesNow())||{name:'torneio'}).name))}${S.removed.length>1?` (e mais ${S.removed.length-1})`:''}<button type="button" class="btn sm" data-act="undoRm">Desfazer</button></div>`}
     h+=`<div class="ph-q">Os teus torneios de hoje</div>`;
-    h+=ls.length?ls.map(l=>{const n=phLineErrs(r,l);const ev=lineEvent(l,ents);return `<button type="button" class="ph-card ph-lcard" data-act="phGo" data-v="linha:${l.lid}"><span><span class="lt">${ev?esc(shortName(ev.name)):l.manual?'Torneio em falta':'Torneio'}</span><span class="ls" style="display:block">${esc(phLineSummary(l,ents))}</span></span><span class="chip ${n?(S.submitted||S.touched[l.lid]?'err':''):'ok'}">${n?'falta '+n:'✓'}</span></button>`}).join(''):`<p class="hint">Ainda sem torneios hoje.</p>`;
+    h+=ls.length?ls.map(l=>{const n=phLineErrs(r,l);const ev=lineEvent(l,ents);return `<button type="button" class="ph-card ph-lcard" data-act="phGo" data-v="linha:${l.lid}"><span><span class="lt">${ev?esc(shortName(ev.name)):l.manual?'Torneio em falta':'Torneio'}</span><span class="ls" style="display:block">${esc(phLineSummary(l,ents))}</span></span><span class="chip ${n?(S.submitted||PH.tried[l.lid]?'err':''):'ok'}">${n?'falta '+n:'✓'}</span></button>`}).join(''):`<p class="hint">Ainda sem torneios hoje.</p>`;
     h+=`<div class="ph-add"><button type="button" class="btn p ph-big" data-act="phGo" data-v="foto">📷 Foto do ticket</button><button type="button" class="btn ph-big" data-act="phList">Escolher da lista</button><button type="button" class="ph-link" data-act="phMissing">Não está na lista? Falta um torneio</button></div>`;
     body=h;
     foot=`<button type="button" class="btn p ph-main" data-act="phGo" data-v="fecho">Seguinte</button>`;
@@ -1188,6 +1197,7 @@ function renderPhone(){
   el.innerHTML=`<div class="ph-head">${back}<div class="ph-title">${esc(title)}</div></div>${PH.done?'':dots}<div class="ph-body" id="ph-body">${body}</div><div class="ph-foot"><div class="ph-info" id="p-footInfo"></div>${foot}</div>`;
   if(st==='lista')phList();
   updatePhone(r);
+  if(st==='foto'&&PH.tk&&PH.tk.status!=='reading'){const t=document.querySelector('#phone .ph-tkres');if(t)t.scrollIntoView({block:'nearest'})}
 }
 function phTicketBody(f,cur){
   const tk=PH.tk;let h=`<p class="ls" style="margin-top:0">Tira uma foto ao ticket do casino, ou escolhe na galeria um print da app de inscrição. O tracker lê o torneio e tu confirmas.</p>`;
@@ -1295,7 +1305,8 @@ function tkConfirm(){const tk=PH.tk;if(!tk||tk.status!=='done')return;const f=S.
 function phSetRoom(v){const f=S.form;if(f.room===v)return;if(String(f.declaredEnd||'').trim())S.roomUndo={room:f.room,declaredEnd:f.declaredEnd,diffReason:f.diffReason,diffFor:f.diffFor,diffReasonAt:f.diffReasonAt,endSource:f.endSource,matchedAt:f.matchedAt};
   Object.assign(f,{declaredEnd:'',diffReason:'',diffFor:null,endSource:'typed',matchedAt:null});f.room=v;S.dirty=true;openPickerDefaults(f)}
 function phAction(a,b){const f=S.form;
-  if(a==='phGo'){PH.step=b.dataset.v;PH.listMsg='';if(PH.step==='lista'){openPickerDefaults(f)}render();const bd=document.getElementById('ph-body');if(bd)bd.scrollTop=0;return true}
+  if(a==='phGo'){const cur=PH.step;if(cur.startsWith('linha:')&&b.dataset.v==='torneios'&&b.classList.contains('ph-main')){const lid=cur.slice(6);const r=reconcile(f,entriesNow(),S.level);const pl=r.perLine[lid];if(pl&&pl.msgs.some(m=>m[0]==='err')&&!PH.tried[lid]){PH.tried[lid]=true;render();const m=document.getElementById('p-lmsgs');if(m)m.scrollIntoView({block:'center'});return true}}
+    PH.step=b.dataset.v;PH.listMsg='';if(PH.step==='lista'){openPickerDefaults(f)}render();const bd=document.getElementById('ph-body');if(bd)bd.scrollTop=0;return true}
   if(a==='phBack'){const st=PH.step;PH.step=st.startsWith('linha:')||st==='lista'||st==='foto'?'torneios':st==='torneios'?'hoje':st==='fecho'?'torneios':st==='resumo'?'fecho':'hoje';PH.repick=null;render();return true}
   if(a==='phList'){PH.step='lista';PH.listMsg='';openPickerDefaults(f);render();return true}
   if(a==='phDays'){PF.date=b.dataset.v==='all'?'all':f.date;render();return true}
@@ -1324,12 +1335,12 @@ function updatePhone(r){if(!isPhoneView()||!document.getElementById('ph-body'))r
   if(g('p-endHint')){setH(g('p-endHint'),dOk?`lido como <b>${money(r.declared,cur)}</b>`:'');
     const fx=r.fix['f|declaredEnd'];const ferr=r.errors.filter(x=>r.errSel[x]==='#f-end-bal'&&(S.submitted||S.blurred['f-end-bal']));
     setH(g('p-endErr'),(fx?`<div class="msg warn">Os milhares escrevem-se sem ponto. Querias ${money(num(fx),cur)}? ${fixBtn('f|declaredEnd',fx,cur)}</div>`:ferr.map(x=>`<div class="msg err">${esc(x)}</div>`).join(''))+(S.matchCleared?'<div class="msg info">As contas mudaram depois do "Bate certo": escreve o dinheiro outra vez.</div>':''));
-    const linesOk=f.lines.length&&r.expected>=0&&f.lines.every(l=>r.perLine[l.lid]&&!r.perLine[l.lid].msgs.some(m=>m[0]==='err'||m[0]==='warn'));
+    const linesOk=f.lines.length&&r.expected>=0&&f.lines.every(l=>r.perLine[l.lid]&&!r.perLine[l.lid].msgs.some(m=>m[0]==='err'||(m[0]==='warn'&&!/A prova|prova do prémio|botão Foto/.test(m[1]))));
     setH(g('p-match'),linesOk&&String(f.declaredEnd||'').trim()===''?(S.matchArm?`<div class="msg warn" style="margin-top:6px">Contaste o dinheiro? As contas dão <b>${money(r.expected,cur)}</b>.<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap"><button type="button" class="btn sm p" data-act="matchYes">Sim, contei e tenho ${money(r.expected,cur)}</button><button type="button" class="btn sm" data-act="matchNo">Não, vou contar</button></div></div>`:`<button type="button" class="btn sm" data-act="match" style="margin-top:6px">Bate certo com as contas</button>`):'');
     if(g('p-diffBox'))g('p-diffBox').hidden=!r.diff;
     setH(g('p-calc'),`<div class="r"><span class="k">Saldo inicial</span><span>${money(r.start,cur)}</span></div><div class="r"><span class="k">Entradas pagas (${r.bullets})</span><span>${signed(-r.cost,cur)}</span></div><div class="r"><span class="k">Prémios em dinheiro</span><span>${signed(r.prize,cur)}</span></div><div class="r tot"><span>As contas dão</span><span>${money(r.expected,cur)}</span></div>${r.diff?`<div class="r"><span class="k">Diferença</span><span>${signed(r.diff,cur)}</span></div>`:''}`)}
   if(PH.step.startsWith('linha:')){const lid=PH.step.slice(6);const line=findLine(lid);const pl=r.perLine[lid];
-    if(line&&pl){const show=S.submitted||S.touched[lid];setH(g('p-lmsgs'),pl.msgs.filter(m=>m[0]!=='err'||show).map(m=>`<div class="msg ${m[0]}">${m[1]}</div>`).join(''));
+    if(line&&pl){const show=S.submitted||PH.tried[lid];setH(g('p-lmsgs'),pl.msgs.filter(m=>m[0]!=='err'||show).map(m=>`<div class="msg ${m[0]}">${m[1]}</div>`).join(''));
       if(g('p-plan'))g('p-plan').hidden=!pl.needPlan;
       [['p-rd-pr','prize'],['p-rd-mb','manualBuyIn']].forEach(([id,fld])=>{const el=g(id);if(!el)return;const fx=r.fix[lid+'|'+fld];const n=num(line[fld]);setH(el,fx?`<div class="msg warn" style="margin-top:4px">Os milhares escrevem-se sem ponto. Querias ${money(num(fx),cur)}? ${fixBtn(lid+'|'+fld,fx,cur)}</div>`:n>0?'lido como <b>'+money(n,cur)+'</b>':'')});
       if(g('p-fltot'))setH(g('p-fltot'),`Total hoje: <b>${line.bullets}</b> ${num(line.bullets)===1?'entrada':'entradas'} · ${money(pl.cost,cur)}`)}}
