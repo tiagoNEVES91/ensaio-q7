@@ -1203,14 +1203,18 @@ function renderPhone(){
   updatePhone(r);
   if(st==='foto'&&PH.tk&&PH.tk.status!=='reading'){const t=document.querySelector('#phone .ph-tkres');if(t)t.scrollIntoView({block:'nearest'})}
 }
+function tkCostTxt(tk,pe,cur){return tk.cont?'<b>dia seguinte</b> da entrada que já tens (sem buy-in)':tk.voucher?`<b>pago com voucher</b>${tk.res.voucher_origem?' ('+esc(tk.res.voucher_origem)+')':''}: não sai do saldo`:'buy-in '+money(pe.buyIn,cur)}
 function phTicketBody(f,cur){
   const tk=PH.tk;let h=`<p class="ls" style="margin-top:0">Tira uma foto ao ticket do casino, ou escolhe na galeria um print da app de inscrição. O tracker lê o torneio e tu confirmas.</p>`;
   h+=`<label class="btn p ph-big">📷 Tirar foto ou escolher da galeria<input type="file" accept="image/*" data-tk="1" hidden></label>`;
   if(!SAMPLE_IMG)h+=`<div class="msg info" style="margin-top:8px">Nesta página a leitura das fotos é simulada (só no claude.ai o Claude lê fotos a sério). Experimenta com um ticket de exemplo:<br><small>Leitura: ${esc(SAMPLE_ST)}</small></div>`;
   else h+=`<div class="ls" style="margin-top:8px">Ou experimenta com um ticket de exemplo:</div>`;
-  h+=`<div class="stack" style="gap:8px;margin-top:8px">${tkExamples(f).map((t,i)=>`<button type="button" class="tk" data-act="phTkEx" data-i="${i}"><span class="tk-h">${esc(t.series)}</span><b>EVENT #${esc(t.evn)} · ${esc(t.title)}</b><span>${esc(t.flight)} · ${esc(t.dateTxt)} · ${esc(t.time)}</span><span>BUY-IN ${esc(t.price)} · SEAT ${esc(t.seat)}</span></button>`).join('')||'<p class="hint">Não há torneios neste dia para fazer um exemplo.</p>'}</div>`;
+  h+=`<div class="stack" style="gap:8px;margin-top:8px">${tkExamples(f).map((t,i)=>`<button type="button" class="tk" data-act="phTkEx" data-i="${i}"><span class="tk-h">${esc(t.series)}</span><b>EVENT #${esc(t.evn)} · ${esc(t.title)}</b><span>${esc(t.flight)} · ${esc(t.dateTxt)} · ${esc(t.time)}</span><span>BUY-IN ${esc(t.price)} · SEAT ${esc(t.seat)}</span></button>`).join('')||'<p class="hint">Não há torneios neste dia para fazer um exemplo.</p>'}${tkExamples(f).length>1?`<button type="button" class="btn" data-act="phTkExMulti">Exemplo: print da app com 2 torneios</button>`:''}</div>`;
   if(tk){if(tk.status==='reading')h+=`<div class="msg info ph-tkres">A ler o ticket…</div>`;
-    else if(tk.status==='done'){const pe=findEvent(tk.match.fest,tk.match.evId).ev;h+=`<div class="ph-card ph-tkres"><div class="ls">Lido do ticket${tk.conf?' · confiança '+esc(tk.conf):''}</div><div class="lt">${esc(pe.no)} · ${esc(shortName(pe.name))}</div><div class="ls">${dayName(tk.match.day)} · ${fmtDate(tk.res.date||f.date)} · ${tk.cont?'<b>dia seguinte</b> da entrada que já tens (sem buy-in)':'buy-in '+money(pe.buyIn,cur)}${tk.nth>1?` · <b>${tk.nth}.ª entrada</b> neste torneio`:''}</div>${tk.warn?`<div class="msg warn">${esc(tk.warn)}</div>`:''}<button type="button" class="btn p ph-big" data-act="phTkOk">Confirmar</button><button type="button" class="ph-link" data-act="phList">Não é este: escolher da lista</button></div>`}
+    else if(tk.status==='done'){const pe=findEvent(tk.match.fest,tk.match.evId).ev;h+=`<div class="ph-card ph-tkres"><div class="ls">Lido do ticket${tk.conf?' · confiança '+esc(tk.conf):''}</div><div class="lt">${esc(pe.no)} · ${esc(shortName(pe.name))}</div><div class="ls">${dayName(tk.match.day)} · ${fmtDate(tk.res.date||f.date)} · ${tkCostTxt(tk,pe,cur)}${tk.nth>1?` · <b>${tk.nth}.ª entrada</b> neste torneio`:''}</div>${tk.warn?`<div class="msg warn">${esc(tk.warn)}</div>`:''}<button type="button" class="btn p ph-big" data-act="phTkOk">Confirmar</button><button type="button" class="ph-link" data-act="phList">Não é este: escolher da lista</button></div>`}
+    else if(tk.status==='multi'){const n=tk.pick.filter(Boolean).length;h+=`<div class="ph-card ph-tkres"><div class="lt">Li ${tk.items.length} torneios nesta imagem</div><div class="ls">Marca os que jogaste hoje.</div><div class="stack" style="gap:8px;margin-top:8px">${tk.items.map((it,i)=>{if(it.status!=='done')return `<div class="msg warn">${esc(it.msg||'Não consegui ler este.')}</div>`;const pe=findEvent(it.match.fest,it.match.evId).ev;
+      return `<button type="button" class="btn" style="text-align:left;white-space:normal" data-act="phTkPick" data-i="${i}" aria-pressed="${tk.pick[i]}"><b>${tk.pick[i]?'☑':'☐'} ${esc(pe.no)} · ${esc(shortName(pe.name))}</b><br><span class="ls">${dayName(it.match.day)} · ${fmtDate(it.res.date||f.date)} · ${tkCostTxt(it,pe,cur)}${it.nth>1?` · ${it.nth}.ª entrada`:''}${it.res.estado==='eliminado'?' · eliminado':''}</span>${it.warn?`<br><span class="ls" style="color:var(--warn)">${esc(it.warn)}</span>`:''}</button>`}).join('')}</div>
+      <button type="button" class="btn p ph-big" data-act="phTkOkAll" ${n?'':'disabled'} style="margin-top:10px">Juntar ${n} torneio${n===1?'':'s'}</button><button type="button" class="ph-link" data-act="phList">Escolher da lista</button></div>`}
     else h+=`<div class="msg warn ph-tkres">${esc(tk.msg||'Não consegui ler o ticket.')}</div><button type="button" class="btn ph-big" data-act="phList">Escolher da lista</button>${tk.res&&(tk.res.event_name||tk.res.buy_in)?`<button type="button" class="ph-link" data-act="phMissing" data-fromtk="1">Falta um torneio (com o que li)</button>`:''}`}
   return h}
 function phLineBody(line,ev,ents,r,cur){
@@ -1285,9 +1289,10 @@ function tkExamples(f){const cands=tkCandidates().filter(c=>c.fl.some(s=>s.date=
     return {series:(c.fest.name||'').toUpperCase(),evn:evNum(c.e),title:nm.length>34?nm.slice(0,34)+'…':nm,flight:s.label==='Único'?'SINGLE DAY':'DAY '+s.label,dateTxt:String(d.getUTCDate()).padStart(2,'0')+' '+['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][d.getUTCMonth()]+' '+d.getUTCFullYear(),time:s.time||'',price:twd?'TWD '+NF.format(Math.round(c.e.buyIn*32.5/100)*100):money(c.e.buyIn,fe.currency),seat:(10+i*3)+'-'+(2+i),
       res:{series:c.fest.name,kind:'inscricao',event_no:'#'+evNum(c.e),event_name:String(c.e.name).replace(/\[Event \d+\]\s*/,''),flight:s.label,date:f.date,buy_in:twd?Math.round(c.e.buyIn*32.5/100)*100:c.e.buyIn,currency:twd?'TWD':fe.currency,reentry:false,confidence:'alta'}}})}
 function tkPrompt(){const c=tkCandidates().map(x=>({festival:x.fest.name,no:'Ev. '+evNum(x.e),name:x.e.name,buy_in:x.e.buyIn,moeda:x.fest.currency,dias:x.fl.map(s=>({label:s.label,date:s.date,time:s.time}))}));
-  return 'Esta imagem devia ser um ticket de inscrição num torneio de poker live, um cartão de lugar, ou um print da app/email de inscrição. Lê-a e transcreve o que lá está.\n'
-   +'Responde só com um objeto JSON: {"series": string|null (festival, série ou casino), "kind": "inscricao"|"lugar"|"outro" ("inscricao" = pagou uma entrada ou re-entry; "lugar" = só o lugar de um dia seguinte, Day 2/Final Day, sem pagamento), "event_no": string|null, "event_name": string|null, "flight": string|null (ex.: "1B", "2", "FT", "Único"), "date": "YYYY-MM-DD"|null, "buy_in": number|null (o total pago, na moeda do ticket), "currency": string|null (código ISO, ex.: "EUR", "USD", "TWD"), "reentry": boolean, "confidence": "alta"|"media"|"baixa", "texto": string (as linhas principais que leste)}.\n'
-   +'Se a imagem não for um ticket, cartão de lugar ou inscrição num torneio, responde {"kind": "outro", "event_no": null, "event_name": null, "confidence": "baixa", "texto": "não é um ticket"}.\n'
+  return 'Esta imagem devia mostrar um ou mais tickets de inscrição em torneios de poker live, cartões de lugar, ou um print da app/email de inscrição. Lê-a e transcreve o que lá está.\n'
+   +'Pode haver VÁRIOS torneios ou entradas na mesma imagem (vários tickets na mesa, ou uma app com uma lista de inscrições): devolve UM objeto por entrada, incluindo entradas já eliminadas (também foram pagas).\n'
+   +'Responde só com JSON: {"tickets": [ {"series": string|null (festival, série ou casino), "kind": "inscricao"|"lugar" ("inscricao" = uma entrada ou re-entry; "lugar" = só o lugar de um dia seguinte, Day 2/Final Day, sem pagamento), "event_no": string|null, "event_name": string|null, "flight": string|null (ex.: "1B", "2", "FT", "Único"), "date": "YYYY-MM-DD"|null, "buy_in": number|null (o valor da entrada, na moeda do ticket), "currency": string|null (código ISO, ex.: "EUR", "USD", "TWD"), "reentry": boolean, "pago_com": "dinheiro"|"voucher"|null ("voucher" = entrada paga com voucher, ticket ou lugar ganho num satélite), "voucher_origem": string|null (de onde veio o voucher, ex.: "Satélite #S12"), "voucher_data": "YYYY-MM-DD"|null (dia em que o voucher foi ganho), "estado": "inscrito"|"eliminado"|null, "confidence": "alta"|"media"|"baixa"} ], "texto": string (as linhas principais que leste)}.\n'
+   +'Se a imagem não tiver nenhum ticket, lugar ou inscrição num torneio (talão de restaurante, prémio, estrutura, cartaz, transferência, cash game…), responde {"tickets": [], "texto": "não é um ticket"}.\n'
    +'Transcreve o que está na imagem: não escolhas nem corrijas para um torneio da lista. Se um campo não se lê, põe null.\n'
    +'Torneios do catálogo destes dias (só para te ajudar a ler nomes cortados ou desfocados): '+JSON.stringify(c)}
 function tkIsDate(s){return /^\d{4}-\d{2}-\d{2}$/.test(String(s||''))}
@@ -1326,19 +1331,33 @@ function tkMatch(res,name){const f=S.form;res=res||{};
   const ex=S.form.lines.find(o=>{const oe=lineEvent(o,ents);return oe&&oe.eventId===ev.id});
   const nth=ex?(ex._sel?ex._sel.reduce((a,l)=>a+ent0(ex.fl[l].bul),0):ent0(ex.bullets))+1:1;
   const warn=tkIsDate(res.date)&&res.date!==f.date?`O ticket é de ${fmtDate(res.date)} e a sessão é de ${fmtDate(f.date)}. Confirma a data da sessão.`:'';
-  return {status:'done',res,name,conf:res.confidence||'',match:{fest:c.fest.id,evId:ev.id,day},nth,warn,why:sc[0].why}}
+  return {status:'done',res,name,conf:res.confidence||'',match:{fest:c.fest.id,evId:ev.id,day},nth,warn,why:sc[0].why,voucher:res.pago_com==='voucher'}}
+// Uma imagem pode trazer vários torneios. Um só: o fluxo de sempre. Vários: lista para escolher.
+function tkMatchAll(raw,name){raw=raw||{};const list=Array.isArray(raw.tickets)?raw.tickets:[raw];
+  if(!list.length)return {status:'error',res:raw,name,msg:'Isto não parece um ticket nem uma inscrição num torneio. Tira outra foto ou escolhe da lista.'};
+  if(list.length===1)return tkMatch(list[0],name);
+  const items=list.map(r=>tkMatch(r,name));const seen={};items.forEach(it=>{if(it.status==='done'&&!it.cont){const k=it.match.evId;it.nth+=seen[k]||0;seen[k]=(seen[k]||0)+1}});
+  return {status:'multi',name,items,pick:items.map(it=>it.status==='done'&&!it.warn)}}
 async function tkReadFile(file){PH.tk={status:'reading'};renderPhone();
   if(!SAMPLE||!SAMPLE_IMG){PH.tk={status:'error',msg:'Aqui a leitura das fotos é simulada. Usa um ticket de exemplo ou escolhe da lista.'};renderPhone();return}
-  try{const res=await SAMPLE.json(tkPrompt(),{images:[file],modelTier:'default'});PH.tk=tkMatch(res,file.name||'ticket.jpg')}
+  try{const res=await SAMPLE.json(tkPrompt(),{images:[file],modelTier:'default'});PH.tk=tkMatchAll(res,file.name||'ticket.jpg')}
   catch(e){PH.tk={status:'error',msg:e&&e.code==='not_granted'?'Sem autorização para o Claude ler a foto. Escolhe da lista.':e&&e.code==='image_rejected'?'Esta imagem não serve. Tira outra foto ou escolhe da lista.':'Não consegui ler o ticket. Escolhe da lista.'}}
   renderPhone()}
-function tkConfirm(){const tk=PH.tk;if(!tk||tk.status!=='done')return;const f=S.form;const ents=entriesNow();
+function tkConfirmOne(tk){const f=S.form;const ents=entriesNow();
   const ex=f.lines.find(o=>{const oe=lineEvent(o,ents);return oe&&oe.festId===tk.match.fest&&oe.eventId===tk.match.evId});let lid;
   if(ex&&tk.cont){lid=ex.lid}
   else if(ex){lid=ex.lid;const ev=lineEvent(ex,ents);const e=ents[ex.entryId];const multi=syncFlights(ex,ev,f.date,e?e.status:null,ex.kind==='cont'&&e?e.days.map(x=>x.day):[]);
     if(multi&&ex.fl&&ex.fl[tk.match.day]){const x=ex.fl[tk.match.day];if(x.on)x.bul=String(ent0(x.bul)+1);else{x.on=true;x.bul='1'}}else ex.bullets=String(ent0(ex.bullets)+1)}
-  else{const res=phAddEvent(tk.match.fest,tk.match.evId,tk.match.day);if(res.msg){PH.tk={status:'error',msg:res.msg};renderPhone();return}lid=res.lid}
-  const ln=findLine(lid);ln.tickets=(ln.tickets||[]).concat([{name:tk.name,read:tk.res}]);S.dirty=true;PH.tk=null;PH.step='linha:'+lid;render()}
+  else{const res=phAddEvent(tk.match.fest,tk.match.evId,tk.match.day);if(res.msg)return {msg:res.msg};lid=res.lid}
+  const ln=findLine(lid);
+  // Voucher ou ticket de satélite: a 1.ª entrada não é buy-in pago (usa o "Entrei com satélite/ticket" que já existe).
+  if(tk.voucher&&ln.kind==='new'&&ent0(ln.bullets)<=1){ln.method='satelite';ln.satName=tk.res.voucher_origem||ln.satName||'';ln.satDate=tk.res.voucher_data||ln.satDate||''}
+  ln.tickets=(ln.tickets||[]).concat([{name:tk.name,read:tk.res}]);S.dirty=true;return {lid}}
+function tkConfirm(){const tk=PH.tk;if(!tk||tk.status!=='done')return;const r=tkConfirmOne(tk);if(r.msg){PH.tk={status:'error',msg:r.msg};renderPhone();return}
+  PH.tk=null;PH.step='linha:'+r.lid;render()}
+function tkConfirmAll(){const tk=PH.tk;if(!tk||tk.status!=='multi')return;const errs=[];
+  tk.items.forEach((it,i)=>{if(tk.pick[i]&&it.status==='done'){const r=tkConfirmOne(it);if(r.msg)errs.push(r.msg)}});
+  PH.tk=errs.length?{status:'error',msg:errs.join(' ')}:null;PH.step='torneios';render()}
 
 /* ---- ações do telemóvel ---- */
 function phSetRoom(v){const f=S.form;if(f.room===v)return;if(String(f.declaredEnd||'').trim())S.roomUndo={room:f.room,declaredEnd:f.declaredEnd,diffReason:f.diffReason,diffFor:f.diffFor,diffReasonAt:f.diffReasonAt,endSource:f.endSource,matchedAt:f.matchedAt};
@@ -1360,6 +1379,9 @@ function phAction(a,b){const f=S.form;
   if(a==='phDay'){const ln=findLine(b.dataset.lid);if(ln)ln.day=b.dataset.v;S.dirty=true;render();return true}
   if(a==='phTkEx'){const ex=tkExamples(f)[+b.dataset.i];if(!ex)return true;PH.tk={status:'reading'};renderPhone();setTimeout(()=>{PH.tk=tkMatch(ex.res,'ticket-exemplo-'+ex.evn+'.jpg');renderPhone()},700);return true}
   if(a==='phTkOk'){tkConfirm();return true}
+  if(a==='phTkPick'){const tk=PH.tk;if(tk&&tk.status==='multi'){const i=+b.dataset.i;tk.pick[i]=!tk.pick[i];renderPhone()}return true}
+  if(a==='phTkOkAll'){tkConfirmAll();return true}
+  if(a==='phTkExMulti'){const ex=tkExamples(f);if(ex.length<2)return true;PH.tk={status:'reading'};renderPhone();setTimeout(()=>{PH.tk=tkMatchAll({tickets:[ex[0].res,ex[ex.length-1].res]},'print-app-exemplo.png');renderPhone()},700);return true}
   if(a==='phSubmit'){S.submitted=true;const r=reconcile(f,entriesNow(),S.level);if(!r.errors.length)PH.done=true;render();return true}
   if(a==='phNew'){PH.done=false;loadBlank(true);PH.step='hoje';render();return true}
   return false}
