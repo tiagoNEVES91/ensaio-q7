@@ -1206,7 +1206,7 @@ function phTicketBody(f,cur){
   else h+=`<div class="ls" style="margin-top:8px">Ou experimenta com um ticket de exemplo:</div>`;
   h+=`<div class="stack" style="gap:8px;margin-top:8px">${tkExamples(f).map((t,i)=>`<button type="button" class="tk" data-act="phTkEx" data-i="${i}"><span class="tk-h">${esc(t.series)}</span><b>EVENT #${esc(t.evn)} · ${esc(t.title)}</b><span>${esc(t.flight)} · ${esc(t.dateTxt)} · ${esc(t.time)}</span><span>BUY-IN ${esc(t.price)} · SEAT ${esc(t.seat)}</span></button>`).join('')||'<p class="hint">Não há torneios neste dia para fazer um exemplo.</p>'}</div>`;
   if(tk){if(tk.status==='reading')h+=`<div class="msg info ph-tkres">A ler o ticket…</div>`;
-    else if(tk.status==='done'){const pe=findEvent(tk.match.fest,tk.match.evId).ev;h+=`<div class="ph-card ph-tkres"><div class="ls">Lido do ticket${tk.conf?' · confiança '+esc(tk.conf):''}</div><div class="lt">${esc(pe.no)} · ${esc(shortName(pe.name))}</div><div class="ls">${dayName(tk.match.day)} · ${fmtDate(tk.res.date||f.date)} · buy-in ${money(pe.buyIn,cur)}${tk.nth>1?` · <b>${tk.nth}.ª entrada</b> neste torneio`:''}</div>${tk.warn?`<div class="msg warn">${esc(tk.warn)}</div>`:''}<button type="button" class="btn p ph-big" data-act="phTkOk">Confirmar</button><button type="button" class="ph-link" data-act="phList">Não é este: escolher da lista</button></div>`}
+    else if(tk.status==='done'){const pe=findEvent(tk.match.fest,tk.match.evId).ev;h+=`<div class="ph-card ph-tkres"><div class="ls">Lido do ticket${tk.conf?' · confiança '+esc(tk.conf):''}</div><div class="lt">${esc(pe.no)} · ${esc(shortName(pe.name))}</div><div class="ls">${dayName(tk.match.day)} · ${fmtDate(tk.res.date||f.date)} · ${tk.cont?'<b>dia seguinte</b> da entrada que já tens (sem buy-in)':'buy-in '+money(pe.buyIn,cur)}${tk.nth>1?` · <b>${tk.nth}.ª entrada</b> neste torneio`:''}</div>${tk.warn?`<div class="msg warn">${esc(tk.warn)}</div>`:''}<button type="button" class="btn p ph-big" data-act="phTkOk">Confirmar</button><button type="button" class="ph-link" data-act="phList">Não é este: escolher da lista</button></div>`}
     else h+=`<div class="msg warn ph-tkres">${esc(tk.msg||'Não consegui ler o ticket.')}</div><button type="button" class="btn ph-big" data-act="phList">Escolher da lista</button>${tk.res&&(tk.res.event_name||tk.res.buy_in)?`<button type="button" class="ph-link" data-act="phMissing" data-fromtk="1">Falta um torneio (com o que li)</button>`:''}`}
   return h}
 function phLineBody(line,ev,ents,r,cur){
@@ -1268,27 +1268,61 @@ function phAddEvent(fest,evId,day){const f=S.form;const ents=entriesNow();
   f.lines.push(line);S.dirty=true;return {lid:line.lid}}
 
 /* ---- leitura do ticket ---- */
+// Câmbio só para comparar o buy-in do ticket com o do catálogo (tolerância larga: fee, arredondamento, câmbio do dia).
+const TK_FX={USD:1,TWD:1/32.5,EUR:1.08,GBP:1.27,AUD:0.66,CAD:0.73,CZK:0.043,MXN:0.055,KRW:0.00073,JPY:0.0067,PHP:0.017,VND:0.00004,HKD:0.128,SGD:0.74,MYR:0.21,THB:0.028,INR:0.012};
+// Nomes por que cada festival aparece nos tickets e nas apps.
+const TK_ALIAS={apt:['apt','asian poker tour','taipei','台北','亞洲撲克'],ept:['ept','european poker tour','pokerstars','barcelona','estrellas','casino barcelona']};
+const tkDigits=s=>String(s||'').replace(/\D/g,'');
+const tkWords=s=>String(s||'').toLowerCase().replace(/\[event \d+\]/g,' ').split(/[^a-z0-9à-ú]+/).filter(x=>x.length>=3&&!STOP.has(x)&&!/^\d+$/.test(x)&&!['nlh','twd','usd','eur','day','the','and','with','for','sponsored'].includes(x));
 function tkCandidates(){const f=S.form;const cur=roomOf(f.room).currency;const ds=[addDays(f.date,-1),f.date,addDays(f.date,1)];const out=[];
-  CATALOG.filter(x=>x.currency===cur).forEach(fe=>fe.events.forEach(e=>{const fl=(e.sched||[]).filter(s=>ds.includes(s.date)&&e.flights.includes(s.label));if(fl.length)out.push({fest:fe,e,fl})}));return out.slice(0,80)}
-function tkExamples(f){const cands=tkCandidates().filter(c=>c.fl.some(s=>s.date===f.date));const fe=CATALOG.find(x=>x.currency===roomOf(f.room).currency);const twd=fe&&fe.id==='apt';
-  return cands.slice(0,3).map((c,i)=>{const s=c.fl.find(x=>x.date===f.date);const d=new Date(f.date+'T12:00:00Z');const nm=String(c.e.name).replace(/\[Event \d+\]\s*/,'').toUpperCase();
-    return {series:(c.fest.name||'').toUpperCase(),evn:evNum(c.e),title:nm.length>34?nm.slice(0,34)+'…':nm,flight:s.label==='Único'?'SINGLE DAY':/^1[A-Z]$/.test(s.label)?'DAY '+s.label:'DAY '+s.label,dateTxt:String(d.getUTCDate()).padStart(2,'0')+' '+['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][d.getUTCMonth()]+' '+d.getUTCFullYear(),time:s.time||'',price:twd?'TWD '+NF.format(Math.round(c.e.buyIn*32.5/100)*100):money(c.e.buyIn,fe.currency),seat:(10+i*3)+'-'+(2+i),
-      res:{event_no:'#'+evNum(c.e),event_name:String(c.e.name).replace(/\[Event \d+\]\s*/,''),flight:s.label,date:f.date,buy_in:twd?Math.round(c.e.buyIn*32.5/100)*100:c.e.buyIn,currency:twd?'TWD':fe.currency,reentry:false,confidence:'alta'}}})}
-function tkPrompt(){const c=tkCandidates().map(x=>({no:'Ev. '+evNum(x.e),name:x.e.name,buy_in_usd:x.e.buyIn,flights:x.fl.map(s=>({label:s.label,date:s.date,time:s.time}))}));
-  return 'Esta imagem é a foto de um ticket de inscrição num torneio de poker live (ou um print da app de inscrição do casino). Lê o ticket e diz que torneio é.\n'
-   +'Responde só com um objeto JSON: {"event_no": string|null, "event_name": string|null, "flight": string|null (ex.: "1B", "2", "FT", "Único"), "date": "YYYY-MM-DD"|null, "buy_in": number|null, "currency": string|null, "reentry": boolean, "confidence": "alta"|"media"|"baixa", "texto": string (as linhas principais que leste)}.\n'
-   +'Se a imagem não for um ticket de torneio, responde {"event_no": null, "event_name": null, "confidence": "baixa", "texto": "não é um ticket"}.\n'
-   +'Torneios do catálogo destes dias (para te ajudar a reconhecer o evento): '+JSON.stringify(c)}
-function tkMatch(res,name){const f=S.form;const digits=s=>String(s||'').replace(/\D/g,'');const cands=tkCandidates();
-  let c=res&&res.event_no?cands.find(x=>digits(res.event_no)&&(digits(res.event_no)===evNum(x.e)||digits(res.event_no)===digits(x.e.no))):null;
-  if(!c&&res&&res.event_name){const w=String(res.event_name).toLowerCase().split(/[^a-z0-9à-ú]+/).filter(x=>x.length>=4&&!STOP.has(x));c=cands.map(x=>[x,w.filter(t=>x.e.name.toLowerCase().includes(t)).length]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).map(x=>x[0])[0]||null}
-  if(!c)return {status:'nomatch',res,name,msg:`Li ${res&&(res.event_name||res.event_no)?'"'+(res.event_name||res.event_no)+'"':'o ticket'}, mas não encontro este torneio no catálogo de ${fmtDate(f.date)}.`};
-  let fl=String(res.flight||'').toUpperCase().replace(/^(DAY|FLIGHT)\s*/,'').trim();if(/^[A-F]$/.test(fl))fl='1'+fl;if(/SINGLE|ÚNICO|UNICO/.test(fl))fl='Único';if(/FINAL/.test(fl))fl='FT';
-  const labels=c.fl.filter(s=>s.date===(res.date||f.date)||s.date===f.date).map(s=>s.label);const day=labels.includes(fl)?fl:(labels[0]||autoDay(c.e,f.date,'new'));
-  const ents=entriesNow();const ex=S.form.lines.find(o=>{const oe=lineEvent(o,ents);return oe&&oe.eventId===c.e.id});
+  CATALOG.filter(x=>x.currency===cur).forEach(fe=>fe.events.forEach(e=>{const fl=(e.sched||[]).filter(s=>ds.includes(s.date));if(fl.length)out.push({fest:fe,e,fl})}));return out.slice(0,100)}
+function tkExamples(f){const cands=tkCandidates().filter(c=>c.fl.some(s=>s.date===f.date&&c.e.flights.includes(s.label)));const fe=CATALOG.find(x=>x.currency===roomOf(f.room).currency);const twd=fe&&fe.id==='apt';
+  return cands.slice(0,3).map((c,i)=>{const s=c.fl.find(x=>x.date===f.date&&c.e.flights.includes(x.label));const d=new Date(f.date+'T12:00:00Z');const nm=String(c.e.name).replace(/\[Event \d+\]\s*/,'').toUpperCase();
+    return {series:(c.fest.name||'').toUpperCase(),evn:evNum(c.e),title:nm.length>34?nm.slice(0,34)+'…':nm,flight:s.label==='Único'?'SINGLE DAY':'DAY '+s.label,dateTxt:String(d.getUTCDate()).padStart(2,'0')+' '+['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][d.getUTCMonth()]+' '+d.getUTCFullYear(),time:s.time||'',price:twd?'TWD '+NF.format(Math.round(c.e.buyIn*32.5/100)*100):money(c.e.buyIn,fe.currency),seat:(10+i*3)+'-'+(2+i),
+      res:{series:c.fest.name,kind:'inscricao',event_no:'#'+evNum(c.e),event_name:String(c.e.name).replace(/\[Event \d+\]\s*/,''),flight:s.label,date:f.date,buy_in:twd?Math.round(c.e.buyIn*32.5/100)*100:c.e.buyIn,currency:twd?'TWD':fe.currency,reentry:false,confidence:'alta'}}})}
+function tkPrompt(){const c=tkCandidates().map(x=>({festival:x.fest.name,no:'Ev. '+evNum(x.e),name:x.e.name,buy_in:x.e.buyIn,moeda:x.fest.currency,dias:x.fl.map(s=>({label:s.label,date:s.date,time:s.time}))}));
+  return 'Esta imagem devia ser um ticket de inscrição num torneio de poker live, um cartão de lugar, ou um print da app/email de inscrição. Lê-a e transcreve o que lá está.\n'
+   +'Responde só com um objeto JSON: {"series": string|null (festival, série ou casino), "kind": "inscricao"|"lugar"|"outro" ("inscricao" = pagou uma entrada ou re-entry; "lugar" = só o lugar de um dia seguinte, Day 2/Final Day, sem pagamento), "event_no": string|null, "event_name": string|null, "flight": string|null (ex.: "1B", "2", "FT", "Único"), "date": "YYYY-MM-DD"|null, "buy_in": number|null (o total pago, na moeda do ticket), "currency": string|null (código ISO, ex.: "EUR", "USD", "TWD"), "reentry": boolean, "confidence": "alta"|"media"|"baixa", "texto": string (as linhas principais que leste)}.\n'
+   +'Se a imagem não for um ticket, cartão de lugar ou inscrição num torneio, responde {"kind": "outro", "event_no": null, "event_name": null, "confidence": "baixa", "texto": "não é um ticket"}.\n'
+   +'Transcreve o que está na imagem: não escolhas nem corrijas para um torneio da lista. Se um campo não se lê, põe null.\n'
+   +'Torneios do catálogo destes dias (só para te ajudar a ler nomes cortados ou desfocados): '+JSON.stringify(c)}
+function tkIsDate(s){return /^\d{4}-\d{2}-\d{2}$/.test(String(s||''))}
+function tkDayDiff(a,b){return Math.round((new Date(a+'T12:00:00Z')-new Date(b+'T12:00:00Z'))/864e5)}
+function tkNormFlight(x){let fl=String(x||'').toUpperCase().replace(/^(DAY|FLIGHT|DIA)\s*/,'').trim();if(/^[A-F]$/.test(fl))fl='1'+fl;if(/SINGLE|ÚNICO|UNICO|ONE DAY/.test(fl))fl='Único';if(/FINAL/.test(fl))fl='FT';return fl}
+// Pontua cada torneio candidato com os sinais do ticket. Número, nome, série, buy-in e data; um buy-in ou uma série que não batem tiram pontos.
+function tkScore(res,c){const why=[];let s=0,hard=false;
+  const no=tkDigits(res.event_no);if(no){if(no===evNum(c.e)||no===tkDigits(c.e.no)){s+=2;why.push('número')}else s-=1}
+  const w=tkWords(res.event_name);if(w.length){const hit=w.filter(t=>c.e.name.toLowerCase().includes(t)).length;const r=hit/w.length;
+    if(r>=0.8&&hit>=1){s+=2;why.push('nome')}else if(r>=0.5){s+=1;why.push('parte do nome')}else if(hit===0)s-=2}
+  const se=String(res.series||'').toLowerCase();if(se){const al=TK_ALIAS[c.fest.id]||[];if(al.some(a=>a.length<=4?new RegExp('(^|[^a-z])'+a+'([^a-z]|$)').test(se):se.includes(a))){s+=1;why.push('série')}else{s-=2;hard=true}}
+  const bi=num(res.buy_in),cur=String(res.currency||'').toUpperCase();if(bi>0&&TK_FX[cur]&&TK_FX[c.fest.currency]&&c.e.buyIn>0){const v=bi*TK_FX[cur]/TK_FX[c.fest.currency];const d=Math.abs(v-c.e.buyIn)/c.e.buyIn;
+    if(d<=0.12){s+=1;why.push('buy-in')}else if(d>0.25){s-=3;hard=true}}
+  if(tkIsDate(res.date)&&c.fl.some(x=>x.date===res.date)){s+=1;why.push('data')}
+  const fl=tkNormFlight(res.flight);if(fl&&fl!=='Único'&&c.fl.some(x=>x.label===fl)){s+=1;why.push('dia')}
+  return {c,s,hard,why,id:!!(no&&why.includes('número'))||why.includes('nome')||why.includes('parte do nome')}}
+function tkMatch(res,name){const f=S.form;res=res||{};
+  if(!res.event_no&&!res.event_name)return {status:'error',res,name,msg:res.kind==='outro'||/não é um ticket/i.test(res.texto||'')?'Isto não parece um ticket nem uma inscrição num torneio. Tira outra foto ou escolhe da lista.':'Não consigo ler o nome nem o número do torneio. Tira uma foto ao ticket inteiro, ou escolhe da lista.'};
+  const lbl=`"${res.event_name||res.event_no}"`;
+  const fd=d=>d.slice(0,4)!==f.date.slice(0,4)?fmtDate(d)+'/'+d.slice(0,4):fmtDate(d);const rc=roomOf(f.room);const cu=String(res.currency||'').toUpperCase();
+  const curMsg=cu&&cu!==rc.currency&&!(rc.currency==='USD'&&cu==='TWD')?` O ticket está em ${cu} e a sala da sessão é ${rc.name}.`:'';
+  if(tkIsDate(res.date)&&Math.abs(tkDayDiff(res.date,f.date))>1)return {status:'nomatch',res,name,msg:`Li ${lbl}, mas o ticket é de ${fd(res.date)} e a sessão é de ${fd(f.date)}.${curMsg} Confirma a data e a sala da sessão, ou escolhe da lista.`};
+  const sc=tkCandidates().map(c=>tkScore(res,c)).filter(x=>!x.hard&&x.id&&x.s>=3).sort((a,b)=>b.s-a.s);
+  if(!sc.length)return {status:'nomatch',res,name,msg:`Li ${lbl}${res.series?' ('+res.series+')':''}, mas não encontro este torneio no catálogo de ${fmtDate(f.date)}.${curMsg}`};
+  if(sc[1]&&sc[1].s===sc[0].s)return {status:'nomatch',res,name,msg:`Li ${lbl}, mas pode ser mais do que um torneio do catálogo (${sc.slice(0,3).filter(x=>x.s===sc[0].s).map(x=>shortName(x.c.e.name)).join(' ou ')}). Escolhe da lista.`};
+  const c=sc[0].c;const ev=c.e;const fl=tkNormFlight(res.flight);const dt=tkIsDate(res.date)?res.date:f.date;
+  const onDate=c.fl.filter(s=>s.date===dt||s.date===f.date).map(s=>s.label);
+  // Dia seguinte (Day 2+, FT) ou cartão de lugar: é a continuação de uma entrada que já existe, nunca uma entrada nova.
+  const isCont=(ev.days||[]).includes(fl)||res.kind==='lugar'||(!ev.flights.includes(fl)&&onDate.length>0&&onDate.every(l=>(ev.days||[]).includes(l)));
+  const ents=entriesNow();
+  if(isCont){const open=Object.values(ents).find(x=>x.info&&x.info.festId===c.fest.id&&x.info.eventId===ev.id&&isOpen(x,f.date));
+    const dlab=(ev.days||[]).includes(fl)?fl:(onDate.find(l=>(ev.days||[]).includes(l))||fl);
+    if(!open)return {status:'error',res,name,msg:`É o lugar do ${dayName(dlab)||'dia seguinte'} do ${shortName(ev.name)}, mas não tens este torneio em aberto. Um dia seguinte não é uma entrada nova: regista primeiro o dia em que entraste, ou escolhe da lista.`};
+    return {status:'done',cont:true,res,name,conf:res.confidence||'',match:{fest:c.fest.id,evId:ev.id,day:dlab},nth:0,warn:'',why:sc[0].why}}
+  const day=onDate.includes(fl)&&ev.flights.includes(fl)?fl:(onDate.find(l=>ev.flights.includes(l))||autoDay(ev,f.date,'new'));
+  const ex=S.form.lines.find(o=>{const oe=lineEvent(o,ents);return oe&&oe.eventId===ev.id});
   const nth=ex?(ex._sel?ex._sel.reduce((a,l)=>a+ent0(ex.fl[l].bul),0):ent0(ex.bullets))+1:1;
-  const warn=res.date&&res.date!==f.date?`O ticket é de ${fmtDate(res.date)} e a sessão é de ${fmtDate(f.date)}. Confirma a data da sessão.`:'';
-  return {status:'done',res,name,conf:res.confidence||'',match:{fest:c.fest.id,evId:c.e.id,day},nth,warn}}
+  const warn=tkIsDate(res.date)&&res.date!==f.date?`O ticket é de ${fmtDate(res.date)} e a sessão é de ${fmtDate(f.date)}. Confirma a data da sessão.`:'';
+  return {status:'done',res,name,conf:res.confidence||'',match:{fest:c.fest.id,evId:ev.id,day},nth,warn,why:sc[0].why}}
 async function tkReadFile(file){PH.tk={status:'reading'};renderPhone();
   if(!SAMPLE||!SAMPLE_IMG){PH.tk={status:'error',msg:'Aqui a leitura das fotos é simulada. Usa um ticket de exemplo ou escolhe da lista.'};renderPhone();return}
   try{const res=await SAMPLE.json(tkPrompt(),{images:[file],modelTier:'default'});PH.tk=tkMatch(res,file.name||'ticket.jpg')}
@@ -1296,7 +1330,8 @@ async function tkReadFile(file){PH.tk={status:'reading'};renderPhone();
   renderPhone()}
 function tkConfirm(){const tk=PH.tk;if(!tk||tk.status!=='done')return;const f=S.form;const ents=entriesNow();
   const ex=f.lines.find(o=>{const oe=lineEvent(o,ents);return oe&&oe.festId===tk.match.fest&&oe.eventId===tk.match.evId});let lid;
-  if(ex){lid=ex.lid;const ev=lineEvent(ex,ents);const e=ents[ex.entryId];const multi=syncFlights(ex,ev,f.date,e?e.status:null,ex.kind==='cont'&&e?e.days.map(x=>x.day):[]);
+  if(ex&&tk.cont){lid=ex.lid}
+  else if(ex){lid=ex.lid;const ev=lineEvent(ex,ents);const e=ents[ex.entryId];const multi=syncFlights(ex,ev,f.date,e?e.status:null,ex.kind==='cont'&&e?e.days.map(x=>x.day):[]);
     if(multi&&ex.fl&&ex.fl[tk.match.day]){const x=ex.fl[tk.match.day];if(x.on)x.bul=String(ent0(x.bul)+1);else{x.on=true;x.bul='1'}}else ex.bullets=String(ent0(ex.bullets)+1)}
   else{const res=phAddEvent(tk.match.fest,tk.match.evId,tk.match.day);if(res.msg){PH.tk={status:'error',msg:res.msg};renderPhone();return}lid=res.lid}
   const ln=findLine(lid);ln.tickets=(ln.tickets||[]).concat([{name:tk.name,read:tk.res}]);S.dirty=true;PH.tk=null;PH.step='linha:'+lid;render()}
