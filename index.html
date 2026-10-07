@@ -1113,9 +1113,13 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
 // Hoje → Torneios (cada torneio no seu ecrã; Foto do ticket ou Escolher da lista) → Fecho → Resumo.
 // Usa o mesmo estado (S.form) e o mesmo motor (reconcile) que a vista de computador.
 const PH={step:'hoje',tk:null,repick:null,done:false,more:false,tried:{}};
-let SAMPLE=null,SAMPLE_IMG=false;
+let SAMPLE=null,SAMPLE_IMG=false,SAMPLE_ST='a ligar…';
 // Leitura da foto: no claude.ai o Claude lê a imagem (com autorização de quem testa); fora dele, só tickets de exemplo.
-(async()=>{try{if(window.claude&&claude.use){const s=await claude.use('sample');if(s){SAMPLE=s;const lim=await s.limits().catch(()=>null);SAMPLE_IMG=!!(lim&&lim.images);if(isPhoneView())renderPhone()}}}catch(e){}})();
+(async()=>{try{let t=0;while(!(window.claude&&window.claude.use)&&t<50){await new Promise(r=>setTimeout(r,200));t++}
+  if(!(window.claude&&window.claude.use)){SAMPLE_ST='sem claude.ai';return}
+  const s=await window.claude.use('sample');if(!s){SAMPLE_ST='leitura não disponível nesta vista';return}
+  SAMPLE=s;const lim=await s.limits().catch(()=>null);SAMPLE_IMG=!!(lim&&lim.images);SAMPLE_ST=SAMPLE_IMG?'ok':'esta vista não envia imagens'}
+  catch(e){SAMPLE_ST='erro: '+(e&&(e.code||e.message)||e)}finally{if(isPhoneView())renderPhone()}})();
 function isPhoneView(){const p=document.querySelector('[data-view-panel="tel"]');return !!p&&!p.hidden}
 const PH_MAIN=[['hoje','Hoje'],['torneios','Torneios'],['fecho','Dinheiro'],['resumo','Resumo']];
 function phMainOf(st){return st.startsWith('linha:')||st==='lista'||st==='foto'?'torneios':st}
@@ -1202,7 +1206,7 @@ function renderPhone(){
 function phTicketBody(f,cur){
   const tk=PH.tk;let h=`<p class="ls" style="margin-top:0">Tira uma foto ao ticket do casino, ou escolhe na galeria um print da app de inscrição. O tracker lê o torneio e tu confirmas.</p>`;
   h+=`<label class="btn p ph-big">📷 Tirar foto ou escolher da galeria<input type="file" accept="image/*" data-tk="1" hidden></label>`;
-  if(!SAMPLE_IMG)h+=`<div class="msg info" style="margin-top:8px">Nesta página a leitura das fotos é simulada (só no claude.ai o Claude lê fotos a sério). Experimenta com um ticket de exemplo:</div>`;
+  if(!SAMPLE_IMG)h+=`<div class="msg info" style="margin-top:8px">Nesta página a leitura das fotos é simulada (só no claude.ai o Claude lê fotos a sério). Experimenta com um ticket de exemplo:<br><small>Leitura: ${esc(SAMPLE_ST)}</small></div>`;
   else h+=`<div class="ls" style="margin-top:8px">Ou experimenta com um ticket de exemplo:</div>`;
   h+=`<div class="stack" style="gap:8px;margin-top:8px">${tkExamples(f).map((t,i)=>`<button type="button" class="tk" data-act="phTkEx" data-i="${i}"><span class="tk-h">${esc(t.series)}</span><b>EVENT #${esc(t.evn)} · ${esc(t.title)}</b><span>${esc(t.flight)} · ${esc(t.dateTxt)} · ${esc(t.time)}</span><span>BUY-IN ${esc(t.price)} · SEAT ${esc(t.seat)}</span></button>`).join('')||'<p class="hint">Não há torneios neste dia para fazer um exemplo.</p>'}</div>`;
   if(tk){if(tk.status==='reading')h+=`<div class="msg info ph-tkres">A ler o ticket…</div>`;
