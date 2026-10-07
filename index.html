@@ -414,7 +414,7 @@ const roomOf=id=>ROOMS.find(r=>r.id===id)||ROOMS[0];
 const dayName=d=>d==='Único'?'Único dia':d==='FT'?'Final Day':/^1[A-Z]$/.test(d)?'Flight '+d.slice(1):'Day '+d;
 const theDay=d=>d==='Único'?'Este torneio':'O '+dayName(d)+' deste torneio';
 function L(o){return Object.assign({lid:uid('l'),kind:'new',entryId:null,festId:'',eventId:'',manual:false,manualFest:'',manualDate:'',manualName:'',manualBuyIn:'',manualNo:'',notOther:false,day:'',bullets:'1',method:'direto',
-  endState:'',chips:'',left:'',inMoney:false,pos:'',entrants:'',prize:'',receivedIn:'live',wallet:'Luxon USD',walletBy:{},proof:'',proofFile:'',satName:'',satDate:'',picking:false,fl:null,planReason:'',paidBuyIn:null},o)}
+  endState:'',chips:'',left:'',inMoney:false,pos:'',entrants:'',prize:'',receivedIn:'live',wallet:'Luxon USD',walletBy:{},proof:'',proofFile:'',satName:'',satDate:'',picking:false,fl:null,planReason:'',paidBuyIn:null,noProofNote:''},o)}
 function F(o){return Object.assign({room:'live_usd',homeRoom:null,date:'',start:'',end:'',startBalance:0,declaredEnd:'',endSource:'typed',matchedAt:null,diffReason:'',diffFor:null,warmup:false,meditation:false,notes:'',lines:[]},o)}
 // Saldo inicial da sala escolhida: o da sala com que o dia abriu, ou o saldo próprio de cada outra sala.
 function startBal(f){if(!f.homeRoom||f.room===f.homeRoom)return num(f.startBalance)||0;return DEFAULT_BAL[f.room]||0}
@@ -439,6 +439,8 @@ function autoDay(ev,date,kind,status){if(!ev)return '';if(!ev.sched||!ev.sched.l
   if(c.length)return c[0].label;if(ev.flights.length===1&&kind==='new')return ev.flights[0];return ''}
 function contDay(e,date){return contLast(e)?e.last.day:autoDay(e&&e.info,date,'cont',e&&e.status)}
 // Custo: só entradas válidas (inteiras) contam. Um torneio em falta ligado pela gestão mantém o buy-in que o jogador pagou.
+// Fotos juntas a uma linha: cada ticket vale 1 entrada; um print da app pode valer várias ("entradas").
+function lineProofs(line){return (line.tickets||[]).reduce((a,t)=>a+Math.max(1,ent0(t&&t.read&&t.read.entradas)),0)}
 function lineCashCost(line,ev,method){if(!ev)return 0;const b=ent0(line.bullets);const bi=line.paidBuyIn!=null&&num(line.paidBuyIn)>0?num(line.paidBuyIn):ev.buyIn;if(line.kind==='new'&&method!=='direto')return Math.max(0,b-1)*bi;return b*bi}
 function netPrize(line){const p=num(line.prize);return p>0?p:0}
 function flightsLeft(day,ev){if(!ev||day==='Único')return false;const i=ev.flights.indexOf(day);return i>=0&&i<ev.flights.length-1}
@@ -603,9 +605,14 @@ function reconcile(form,entries,level){
     if(outAll)warn(lr.manual?`Pelo buy-in, este torneio fica fora do plano do teu nível (${level}): ${lr.txt}.`:multi&&outFl.length<line._sel.length?`O ${outFl.map(dayName).join(' e o ')} não ${outFl.length===1?'está':'estão'} no plano do teu nível (${level}).`:`Este torneio não está no plano do teu nível (${level}) para esta série.`);
     if(needPlan){if(!String(line.planReason||'').trim())err('Explica porque jogaste este torneio fora do plano do teu nível.');else if(!enough(line.planReason))err(whyShort(line.planReason,'do plano'))}
     if(line.kind==='new'&&line.method!=='direto'){if((String(line.satName||'').match(/[A-Za-zÀ-ú]/g)||[]).length<3||!line.satDate)err('Diz qual foi o satélite ou ticket: nome e dia.');else if(form.date&&line.satDate>form.date)err('O satélite não pode ser depois deste torneio.');else{const fr=festRange(ev&&ev.festId);if(fr&&line.satDate<addDays(fr[0],-30))err(`O satélite tem de ser da série (a partir de ${fmtDate(addDays(fr[0],-30))}).`)}msgs.push(['info','A 1.ª entrada não sai do saldo. A gestão confirma o satélite.'])}
+    // Cada entrada precisa da sua foto (ticket, print da app, email). Sem foto: o jogador explica e a gestão vê.
+    const miss=room.live&&ev?Math.max(0,b-lineProofs(line)):0;
+    if(miss){const nt=String(line.noProofNote||'').trim();const fx=miss===1?'Falta a foto do ticket':`Faltam ${miss} fotos do ticket (uma por entrada)`;
+      if(!nt)err(`${fx}. Junta a foto, ou escreve porque não a tens.`);else if(!enough(nt))err(whyShort(nt,'da falta de foto'));
+      else warn(`Sem foto: ${miss===1?'1 entrada':miss+' entradas'}. A gestão vai ver a tua explicação.`)}
     const c=curOk?lineCashCost(line,ev,method):0;out.cost+=c;out.bullets+=ev&&curOk?b:0;
     if(line.endState==='itm'&&curOk){const np=netPrize(line);if(line.receivedIn==='live')out.prize+=np;else{out.walletPrize+=np;out.pending.push(`O prémio de ${money(np,cur)} (${ev?esc(ev.name):''}) entra já na ${esc(line.wallet)}. Não conta no saldo do Live.`)}}
-    out.perLine[line.lid]={msgs,ev,cost:c,lr,needPlan,multi,repeatLast};msgs.forEach(m=>{(m[0]==='err'?out.errors:out.warns).push(m[1])});
+    out.perLine[line.lid]={msgs,ev,cost:c,lr,needPlan,multi,repeatLast,needProof:miss};msgs.forEach(m=>{(m[0]==='err'?out.errors:out.warns).push(m[1])});
   });
   if(room.live)Object.values(entries).forEach(e=>{if(isOpen(e,form.date)){const s=nextDayToday(e,form.date);if(s&&!form.lines.some(l=>l.entryId===e.id))out.warns.push(`O ${dayName(s.label)} do ${e.info.name} é hoje. Não o jogaste?`)}});
   const sb=startBal(form);out.start=sb;out.declared=num(form.declaredEnd);const dOk=out.declared!==null&&!isNaN(out.declared);
@@ -716,7 +723,9 @@ function loadScen(di,variant,fresh){keepDraft();freshUI();S.src='scen';S.di=di;S
 function loadCase(ci,di,fresh){keepDraft();freshUI();S.src='case';S.ci=ci;S.di=di;S.level=null;S.player='Caso '+CASES[ci].id;takeDraft(fresh,()=>clone(CASES[ci].days[di].form));afterLoad();render()}
 function loadBlank(fresh){keepDraft();freshUI();S.src='blank';S.level=SCEN.level;S.player='Jogador A';takeDraft(fresh,()=>F({date:'2026-11-16',start:'11:00',startBalance:20000,lines:[L({lid:uid('n'),entryId:uid('E'),picking:true})]}));afterLoad();render()}
 function afterLoad(){if(S.form.lines.some(l=>l.picking))openPickerDefaults(S.form);if(S.form.diffReasonAt===undefined)S.form.diffReasonAt=S.form.diffReason||''}
-
+// Os registos de exemplo já trazem uma foto por entrada (a regra da foto vê-se ao juntar torneios novos).
+function seedProofs(form){(form&&form.lines||[]).forEach(l=>{if(l.tickets)return;const fb=l.fl?Object.values(l.fl).reduce((a,x)=>a+(x&&x.on?ent0(x.bul):0),0):0;const n=Math.max(ent0(l.bullets),fb);if(n>0)l.tickets=Array.from({length:n},(_,i)=>({name:'ticket-'+(i+1)+'.jpg',read:{entradas:1}}))})}
+SCEN.days.forEach(d=>Object.values(d).forEach(v=>{if(v&&v.lines)seedProofs(v)}));CASES.forEach(c=>c.days.forEach(d=>seedProofs(d.form)));
 /* ---------------- render jogador ---------------- */
 function renderLoader(){
   let h='<span class="ls" style="margin-right:4px">Dias da simulação:</span>';
@@ -850,6 +859,7 @@ function renderLine(line,entries,cur,f){
         ${line.endState==='busted'&&flightsLeft(line.day,ev)?`<div class="hint">Ainda há flights até ${fmtDate(lastFlightDate(ev))}: o torneio fica em aberto, caso re-entres.</div>`:''}</div>`;
     }
     h+=satFields;
+    h+=`<div id="proof-${k}" hidden><label class="l" for="${k}-nopr"><span id="proof-t-${k}">Falta a foto do ticket</span>. Junta-a no telemóvel, ou explica porque não a tens <span class="req">*</span></label><textarea class="i" id="${k}-nopr" rows="2" data-f="l.${k}.noProofNote" placeholder="Ex.: o ticket ficou no casaco e a app do casino não mostra entradas antigas">${esc(line.noProofNote)}</textarea></div>`;
     h+=`<div id="plan-${k}" hidden><label class="l" for="${k}-plan">Porque jogaste fora do plano do teu nível? <span class="req">*</span></label><textarea class="i" id="${k}-plan" rows="2" data-f="l.${k}.planReason" placeholder="Ex.: autorizado pelo coach no grupo da série">${esc(line.planReason)}</textarea></div>`;
     if(line.endState==='bagged')h+=`<div class="row c3"><div><label class="l" for="${k}-ch">Fichas no saco <span class="req">*</span></label><input class="i num" id="${k}-ch" value="${esc(line.chips)}" data-f="l.${k}.chips" data-kind="int" inputmode="numeric" autocomplete="off"></div>
         <div><label class="l" for="${k}-lf">Jogadores restantes <span class="req">*</span></label><input class="i num" id="${k}-lf" value="${esc(line.left)}" data-f="l.${k}.left" data-kind="int" inputmode="numeric" autocomplete="off"></div>
@@ -907,6 +917,7 @@ function updateDerived(){
     if(box)box.innerHTML=ms.length&&!line.picking?`<div class="msgs" style="padding:0 12px 12px">${ms.map(m=>`<div class="msg ${m[0]}">${m[1]}</div>`).join('')}</div>`:'';
     const c=document.getElementById('cost-'+line.lid);if(c)c.textContent=money(pl.cost,cur);
     const pb=document.getElementById('plan-'+line.lid);if(pb)pb.hidden=!pl.needPlan;
+    const prb=document.getElementById('proof-'+line.lid);if(prb){prb.hidden=!pl.needProof;const pt=document.getElementById('proof-t-'+line.lid);if(pt)pt.textContent=pl.needProof>1?`Faltam ${pl.needProof} fotos do ticket`:'Falta a foto do ticket'}
     [['pr','prize'],['mb','manualBuyIn']].forEach(([s2,fld])=>{const el=document.getElementById('rd-'+line.lid+'-'+s2);if(!el)return;const fx=r.fix[line.lid+'|'+fld];const n=num(line[fld]);
       const was=el._h;setH(el,fx?`<div class="msg warn" style="margin-top:4px">Os milhares escrevem-se sem ponto. Querias ${money(num(fx),cur)}? ${fixBtn(line.lid+'|'+fld,fx,cur)}</div>`:n>0?'lido como <b>'+money(n,cur)+'</b>':'');
       if(fx&&was!==el._h){const ae=document.activeElement;if(ae&&ae.dataset&&ae.dataset.f==='l.'+line.lid+'.'+fld)el.scrollIntoView({block:'nearest'})}});
@@ -963,6 +974,7 @@ function buildPayload(f,entries,r){
     if(line.endState==='bagged')Object.assign(d,{chips:isInt(line.chips)?intOr0(line.chips):null,players_left:isInt(line.left)?intOr0(line.left):null,in_the_money:!!line.inMoney});
     if(line.endState==='itm')Object.assign(d,{final_position:isInt(line.pos)?intOr0(line.pos):null,entrants:isInt(line.entrants)?intOr0(line.entrants):null,prize_received:num(line.prize)>0?num(line.prize):null,prize_paid_in:line.receivedIn==='live'?'live_cash':'wallet',prize_wallet:line.receivedIn==='live'?null:line.wallet,proof_url:linkOk(line.proof)?normLink(line.proof):null,proof_photo:line.proofFile||null});
     if(pl.needPlan&&String(line.planReason||'').trim())d.plan_reason=String(line.planReason).trim();
+    d.ticket_photos=(line.tickets||[]).map(t=>({file:t.name,entries:Math.max(1,ent0(t.read&&t.read.entradas))}));if(pl.needProof){d.entries_without_photo=pl.needProof;d.no_photo_reason=String(line.noProofNote||'').trim()||null}
     return d})};
   return p;
 }
@@ -1242,6 +1254,8 @@ function phLineBody(line,ev,ents,r,cur){
       <div class="ph-q">Como recebeste?</div><div class="seg two" role="group"><button type="button" data-act="recv" data-lid="${k}" data-v="live" aria-pressed="${line.receivedIn==='live'}">Em dinheiro</button><button type="button" data-act="recv" data-lid="${k}" data-v="transfer" aria-pressed="${line.receivedIn==='transfer'}">Transferência</button></div>
       ${line.receivedIn==='transfer'?`<label class="l" for="p-wal" style="margin-top:8px">Para que carteira?</label><select class="i" id="p-wal" data-f="l.${k}.wallet">${walletsFor(cur).map(w=>opt(w,w,line.wallet)).join('')}</select>`:''}
       <div class="ph-q">Prova do prémio</div>${line.proofFile?`<div style="display:flex;gap:6px;align-items:center"><span class="chip ok">Foto: ${esc(line.proofFile)}</span><button type="button" class="btn sm" data-act="rmPhoto" data-lid="${k}">Tirar</button></div>`:`<label class="btn ph-big">📷 Foto do talão ou dos resultados<input type="file" accept="image/*" data-photo="${k}" hidden></label><input class="i" id="p-pf" value="${esc(line.proof)}" data-f="l.${k}.proof" placeholder="ou um link https://" inputmode="url" autocomplete="off" style="margin-top:6px">`}`}
+    h+=`<div id="p-proof" class="msg warn" hidden style="margin-top:10px"><b id="p-proof-t">Falta a foto do ticket</b><div class="ls">Cada entrada precisa da sua foto: ticket, print da app ou email.</div><button type="button" class="btn p ph-big" data-act="phGo" data-v="foto" style="margin-top:8px">📷 Juntar a foto</button><label class="l" for="p-nopr" style="margin-top:8px">Não tens a foto? Explica porquê <span class="req">*</span></label><textarea class="i" id="p-nopr" rows="2" data-f="l.${k}.noProofNote" placeholder="Ex.: o ticket ficou no casaco e a app do casino não mostra entradas antigas">${esc(line.noProofNote)}</textarea></div>`;
+    if(lineProofs(line))h+=`<div class="ls" style="margin-top:6px">📎 ${lineProofs(line)===1?'1 foto junta':lineProofs(line)+' fotos juntas'}</div>`;
     h+=`<div id="p-plan" hidden><label class="l" for="p-planr">Porque jogaste fora do plano do teu nível? <span class="req">*</span></label><textarea class="i" id="p-planr" rows="2" data-f="l.${k}.planReason" placeholder="Ex.: autorizado pelo coach no grupo da série">${esc(line.planReason)}</textarea></div>`;
   }
   h+=`<div id="p-lmsgs" class="msgs" style="margin-top:10px"></div>`;
@@ -1291,7 +1305,7 @@ function tkExamples(f){const cands=tkCandidates().filter(c=>c.fl.some(s=>s.date=
 function tkPrompt(){const c=tkCandidates().map(x=>({festival:x.fest.name,no:'Ev. '+evNum(x.e),name:x.e.name,buy_in:x.e.buyIn,moeda:x.fest.currency,dias:x.fl.map(s=>({label:s.label,date:s.date,time:s.time}))}));
   return 'Esta imagem devia mostrar um ou mais tickets de inscrição em torneios de poker live, cartões de lugar, ou um print da app/email de inscrição. Lê-a e transcreve o que lá está.\n'
    +'Pode haver VÁRIOS torneios ou entradas na mesma imagem (vários tickets na mesa, ou uma app com uma lista de inscrições): devolve UM objeto por entrada, incluindo entradas já eliminadas (também foram pagas).\n'
-   +'Responde só com JSON: {"tickets": [ {"series": string|null (festival, série ou casino), "kind": "inscricao"|"lugar" ("inscricao" = uma entrada ou re-entry; "lugar" = só o lugar de um dia seguinte, Day 2/Final Day, sem pagamento), "event_no": string|null, "event_name": string|null, "flight": string|null (ex.: "1B", "2", "FT", "Único"), "date": "YYYY-MM-DD"|null, "buy_in": number|null (o valor da entrada, na moeda do ticket), "currency": string|null (código ISO, ex.: "EUR", "USD", "TWD"), "reentry": boolean, "pago_com": "dinheiro"|"voucher"|null ("voucher" = entrada paga com voucher, ticket ou lugar ganho num satélite), "voucher_origem": string|null (de onde veio o voucher, ex.: "Satélite #S12"), "voucher_data": "YYYY-MM-DD"|null (dia em que o voucher foi ganho), "estado": "inscrito"|"eliminado"|null, "confidence": "alta"|"media"|"baixa"} ], "texto": string (as linhas principais que leste)}.\n'
+   +'Responde só com JSON: {"tickets": [ {"series": string|null (festival, série ou casino), "kind": "inscricao"|"lugar"|"nota" ("inscricao" = uma entrada ou re-entry; "lugar" = só o lugar de um dia seguinte, Day 2/Final Day, sem pagamento; "nota" = escrito pelo próprio jogador, numa nota do telemóvel ou num papel dele, e não um documento do casino, da app ou do email), "entradas": number (quantas entradas esta linha ou este ticket representa; um ticket é 1; uma app pode mostrar "Entries: 2"), "event_no": string|null, "event_name": string|null, "flight": string|null (ex.: "1B", "2", "FT", "Único"), "date": "YYYY-MM-DD"|null, "buy_in": number|null (o valor da entrada, na moeda do ticket), "currency": string|null (código ISO, ex.: "EUR", "USD", "TWD"), "reentry": boolean, "pago_com": "dinheiro"|"voucher"|null ("voucher" = entrada paga com voucher, ticket ou lugar ganho num satélite), "voucher_origem": string|null (de onde veio o voucher, ex.: "Satélite #S12"), "voucher_data": "YYYY-MM-DD"|null (dia em que o voucher foi ganho), "estado": "inscrito"|"eliminado"|null, "confidence": "alta"|"media"|"baixa"} ], "texto": string (as linhas principais que leste)}.\n'
    +'Se a imagem não tiver nenhum ticket, lugar ou inscrição num torneio (talão de restaurante, prémio, estrutura, cartaz, transferência, cash game…), responde {"tickets": [], "texto": "não é um ticket"}.\n'
    +'Transcreve o que está na imagem: não escolhas nem corrijas para um torneio da lista. Se um campo não se lê, põe null.\n'
    +'Torneios do catálogo destes dias (só para te ajudar a ler nomes cortados ou desfocados): '+JSON.stringify(c)}
@@ -1310,6 +1324,7 @@ function tkScore(res,c){const why=[];let s=0,hard=false;
   const fl=tkNormFlight(res.flight);if(fl&&fl!=='Único'&&c.fl.some(x=>x.label===fl)){s+=1;why.push('dia')}
   return {c,s,hard,why,id:!!(no&&why.includes('número'))||why.includes('nome')||why.includes('parte do nome')}}
 function tkMatch(res,name){const f=S.form;res=res||{};
+  if(res.kind==='nota')return {status:'error',res,name,msg:'Isto é uma nota escrita por ti, não um ticket do casino. Escolhe o torneio da lista e explica porque não tens a foto.'};
   if(!res.event_no&&!res.event_name)return {status:'error',res,name,msg:res.kind==='outro'||/não é um ticket/i.test(res.texto||'')?'Isto não parece um ticket nem uma inscrição num torneio. Tira outra foto ou escolhe da lista.':'Não consigo ler o nome nem o número do torneio. Tira uma foto ao ticket inteiro, ou escolhe da lista.'};
   const lbl=`"${res.event_name||res.event_no}"`;
   const fd=d=>d.slice(0,4)!==f.date.slice(0,4)?fmtDate(d)+'/'+d.slice(0,4):fmtDate(d);const rc=roomOf(f.room);const cu=String(res.currency||'').toUpperCase();
@@ -1346,12 +1361,14 @@ async function tkReadFile(file){PH.tk={status:'reading'};renderPhone();
 function tkConfirmOne(tk){const f=S.form;const ents=entriesNow();
   const ex=f.lines.find(o=>{const oe=lineEvent(o,ents);return oe&&oe.festId===tk.match.fest&&oe.eventId===tk.match.evId});let lid;
   if(ex&&tk.cont){lid=ex.lid}
+  else if(ex&&!(tk.res&&tk.res.reentry)&&lineProofs(ex)<ent0(ex.bullets)){lid=ex.lid}
   else if(ex){lid=ex.lid;const ev=lineEvent(ex,ents);const e=ents[ex.entryId];const multi=syncFlights(ex,ev,f.date,e?e.status:null,ex.kind==='cont'&&e?e.days.map(x=>x.day):[]);
     if(multi&&ex.fl&&ex.fl[tk.match.day]){const x=ex.fl[tk.match.day];if(x.on)x.bul=String(ent0(x.bul)+1);else{x.on=true;x.bul='1'}}else ex.bullets=String(ent0(ex.bullets)+1)}
   else{const res=phAddEvent(tk.match.fest,tk.match.evId,tk.match.day);if(res.msg)return {msg:res.msg};lid=res.lid}
   const ln=findLine(lid);
   // Voucher ou ticket de satélite: a 1.ª entrada não é buy-in pago (usa o "Entrei com satélite/ticket" que já existe).
   if(tk.voucher&&ln.kind==='new'&&ent0(ln.bullets)<=1){ln.method='satelite';ln.satName=tk.res.voucher_origem||ln.satName||'';ln.satDate=tk.res.voucher_data||ln.satDate||''}
+  const nE=Math.max(1,ent0(tk.res&&tk.res.entradas));if(nE>1&&!tk.cont&&!ex&&!ln.fl)ln.bullets=String(nE);
   ln.tickets=(ln.tickets||[]).concat([{name:tk.name,read:tk.res}]);S.dirty=true;return {lid}}
 function tkConfirm(){const tk=PH.tk;if(!tk||tk.status!=='done')return;const r=tkConfirmOne(tk);if(r.msg){PH.tk={status:'error',msg:r.msg};renderPhone();return}
   PH.tk=null;PH.step='linha:'+r.lid;render()}
@@ -1403,6 +1420,7 @@ function updatePhone(r){if(!isPhoneView()||!document.getElementById('ph-body'))r
   if(PH.step.startsWith('linha:')){const lid=PH.step.slice(6);const line=findLine(lid);const pl=r.perLine[lid];
     if(line&&pl){const show=S.submitted||PH.tried[lid];setH(g('p-lmsgs'),pl.msgs.filter(m=>m[0]!=='err'||show).map(m=>`<div class="msg ${m[0]}">${m[1]}</div>`).join(''));
       if(g('p-plan'))g('p-plan').hidden=!pl.needPlan;
+      if(g('p-proof')){g('p-proof').hidden=!pl.needProof;if(g('p-proof-t'))g('p-proof-t').textContent=pl.needProof>1?`Faltam ${pl.needProof} fotos do ticket`:'Falta a foto do ticket'}
       [['p-rd-pr','prize'],['p-rd-mb','manualBuyIn']].forEach(([id,fld])=>{const el=g(id);if(!el)return;const fx=r.fix[lid+'|'+fld];const n=num(line[fld]);setH(el,fx?`<div class="msg warn" style="margin-top:4px">Os milhares escrevem-se sem ponto. Querias ${money(num(fx),cur)}? ${fixBtn(lid+'|'+fld,fx,cur)}</div>`:n>0?'lido como <b>'+money(n,cur)+'</b>':'')});
       if(g('p-fltot'))setH(g('p-fltot'),`Total hoje: <b>${line.bullets}</b> ${num(line.bullets)===1?'entrada':'entradas'} · ${money(pl.cost,cur)}`)}}
   const nErr=[...new Set(r.errors)].length;const pend=Object.keys(r.fix).length>0;
@@ -1426,14 +1444,14 @@ const GDATA=[
 ];
 let GS={filter:'all',sel:null,resolved:{},pending:{},player:'all',confirmed:{},satOk:{},satNo:{}};
 function gAll(){
-  const out=[];const diffs=[];const plans=[];const lastReg={};const matched=[];
+  const out=[];const diffs=[];const plans=[];const noPhoto=[];const lastReg={};const matched=[];
   GDATA.forEach(src=>{src.days.forEach((d,i)=>{const r=reconcile(d.form,buildEntries(src.days.slice(0,i)),src.level);if(r.diff)diffs.push({player:src.player,date:d.form.date,expected:r.expected,declared:r.declared,diff:r.diff,reason:d.form.diffReason});
       if(!lastReg[src.player]||d.form.date>lastReg[src.player])lastReg[src.player]=d.form.date;
       if(d.form.endSource==='match_button')matched.push({player:src.player,date:d.form.date,declared:r.declared,manual:d.form.lines.some(l=>l.manual)});
-      d.form.lines.forEach(l=>{const pl=r.perLine[l.lid];if(pl&&pl.needPlan)plans.push({key:src.player+'|'+l.entryId,player:src.player,level:src.level,date:d.form.date,name:pl.ev?pl.ev.name:'',rule:pl.lr?pl.lr.txt:'',reason:l.planReason})})});
+      d.form.lines.forEach(l=>{const pl=r.perLine[l.lid];if(pl&&pl.needPlan)plans.push({key:src.player+'|'+l.entryId,player:src.player,level:src.level,date:d.form.date,name:pl.ev?pl.ev.name:'',rule:pl.lr?pl.lr.txt:'',reason:l.planReason});if(pl&&pl.needProof)noPhoto.push({key:src.player+'|'+l.entryId,n:pl.needProof,reason:l.noProofNote,date:d.form.date})})});
     Object.values(settle(buildEntries(src.days),G_TODAY)).forEach(e=>{if(!e.info)return;const key=src.player+'|'+e.id;const res=GS.resolved[key];if(GS.satNo[key])e.cost+=e.info.buyIn;
       out.push(Object.assign({key,player:src.player,level:src.level,src,resolved:res},e))})});
-  return {entries:out,diffs,plans,lastReg,matched};
+  return {entries:out,diffs,plans,lastReg,matched,noPhoto};
 }
 const ALERT_MARGIN_DAYS=3;
 function gLine(key){const [pl,id]=key.split('|');const src=GDATA.find(g=>g.player===pl);if(!src)return null;const lines=src.days.flatMap(d=>d.form.lines);const res=GS.resolved[key];return {src,line:(res&&res.lid&&lines.find(l=>l.lid===res.lid))||lines.find(l=>l.entryId===id)}}
@@ -1442,7 +1460,7 @@ function gAlert(e){if(e.status!=='open')return '';
   return ''}
 function gToday(e){return e.status==='open'||e.status==='reentry'?nextDayToday(e,G_TODAY):null}
 function renderGestao(){
-  const {entries,diffs,plans,lastReg,matched}=gAll();const cur='USD';const planKeys=new Set(plans.map(p=>p.key));
+  const {entries,diffs,plans,lastReg,matched,noPhoto}=gAll();const cur='USD';const planKeys=new Set(plans.map(p=>p.key));
   const open=entries.filter(e=>e.status==='open'||e.status==='reentry');
   const missing=entries.filter(e=>e.manual&&!e.resolved);const alerts=entries.filter(e=>gAlert(e));
   const today=entries.filter(e=>gToday(e));const todayPl=[...new Set(today.map(e=>e.player))];
@@ -1479,6 +1497,7 @@ function renderGestao(){
     dbox.innerHTML=`<div><div class="ls">${esc(e.player)} · nível ${esc(e.level)} · ${esc(e.info.festName||'')}</div><h3>${esc(e.info.name)} <span class="chip ${st[1]}">${st[0]}</span></h3><div class="ls">Buy-in ${money(e.info.buyIn,cur)}${e.paidBuyIn!=null&&num(e.paidBuyIn)!==e.info.buyIn?` (o jogador pagou ${money(num(e.paidBuyIn),cur)})`:''}${e.paidMix!=null?` (num dos dias pagou ${money(num(e.paidMix),cur)})`:''} · ${e.bullets} ${e.bullets===1?'entrada':'entradas'} · custo ${money(e.cost,cur)}${e.method!=='direto'?' · entrou com satélite/ticket':''}</div></div>
       <div class="tl">${e.days.map(d=>`<div class="ev"><div><b>${fmtDate(d.date)}</b> · ${dayName(d.day)}${d.bullets?` · ${d.bullets} ${d.bullets===1?'entrada':'entradas'}`:''}</div><div class="ls">${d.endState==='bagged'?`passou com ${NF.format(intOr0(d.chips))}${d.left?' · restam '+esc(d.left):''}${d.inMoney?' · já nos prémios':''}`:d.endState==='busted'?'eliminado sem prémio':`${esc(d.pos)}.º${d.entrants?' de '+esc(d.entrants):''} · prémio ${money(num(d.prize),cur)}${d.receivedIn==='transfer'?' na '+esc(d.wallet||'carteira'):' em dinheiro'}`}</div></div>`).join('')}</div>
       ${planKeys.has(e.key)?`<div class="msg info">Fora do plano do nível. Explicação: ${esc(e.planReason||'—')}</div>`:''}
+      ${noPhoto.filter(x=>x.key===e.key).map(x=>`<div class="msg warn">Sem foto do ticket (${fmtDate(x.date)}, ${x.n===1?'1 entrada':x.n+' entradas'}). Explicação: ${esc(x.reason||'—')}</div>`).join('')}
       ${e.method!=='direto'?`<div class="msg ${GS.satOk[e.key]?'':'warn'}" style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><span>Entrou com satélite/ticket: <b>${esc(e.satName||'—')}</b>${e.satDate?' a '+fmtDate(e.satDate):''}.${GS.satOk[e.key]?' Confirmado por '+esc(GS.satOk[e.key].by)+' a '+esc(GS.satOk[e.key].at)+'.':''}${GS.satNo[e.key]?` Recusado por ${esc(GS.satNo[e.key].by)} a ${esc(GS.satNo[e.key].at)}: a 1.ª entrada (${money(e.info.buyIn,cur)}) volta a contar e o jogador é avisado.`:''}</span><span style="display:flex;gap:6px">${GS.satOk[e.key]||GS.satNo[e.key]?`<button type="button" class="btn sm" data-act="${GS.satOk[e.key]?'gsat':'gsatNo'}" data-key="${esc(e.key)}">Desfazer</button>`:`<button type="button" class="btn sm p" data-act="gsat" data-key="${esc(e.key)}">Confirmar satélite</button><button type="button" class="btn sm" data-act="gsatNo" data-key="${esc(e.key)}">Recusar</button>`}</span></div>`:''}
       ${gAlert(e)?`<div class="msg warn">Alerta: ${esc(gAlert(e))} Confirmar com o jogador.</div>`:''}
       ${e.proofFile?`<div class="ls">Prova: foto ${esc(e.proofFile)}</div>`:e.proof?`<div class="ls">Prova: ${esc(e.proof)}${proofOk(e.proof)?'':' <span class="chip warn">não é link https://</span>'}</div>`:''}`}
@@ -1512,7 +1531,8 @@ function renderGestao(){
    ${matched.length?`<p class="hint" style="margin:0">Saldo final pelo "Bate certo" (não foi escrito): ${matched.map(m=>esc(m.player)+' a '+fmtDate(m.date)+(m.manual?' <span class="chip warn" style="padding:0 6px">com torneio à mão</span>':'')).join(', ')}.</p>`:''}
    <div class="scroll"><table class="t"><thead><tr><th>Dia</th><th>Jogador</th><th class="n">Esperado</th><th class="n">Declarado</th><th class="n">Diferença</th><th>Explicação</th></tr></thead><tbody>${diffs.map(d=>`<tr><td>${fmtDate(d.date)}</td><td>${esc(d.player)}</td><td class="n">${money(d.expected,cur)}</td><td class="n">${money(d.declared,cur)}</td><td class="n">${signed(d.diff,cur)}</td><td>${esc(d.reason)}</td></tr>`).join('')||'<tr><td colspan="6" class="hint">Nenhuma.</td></tr>'}</tbody></table></div>`;
 }
-
+GDATA.forEach(src=>src.days.forEach(d=>seedProofs(d.form)));
+GDATA.forEach(src=>src.days.forEach(d=>d.form.lines.forEach(l=>{if(l.lid==='gd1'){l.tickets=[];l.noProofNote='O ticket molhou-se e ficou ilegível; a app do casino não guarda o recibo.'}})));
 /* ---------------- casos (IT) ---------------- */
 function renderCases(){
   let h='';
