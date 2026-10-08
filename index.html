@@ -1137,9 +1137,18 @@ let SAMPLE=null,SAMPLE_IMG=false,SAMPLE_ST='a ligar…';
 function isPhoneView(){const p=document.querySelector('[data-view-panel="tel"]');return !!p&&!p.hidden}
 const PH_MAIN=[['hoje','Hoje'],['torneios','Torneios'],['fecho','Dinheiro'],['resumo','Resumo']];
 function phMainOf(st){return st.startsWith('linha:')||st==='lista'||st==='foto'?'torneios':st}
-// Nas listas do telemóvel: sem "[Event N]" e sem as descrições longas entre parênteses ("(3 Flops, 2 Turns, …)").
-// Parênteses curtos ficam, porque dizem o que o torneio é: "(TWD 4,000 Bounty)", "(64 Cap)".
-const shortName=n=>String(n||'').replace(/^\[Event \d+\]\s*/,'').replace(/\s*\([^()]{21,}\)/g,'').trim();
+// Nas listas do telemóvel, só o que identifica o torneio. Sai: "[Event N]", patrocínios, regras de entradas
+// ("1 Re-Entry", "Two Total Entries Allowed", "Best of 3 all rounds") e descrições entre parênteses.
+// Ficam os parênteses que dizem dinheiro ou limite: "(TWD 4,000 Bounty)", "(64 Cap)". O nome completo continua a ser o usado nas contas e na leitura.
+const shortName=n=>String(n||'').replace(/^\[Event \d+\]\s*/,'')
+  .replace(/\s*-\s*(Sponsored|Presented|Powered) by .*$/i,'')
+  .replace(/\s*-\s*(\d+|Single|Double|Triple|Unlimited) Re-?Entr(y|ies)\b/gi,'')
+  .replace(/\s*-\s*\w+ Total Entries Allowed/gi,'')
+  .replace(/\s*-\s*Best of \d+ all rounds/gi,'')
+  .replace(/\s*-\s*All In or Fold!?/gi,'')
+  .replace(/\s*\(([^()]*)\)/g,(m,x)=>/TWD|USD|EUR|\$|€|Cap\b/i.test(x)&&x.length<=24?m:'')
+  .replace(/^Hyper Turbo Home Games - NL( -)? Hold'em - /,'Hyper Turbo Home Games - ')
+  .replace(/\s{2,}/g,' ').trim();
 const evNum=e=>{const m=String(e.name||'').match(/\[Event (\d+)\]/);return m?m[1]:String(e.no||'').replace(/\D/g,'')};
 function phLines(){return S.form.lines.filter(l=>!(l.kind==='new'&&l.picking&&!l.eventId&&!l.manual))}
 function phLineErrs(r,l){const pl=r.perLine[l.lid];return pl?pl.msgs.filter(m=>m[0]==='err').length:0}
