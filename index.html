@@ -1185,7 +1185,7 @@ function renderPhone(){
     const ls=phLines();
     if(S.removed.length){const x=S.removed[S.removed.length-1];h+=`<div class="msg info" style="display:flex;justify-content:space-between;align-items:center;gap:8px">Removido: ${esc(shortName((lineEvent(x.line,entriesNow())||{name:'torneio'}).name))}${S.removed.length>1?` (e mais ${S.removed.length-1})`:''}<button type="button" class="btn sm" data-act="undoRm">Desfazer</button></div>`}
     h+=`<div class="ph-q">Os teus torneios de hoje</div>`;
-    h+=ls.length?ls.map(l=>{const n=phLineErrs(r,l);const ev=lineEvent(l,ents);return `<button type="button" class="ph-card ph-lcard" data-act="phGo" data-v="linha:${l.lid}"><span><span class="lt">${ev?esc(shortName(ev.name)):l.manual?'Torneio em falta':'Torneio'}</span><span class="ls" style="display:block">${esc(phLineSummary(l,ents))}</span></span><span class="chip ${n?(S.submitted||PH.tried[l.lid]?'err':''):'ok'}">${n?'falta '+n:'✓'}</span></button>`}).join(''):`<p class="hint">Ainda sem torneios hoje.</p>`;
+    h+=ls.length?ls.map(l=>{const n=phLineErrs(r,l);const ev=lineEvent(l,ents);return `<button type="button" class="ph-card ph-lcard" data-act="phGo" data-v="linha:${l.lid}"><span><span class="lt">${ev?esc(shortName(ev.name)):l.manual?'Torneio em falta':'Torneio'}</span><span class="ls" style="display:block">${esc(phLineSummary(l,ents))}</span></span><span class="chip ${n?(S.submitted||PH.tried[l.lid]?'err':''):'ok'}">${n?esc(phMissTxt((r.perLine[l.lid]?r.perLine[l.lid].msgs:[]).filter(m=>m[0]==='err').map(m=>m[1]))):'✓'}</span></button>`}).join(''):`<p class="hint">Ainda sem torneios hoje.</p>`;
     h+=`<div class="ph-add"><button type="button" class="btn p ph-big" data-act="phGo" data-v="foto">📷 Foto do ticket</button><button type="button" class="btn ph-big" data-act="phList">Escolher da lista</button><button type="button" class="ph-link" data-act="phMissing">Não está na lista? Falta um torneio</button></div>`;
     body=h;
     foot=`<button type="button" class="btn p ph-main" data-act="phGo" data-v="fecho">Seguinte</button>`;
@@ -1218,6 +1218,12 @@ function renderPhone(){
   if(st==='foto'&&PH.tk){const t=document.querySelector('#phone .ph-tkres');if(t)t.scrollIntoView({block:'nearest'})}
 }
 function tkCostTxt(tk,pe,cur){return tk.cont?'<b>dia seguinte</b> da entrada que já tens (sem buy-in)':tk.voucher?`<b>pago com voucher</b>${tk.res.voucher_origem?' ('+esc(tk.res.voucher_origem)+')':''}: não sai do saldo`:'buy-in '+money(pe.buyIn,cur)}
+// O que falta, dito numa ou duas palavras (para os avisos curtos da lista e do rodapé).
+function phMissLabel(m){m=String(m||'').replace(/<[^>]+>/g,'');
+  return /como acabou/i.test(m)?'como acabou':/foto do ticket|fotos do ticket|falta de foto/i.test(m)?'foto do ticket':/prova/i.test(m)?'prova do prémio':/fichas/i.test(m)?'fichas no saco':
+    /plano/i.test(m)?'explicação do plano':/saldo final|saldo.*mal escrito|sem \$|milhares/i.test(m)?'saldo final':/diferença/i.test(m)?'motivo da diferença':/satélite/i.test(m)?'satélite':
+    /prémio|lugar|posição|jogadores/i.test(m)?'prémio':/entradas/i.test(m)?'entradas':/hora de fim|fim/i.test(m)?'hora de fim':/hora/i.test(m)?'hora de início':/sala/i.test(m)?'sala':'um dado'}
+function phMissTxt(list){const u=[...new Set(list.map(phMissLabel))];return u.length?'Falta: '+u[0]+(u.length>1?' +'+(u.length-1):''):''}
 function phTicketBody(f,cur){
   const tk=PH.tk;let h=`<p class="ls" style="margin-top:0">Tira uma foto ao ticket do casino, ou escolhe na galeria um print da app de inscrição. O tracker lê o torneio e tu confirmas.</p>`;
   const rl=RL&&!SAMPLE_IMG;if(rl){h+=`<div class="msg info" style="margin-bottom:8px"><b>Leitura real.</b> A foto vai para o leitor da Polarize e a resposta chega em cerca de 40 segundos.<br><small id="p-rlst">${esc(rlSeenTxt())}</small></div><label class="l" for="p-rlcode">Código de teste</label><input class="i" id="p-rlcode" value="${esc(rlCode())}" autocomplete="off" autocapitalize="characters" style="margin-bottom:8px">`;setTimeout(rlLeitor,0)}
@@ -1450,7 +1456,7 @@ function updatePhone(r){if(!isPhoneView()||!document.getElementById('ph-body'))r
       [['p-rd-pr','prize'],['p-rd-mb','manualBuyIn']].forEach(([id,fld])=>{const el=g(id);if(!el)return;const fx=r.fix[lid+'|'+fld];const n=num(line[fld]);setH(el,fx?`<div class="msg warn" style="margin-top:4px">Os milhares escrevem-se sem ponto. Querias ${money(num(fx),cur)}? ${fixBtn(lid+'|'+fld,fx,cur)}</div>`:n>0?'lido como <b>'+money(n,cur)+'</b>':'')});
       if(g('p-fltot'))setH(g('p-fltot'),`Total hoje: <b>${line.bullets}</b> ${num(line.bullets)===1?'entrada':'entradas'} · ${money(pl.cost,cur)}`)}}
   const nErr=[...new Set(r.errors)].length;const pend=Object.keys(r.fix).length>0;
-  if(g('p-footInfo'))setH(g('p-footInfo'),`<span>Esperado <b>${pend?'—':money(r.expected,cur)}</b></span>${dOk?`<span>Diferença <b>${pend||r.diff==null?'—':signed(r.diff,cur)}</b></span>`:''}${PH.step==='resumo'||S.submitted?(nErr?`<span class="chip ${S.submitted?'err':''}">falta ${nErr}</span>`:'<span class="chip ok">✓</span>'):''}`)}
+  if(g('p-footInfo'))setH(g('p-footInfo'),`<span>Esperado <b>${pend?'—':money(r.expected,cur)}</b></span>${dOk?`<span>Diferença <b>${pend||r.diff==null?'—':signed(r.diff,cur)}</b></span>`:''}${PH.step==='resumo'||S.submitted?(nErr?`<span class="chip ${S.submitted?'err':''}">${esc(phMissTxt(r.errors))}</span>`:'<span class="chip ok">✓</span>'):''}`)}
 
 /* ---------------- gestão (APT, "hoje" = 21/11) ---------------- */
 const G_TODAY='2026-11-21';
