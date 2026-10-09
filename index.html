@@ -1196,7 +1196,7 @@ function renderPhone(){
     body=`${asks.length?`<div class="msg warn" style="margin-bottom:10px"><b>A gestão pediu a foto do ticket</b> de ${asks.length===1?'um torneio':asks.length+' torneios'} sem foto. Junta-a no registo desse dia.</div>`:''}<div class="ph-q">Quando jogaste?</div>
       <label class="l" for="p-date">Data da sessão</label><input class="i" id="p-date" type="date" value="${esc(f.date)}" data-f="f.date"><div class="hint" id="p-dateHint">${dh}</div>
       <div class="row c2 ph-row">${phField('p-start','Início','f.start',f.start,'time','numeric',true)}${phField('p-end','Fim','f.end',f.end,'time','numeric',true)}</div>
-      <div class="hint">Escreve só os números: 2130 → 21:30.</div>
+      <div class="hint">Escreve só os números: 2130 → 21:30.</div><div class="hint" id="p-dur" style="font-weight:600"></div>
       <div id="p-timeMsgs" class="msgs"></div>
       <div class="ph-q">Em que sala?</div>
       <div class="seg two" role="group">${ROOMS.map(x=>`<button type="button" data-act="phRoom" data-v="${x.id}" aria-pressed="${f.room===x.id}">${x.name}</button>`).join('')}</div>
@@ -1483,6 +1483,7 @@ function updatePhone(r){if(!isPhoneView()||!document.getElementById('ph-body'))r
     const tfix=['start','end'].map(k=>r.fix['f|'+k]?`<div class="msg warn">${k==='start'?'Início':'Fim'} "${esc(f[k])}": querias <button type="button" class="btn sm p" data-act="fixTime" data-k="${k}" data-val="${r.fix['f|'+k][0]}">${r.fix['f|'+k][0]}</button> ou <button type="button" class="btn sm p" data-act="fixTime" data-k="${k}" data-val="${r.fix['f|'+k][1]}">${r.fix['f|'+k][1]}</button>?</div>`:'').join('');
     setH(g('p-timeMsgs'),tfix+['#f-date','#f-start','#f-end'].flatMap(fe).map(x=>`<div class="msg err">${esc(x)}</div>`).join('')+r.timeWarns.map(w=>`<div class="msg warn">${esc(w)}</div>`).join(''))}
   if(g('p-dateHint')){let dh='';if(/^\d{4}-\d\d-\d\d$/.test(f.date||'')){try{dh=new Date(f.date+'T12:00:00Z').toLocaleDateString('pt-PT',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'})}catch(x){}}setH(g('p-dateHint'),dh)}
+  if(g('p-dur')){const a=normTime(f.start),b=normTime(f.end);let t='';if(hm(a)&&hm(b)&&a!==b){let d=toMin(b)-toMin(a);const nx=d<0;if(nx)d+=1440;t=`Sessão de ${Math.floor(d/60)} h${d%60?' '+String(d%60).padStart(2,'0')+' min':''}${nx&&f.date?` · acaba no dia seguinte (${fmtDate(addDays(f.date,1))})`:''}`}g('p-dur').textContent=t}
   if(g('p-roomUndo'))setH(g('p-roomUndo'),S.roomUndo?`<div class="msg info" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">Saldo final apagado: é outra sala.<button type="button" class="btn sm" data-act="undoRoom">Desfazer</button></div>`:'');
   const dOk=r.declared!==null&&!isNaN(r.declared);
   if(g('p-endHint')){setH(g('p-endHint'),dOk?`lido como <b>${money(r.declared,cur)}</b>`:'');
