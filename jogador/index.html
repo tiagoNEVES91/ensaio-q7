@@ -4,6 +4,8 @@
 <title>Registo de torneios</title><script>document.documentElement.classList.add("so-jogador")</script><style>
 .so-jogador header.top,.so-jogador .startcard,.so-jogador .viewsw,.so-jogador #phCtx,.so-jogador .card:has(#loader2){display:none!important}
 .so-jogador .phone-wrap{gap:0}
+.so-jogador #themeBtn{position:fixed;top:10px;right:max(10px,calc(50vw - 205px));z-index:20;min-height:36px;padding:4px 10px}
+@media (max-width:640px){.so-jogador #themeBtn{right:30px;top:16px}}
 @media (min-width:641px){.so-jogador .phone{width:430px;height:100vh;min-height:0;border:0;border-radius:0;box-shadow:0 0 0 1px var(--line)}}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1692,4 +1694,5 @@ loadScen(0,'empty');
 const hv=(location.hash||'').slice(1);setView(['tel','jogador','gestao'].includes(hv)?hv:'tel');
 </script>
 <script>(()=>{const q=new URLSearchParams(location.search);const c=q.get('c');if(c)try{localStorage.setItem('rl_codigo',c.trim().toUpperCase())}catch(e){}
+const tb=document.getElementById('themeBtn');if(tb)document.body.appendChild(tb);
 setTimeout(()=>{if(S.src!=='blank')loadBlank();setView('tel');render()},20)})()</script>
