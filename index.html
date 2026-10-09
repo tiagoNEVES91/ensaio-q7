@@ -728,6 +728,19 @@ function afterLoad(){if(S.form.lines.some(l=>l.picking))openPickerDefaults(S.for
 // Os registos de exemplo já trazem uma foto por entrada (a regra da foto vê-se ao juntar torneios novos).
 function seedProofs(form){(form&&form.lines||[]).forEach(l=>{if(l.tickets)return;const fb=l.fl?Object.values(l.fl).reduce((a,x)=>a+(x&&x.on?ent0(x.bul):0),0):0;const n=Math.max(ent0(l.bullets),fb);if(n>0)l.tickets=Array.from({length:n},(_,i)=>({name:'ticket-'+(i+1)+'.jpg',read:{entradas:1}}))})}
 SCEN.days.forEach(d=>Object.values(d).forEach(v=>{if(v&&v.lines)seedProofs(v)}));CASES.forEach(c=>c.days.forEach(d=>seedProofs(d.form)));
+
+/* ---------------- rascunhos guardados no browser (o F5 não apaga o que o jogador escreveu) ---------------- */
+const DRAFT_LS='registo-live-rascunhos-v12';let draftTimer=0;
+function saveDrafts(){try{keepDraft();if(!Object.keys(S.drafts).length){localStorage.removeItem(DRAFT_LS);return}
+  localStorage.setItem(DRAFT_LS,JSON.stringify({drafts:S.drafts,at:{src:S.src,di:S.di,ci:S.ci,variant:S.variant,step:PH.step}}))}catch(e){}}
+function saveDraftsSoon(){clearTimeout(draftTimer);draftTimer=setTimeout(saveDrafts,500)}
+if(typeof document!=='undefined'){['input','change','click'].forEach(t=>document.addEventListener(t,saveDraftsSoon,true));
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveDrafts()});window.addEventListener('pagehide',saveDrafts)}
+(()=>{if(typeof localStorage==='undefined')return;let d=null;try{d=JSON.parse(localStorage.getItem(DRAFT_LS)||'null')}catch(e){}if(!d||!d.drafts)return;
+  S.drafts=d.drafts;const ids=JSON.stringify(d.drafts).match(/"(?:lid|entryId)":"[A-Za-z]+(\d+)"/g)||[];ids.forEach(m=>{const n=+m.replace(/\D/g,'');if(n>_n)_n=n});
+  // depois do arranque da página: volta ao dia e ao passo em que o jogador estava
+  setTimeout(()=>{const a=d.at||{};if(a.src==='blank')loadBlank();else if(a.src==='case'&&typeof loadCase==='function')loadCase(a.ci||0,a.di||0);else if(a.src==='scen')loadScen(a.di||0,a.variant||'form');
+    const st=String(a.step||'');if(/^(hoje|torneios|fecho|resumo|lista|foto)$/.test(st)||(st.startsWith('linha:')&&findLine(st.slice(6))))PH.step=st;render()},0)})();
 /* ---------------- render jogador ---------------- */
 function renderLoader(){
   let h='<span class="ls" style="margin-right:4px">Dias da simulação:</span>';
@@ -735,7 +748,8 @@ function renderLoader(){
     h+=`<button type="button" class="btn sm daybtn" data-act="loadScen" data-di="${di}" aria-pressed="${on}" title="${esc(d.title)}${dr?' · com alterações tuas':''}">${fmtDate(d.form.date)}${dr?' •':''}</button>`});
   const bd=(S.src==='blank'&&S.dirty)||!!S.drafts.blank;
   h+=`<span style="width:6px"></span><button type="button" class="btn sm daybtn" data-act="blank" aria-pressed="${S.src==='blank'}">Em branco${bd?' •':''}</button>`;
-  if(Object.keys(S.drafts).length||S.dirty)h+=`<span class="ls" style="margin-left:6px">• tem alterações tuas (ficam até Repor)</span>`;
+  if(Object.keys(S.drafts).length||S.dirty)h+=`<span class="ls" style="margin-left:6px">• tem alterações tuas, guardadas neste browser</span>`;
+  if(S.dirty||S.drafts[draftKey()])h+=`<button type="button" class="btn sm ghost" data-act="reset" style="margin-left:6px">Repor este dia</button>`;
   ['loader','loader2'].forEach(id=>{const x=document.getElementById(id);if(x)x.innerHTML=h});
 }
 function opt(v,label,sel){return `<option value="${esc(v)}"${String(v)===String(sel)?' selected':''}>${esc(label)}</option>`}
@@ -1326,7 +1340,7 @@ function tkExamples(f){const cands=tkCandidates().filter(c=>c.fl.some(s=>s.date=
 function tkPrompt(){const c=tkCandidates().map(x=>({festival:x.fest.name,no:'Ev. '+evNum(x.e),name:x.e.name,buy_in:x.e.buyIn,moeda:x.fest.currency,dias:x.fl.map(s=>({label:s.label,date:s.date,time:s.time}))}));
   return 'Esta imagem devia mostrar um ou mais tickets de inscrição em torneios de poker live, cartões de lugar, ou um print da app/email de inscrição. Lê-a e transcreve o que lá está.\n'
    +'Pode haver VÁRIOS torneios ou entradas na mesma imagem (vários tickets na mesa, ou uma app com uma lista de inscrições): devolve UM objeto por entrada, incluindo entradas já eliminadas (também foram pagas).\n'
-   +'Responde só com JSON: {"tickets": [ {"series": string|null (festival, série ou casino), "kind": "inscricao"|"lugar"|"nota" ("inscricao" = uma entrada ou re-entry; "lugar" = só o lugar de um dia seguinte, Day 2/Final Day, sem pagamento; "nota" = escrito pelo próprio jogador, numa nota do telemóvel ou num papel dele, e não um documento do casino, da app ou do email), "entradas": number (quantas entradas esta linha ou este ticket representa; um ticket é 1; uma app pode mostrar "Entries: 2"), "event_no": string|null, "event_name": string|null, "flight": string|null (ex.: "1B", "2", "FT", "Único"), "date": "YYYY-MM-DD"|null, "buy_in": number|null (o TOTAL pago por esta entrada: buy-in + fee + bounty, na moeda do ticket), "currency": string|null (código ISO, ex.: "EUR", "USD", "TWD"), "reentry": boolean, "pago_com": "dinheiro"|"voucher"|null ("voucher" = entrada paga com voucher, ticket ou lugar ganho num satélite), "voucher_origem": string|null (de onde veio o voucher, ex.: "Satélite #S12"), "voucher_data": "YYYY-MM-DD"|null (dia em que o voucher foi ganho), "estado": "inscrito"|"eliminado"|null, "confidence": "alta"|"media"|"baixa"} ], "texto": string (as linhas principais que leste)}.\n'
+   +'Responde só com JSON: {"tickets": [ {"series": string|null (festival, série ou casino), "kind": "inscricao"|"lugar"|"nota" ("inscricao" = uma entrada ou re-entry; "lugar" = só o lugar de um dia seguinte, Day 2/Final Day, sem pagamento; "nota" = escrito pelo próprio jogador, numa nota do telemóvel ou num papel dele, e não um documento do casino, da app ou do email), "entradas": number (quantas entradas esta linha ou este ticket representa; um ticket é 1; uma app pode mostrar "Entries: 2"), "event_no": string|null, "event_name": string|null, "flight": string|null (ex.: "1B", "2", "FT", "Único"), "date": "YYYY-MM-DD"|null, "buy_in": number|null (o TOTAL pago por esta entrada: buy-in + fee + bounty, na moeda do ticket), "currency": string|null (código ISO, ex.: "EUR", "USD", "TWD"), "reentry": boolean, "pago_com": "dinheiro"|"voucher"|null ("voucher" = entrada paga com voucher, ticket ou lugar ganho num satélite), "voucher_origem": string|null (de onde veio o voucher, ex.: "Satélite #S12"), "voucher_data": "YYYY-MM-DD"|null (dia em que o voucher foi ganho), "estado": "inscrito"|"eliminado"|null, "recibo": string|null (o nº do recibo, do ticket ou da inscrição, tal como está impresso, ex.: "APT26-5241-6977"; null se não houver), "mesa": string|null, "lugar": string|null, "confidence": "alta"|"media"|"baixa"} ], "texto": string (as linhas principais que leste)}.\n'
    +'Se a imagem não tiver nenhum ticket, lugar ou inscrição num torneio (talão de restaurante, prémio, estrutura, cartaz, transferência, cash game…), responde {"tickets": [], "texto": "não é um ticket"}.\n'
    +'Transcreve o que está na imagem: não escolhas nem corrijas para um torneio da lista. Se um campo não se lê, põe null.\n'
    +'Torneios do catálogo destes dias (só para te ajudar a ler nomes cortados ou desfocados): '+JSON.stringify(c)}
@@ -1396,9 +1410,16 @@ function tkMatchAll(raw,name){raw=raw||{};const list=Array.isArray(raw.tickets)?
 // Impressão digital da foto: a mesma foto enviada duas vezes não pode virar re-entry nem 2.º ticket.
 async function tkHash(file){try{const b=await crypto.subtle.digest('SHA-256',await file.arrayBuffer());return [...new Uint8Array(b)].slice(0,12).map(x=>x.toString(16).padStart(2,'0')).join('')}catch(e){return 'n:'+(file.name||'')+':'+file.size}}
 function tkDupOf(h){if(!h)return null;const ents=entriesNow();const ln=S.form.lines.find(l=>(l.tickets||[]).some(t=>t.hash===h));if(!ln)return null;const ev=lineEvent(ln,ents);return ev?shortName(ev.name):'outro torneio'}
+function tkKeys(res,m){const k=[];if(!res)return k;const r=String(res.recibo||'').toUpperCase().replace(/[^A-Z0-9]/g,'');if(r.length>=5)k.push('r:'+r);
+  const me=String(res.mesa||'').trim(),lu=String(res.lugar||'').trim();if(m&&me&&lu)k.push(['m',m.evId,m.day,me,lu].join('|'));return k}
+function tkDupRead(it){const k=it&&it.status==='done'?tkKeys(it.res,it.match):[];if(!k.length)return null;const ents=entriesNow();
+  const ln=S.form.lines.find(l=>(l.tickets||[]).some(t=>(t.keys||[]).some(x=>k.includes(x))));if(!ln)return null;const ev=lineEvent(ln,ents);
+  return `Este ticket${it.res.recibo?' (nº '+esc(it.res.recibo)+')':''} já está junto ao ${ev?shortName(ev.name):'outro torneio'}. Se voltaste a entrar, tira uma foto ao ticket da nova entrada.`}
+function tkDupCheck(){const tk=PH.tk;if(!tk)return;if(tk.status==='done'){const m=tkDupRead(tk);if(m)PH.tk={status:'error',msg:m}}
+  else if(tk.status==='multi')tk.items.forEach((it,i)=>{const m=tkDupRead(it);if(m){tk.items[i]={status:'error',msg:m};tk.pick[i]=false}})}
 async function tkReadFile(file){PH.tk={status:'reading'};renderPhone();const h=await tkHash(file);const dup=tkDupOf(h);
   if(dup){PH.tk={status:'error',msg:`Esta foto já está junta ao ${dup}. Se voltaste a entrar, tira uma foto ao ticket da nova entrada.`};renderPhone();return}
-  await tkReadFile2(file);if(PH.tk&&typeof PH.tk==='object')PH.tk.hash=h;renderPhone()}
+  await tkReadFile2(file);if(PH.tk&&typeof PH.tk==='object'){PH.tk.hash=h;tkDupCheck()}renderPhone()}
 async function tkReadFile2(file){
   if((!SAMPLE||!SAMPLE_IMG)&&RL){await rlRead(file);return}
   if(!SAMPLE||!SAMPLE_IMG){PH.tk={status:'error',msg:'Aqui a leitura das fotos é simulada. Usa um ticket de exemplo ou escolhe da lista.'};renderPhone();return}
@@ -1417,7 +1438,7 @@ function tkConfirmOne(tk){const f=S.form;const ents=entriesNow();
   // Voucher ou ticket de satélite: a 1.ª entrada não é buy-in pago (usa o "Entrei com satélite/ticket" que já existe).
   if(tk.voucher&&ln.kind==='new'&&ent0(ln.bullets)<=1){ln.method='satelite';ln.satName=tk.res.voucher_origem||ln.satName||'';ln.satDate=tk.res.voucher_data||ln.satDate||''}
   const nE=Math.max(1,ent0(tk.res&&tk.res.entradas));if(nE>1&&!tk.cont&&!ex&&!ln.fl)ln.bullets=String(nE);
-  ln.tickets=(ln.tickets||[]).concat([{name:tk.name,read:tk.res,hash:tk.hash||null}]);S.dirty=true;return {lid}}
+  ln.tickets=(ln.tickets||[]).concat([{name:tk.name,read:tk.res,hash:tk.hash||null,keys:tkKeys(tk.res,tk.match)}]);S.dirty=true;return {lid}}
 function tkConfirm(){const tk=PH.tk;if(!tk||tk.status!=='done')return;const r=tkConfirmOne(tk);if(r.msg){PH.tk={status:'error',msg:r.msg};renderPhone();return}
   PH.tk=null;PH.step='linha:'+r.lid;render()}
 function tkConfirmAll(){const tk=PH.tk;if(!tk||tk.status!=='multi')return;const errs=[];
