@@ -1089,6 +1089,8 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
   if(a==='gtile'){const v=b.dataset.v;if(['open','alert','today','quiet','plan','photo','diff','miss','trans','sat'].includes(v)){GS.filter=v;renderGestao();const el=document.getElementById('gListCard');if(el)el.scrollIntoView({block:'start'})}else{GS.filter='all';renderGestao();const el=document.getElementById(v);if(el)el.scrollIntoView({block:'center'})}return}
   if(a==='gpl'){GS.player=b.dataset.v;renderGestao();const el=document.getElementById('gListCard');if(el)el.scrollIntoView({block:'start'});return}
   if(a==='gsatNo'){const k=b.dataset.key;if(GS.satNo[k])delete GS.satNo[k];else GS.satNo[k]={by:'admin',at:fmtDate(G_TODAY)};renderGestao();return}
+  if(a==='gphOk'){const k=b.dataset.key;if(GS.photoOk[k])delete GS.photoOk[k];else GS.photoOk[k]={by:'admin',at:fmtDate(G_TODAY)};renderGestao();return}
+  if(a==='gphAsk'){const k=b.dataset.key;if(GS.photoAsk[k])delete GS.photoAsk[k];else GS.photoAsk[k]={by:'admin',at:fmtDate(G_TODAY)};renderGestao();return}
   if(a==='gsat'){const k=b.dataset.key;if(GS.satOk[k])delete GS.satOk[k];else GS.satOk[k]={by:'admin',at:fmtDate(G_TODAY)};renderGestao();return}
   if(a==='gconf'){const k=b.dataset.key;if(GS.confirmed[k])delete GS.confirmed[k];else GS.confirmed[k]={by:'admin',at:fmtDate(G_TODAY)};renderGestao();return}
   if(a==='tourStart'){tourGo(0);return}
@@ -1189,7 +1191,8 @@ function renderPhone(){
   } else if(st==='hoje'){
     title='Hoje';
     let dh='';if(/^\d{4}-\d\d-\d\d$/.test(f.date||'')){try{dh=new Date(f.date+'T12:00:00Z').toLocaleDateString('pt-PT',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'})}catch(x){}}
-    body=`<div class="ph-q">Quando jogaste?</div>
+    const asks=typeof GS!=='undefined'?Object.keys(GS.photoAsk||{}).filter(k=>k.split('|')[0]===S.player&&!GS.photoOk[k]):[];
+    body=`${asks.length?`<div class="msg warn" style="margin-bottom:10px"><b>A gestão pediu a foto do ticket</b> de ${asks.length===1?'um torneio':asks.length+' torneios'} sem foto. Junta-a no registo desse dia.</div>`:''}<div class="ph-q">Quando jogaste?</div>
       <label class="l" for="p-date">Data da sessão</label><input class="i" id="p-date" type="date" value="${esc(f.date)}" data-f="f.date"><div class="hint" id="p-dateHint">${dh}</div>
       <div class="row c2 ph-row">${phField('p-start','Início','f.start',f.start,'time','numeric',true)}${phField('p-end','Fim','f.end',f.end,'time','numeric',true)}</div>
       <div class="hint">Escreve só os números: 2130 → 21:30.</div>
@@ -1514,7 +1517,7 @@ const GDATA=[
    {form:F({date:'2026-11-19',startBalance:30000,declaredEnd:'19500',diffReason:'500 $ guardados no cofre do hotel.',diffFor:-500,lines:[L({lid:'gd1',entryId:'GD1',festId:'apt',eventId:'apt1009',day:'Único',bullets:'1',endState:'busted'})]})},
    {form:F({date:'2026-11-20',startBalance:19500,declaredEnd:'19500',endSource:'match_button',lines:[L({lid:'gd2',entryId:'GD2',festId:'apt',eventId:'apt1011',day:'1',bullets:'1',method:'satelite',satName:'Satélite do Main Event',satDate:'2026-11-18',endState:'bagged',chips:'310000',left:'210'})]})}]},
 ];
-let GS={filter:'all',sel:null,resolved:{},pending:{},player:'all',confirmed:{},satOk:{},satNo:{}};
+let GS={filter:'all',sel:null,resolved:{},pending:{},player:'all',confirmed:{},satOk:{},satNo:{},photoOk:{},photoAsk:{}};
 function gAll(){
   const out=[];const diffs=[];const plans=[];const noPhoto=[];const lastReg={};const matched=[];
   GDATA.forEach(src=>{src.days.forEach((d,i)=>{const r=reconcile(d.form,buildEntries(src.days.slice(0,i)),src.level);if(r.diff)diffs.push({player:src.player,date:d.form.date,expected:r.expected,declared:r.declared,diff:r.diff,reason:d.form.diffReason});
@@ -1532,7 +1535,7 @@ function gAlert(e){if(e.status!=='open')return '';
   return ''}
 function gToday(e){return e.status==='open'||e.status==='reentry'?nextDayToday(e,G_TODAY):null}
 function renderGestao(){
-  const {entries,diffs,plans,lastReg,matched,noPhoto}=gAll();const cur='USD';const planKeys=new Set(plans.map(p=>p.key));const photoKeys=new Set(noPhoto.map(x=>x.key));
+  const {entries,diffs,plans,lastReg,matched,noPhoto}=gAll();const cur='USD';const planKeys=new Set(plans.map(p=>p.key));const photoKeys=new Set(noPhoto.filter(x=>!GS.photoOk[x.key]).map(x=>x.key));const photoTodo=noPhoto.filter(x=>!GS.photoOk[x.key]&&!GS.photoAsk[x.key]);const photoAsked=noPhoto.filter(x=>GS.photoAsk[x.key]&&!GS.photoOk[x.key]);
   const open=entries.filter(e=>e.status==='open'||e.status==='reentry');
   const missing=entries.filter(e=>e.manual&&!e.resolved);const alerts=entries.filter(e=>gAlert(e));
   const today=entries.filter(e=>gToday(e));const todayPl=[...new Set(today.map(e=>e.player))];
@@ -1547,7 +1550,7 @@ function renderGestao(){
     tile('t-today','today','Jogam hoje',todayPl.length,todayPl.length?esc(todayPl.join(', ')):'ninguém',false)+
     tile('t-quiet','quiet','Sem registo há 2+ dias',quiet.length,quiet.length?esc(quiet.map(p=>p+' ('+fmtDate(lastReg[p])+')').join(', ')):'todos em dia',quiet.length)+
     tile('t-plan','plan','Fora do plano do nível',plans.length,plans.every(p=>p.reason)?'todos com explicação':plans.filter(p=>!p.reason).length+' sem explicação',plans.some(p=>!p.reason))+
-    tile('t-photo','photo','Sem foto do ticket',noPhoto.length,noPhoto.length?(noPhoto.every(x=>String(x.reason||'').trim())?'todos com explicação':noPhoto.filter(x=>!String(x.reason||'').trim()).length+' sem explicação'):'nenhum',noPhoto.length)+
+    tile('t-photo','photo','Sem foto do ticket',photoTodo.length,photoTodo.length?'por decidir'+(photoAsked.length?' · '+photoAsked.length+' pedida'+(photoAsked.length>1?'s':''):''):photoAsked.length?photoAsked.length+' pedida'+(photoAsked.length>1?'s':'')+' ao jogador':'nenhuma por decidir',photoTodo.length)+
     tile('t-diff','diff',`Diferenças de saldo${month?' ('+month+')':''}`,diffs.length,`${signed(diffs.reduce((a,d)=>a+d.diff,0),cur)} · ${diffs.every(d=>d.reason)?'todas explicadas':diffs.filter(d=>!d.reason).length+' sem explicação'} · ${matched.length} pelo "Bate certo"${matched.some(m=>m.manual)?' (com torneio à mão)':''}`,diffs.some(d=>!d.reason)||matched.some(m=>m.manual))+
     tile('t-miss','miss','Torneios em falta',missing.length,'escritos à mão, por resolver',missing.length)+
     tile('t-trans','trans','Prémios por confirmar',toConfirm.length,`transferências · ${noProof.length} sem prova`,toConfirm.length||noProof.length)+
@@ -1557,7 +1560,7 @@ function renderGestao(){
   const fOk=e=>GS.filter==='all'||(SPECIAL[GS.filter]?SPECIAL[GS.filter][1](e):true);
   const list=entries.filter(e=>GS.player==='all'||e.player===GS.player).filter(fOk).sort((a,b)=>(b.last?b.last.date:'').localeCompare(a.last?a.last.date:''));
   if(!GS.sel||!list.find(x=>x.key===GS.sel))GS.sel=list.length?list[0].key:null;
-  const tags=e=>`${e.manual&&!e.resolved?'<span class="chip warn" style="padding:0 6px">provisório</span>'+(e.info.buyIn>=MANUAL_REVIEW?' <span class="chip warn" style="padding:0 6px">confirmar (≥ '+money(MANUAL_REVIEW,cur)+')</span>':''):esc(e.info.no||'')}${e.method!=='direto'?' <span class="chip" style="padding:0 6px">satélite</span>':''}${photoKeys.has(e.key)?' <span class="chip warn" style="padding:0 6px">sem foto</span>':''}${e.paidBuyIn!=null&&num(e.paidBuyIn)!==e.info.buyIn?` <span class="chip warn" style="padding:0 6px">pagou ${money(num(e.paidBuyIn),cur)}</span>`:''}`;
+  const tags=e=>`${e.manual&&!e.resolved?'<span class="chip warn" style="padding:0 6px">provisório</span>'+(e.info.buyIn>=MANUAL_REVIEW?' <span class="chip warn" style="padding:0 6px">confirmar (≥ '+money(MANUAL_REVIEW,cur)+')</span>':''):esc(e.info.no||'')}${e.method!=='direto'?' <span class="chip" style="padding:0 6px">satélite</span>':''}${photoKeys.has(e.key)?(GS.photoAsk[e.key]?' <span class="chip info" style="padding:0 6px">foto pedida</span>':' <span class="chip warn" style="padding:0 6px">sem foto</span>'):''}${e.paidBuyIn!=null&&num(e.paidBuyIn)!==e.info.buyIn?` <span class="chip warn" style="padding:0 6px">pagou ${money(num(e.paidBuyIn),cur)}</span>`:''}`;
   const alertTxt=e=>{const al=gAlert(e);const td=gToday(e);return al?`<span class="chip warn">${esc(al)}</span>`:td?`<span class="chip info">${dayName(td.label)} é hoje</span>`:''};
   const daysTxt=e=>e.days.map(d=>dayName(d.day)).join(' → ');
   const resTxt=e=>['paid','closed'].includes(e.status)?signed((e.prize||0)-e.cost,cur):'—';
@@ -1570,7 +1573,7 @@ function renderGestao(){
     dbox.innerHTML=`<div><div class="ls">${esc(e.player)} · nível ${esc(e.level)} · ${esc(e.info.festName||'')}</div><h3>${esc(shortName(e.info.name))} <span class="chip ${st[1]}">${st[0]}</span></h3><div class="ls">Buy-in ${money(e.info.buyIn,cur)}${e.paidBuyIn!=null&&num(e.paidBuyIn)!==e.info.buyIn?` (o jogador pagou ${money(num(e.paidBuyIn),cur)})`:''}${e.paidMix!=null?` (num dos dias pagou ${money(num(e.paidMix),cur)})`:''} · ${e.bullets} ${e.bullets===1?'entrada':'entradas'} · custo ${money(e.cost,cur)}${e.method!=='direto'?' · entrou com satélite/ticket':''}</div></div>
       <div class="tl">${e.days.map(d=>`<div class="ev"><div><b>${fmtDate(d.date)}</b> · ${dayName(d.day)}${d.bullets?` · ${d.bullets} ${d.bullets===1?'entrada':'entradas'}`:''}</div><div class="ls">${d.endState==='bagged'?`passou com ${NF.format(intOr0(d.chips))}${d.left?' · restam '+esc(d.left):''}${d.inMoney?' · já nos prémios':''}`:d.endState==='busted'?'eliminado sem prémio':`${esc(d.pos)}.º${d.entrants?' de '+esc(d.entrants):''} · prémio ${money(num(d.prize),cur)}${d.receivedIn==='transfer'?' na '+esc(d.wallet||'carteira'):' em dinheiro'}`}</div></div>`).join('')}</div>
       ${planKeys.has(e.key)?`<div class="msg info">Fora do plano do nível. Explicação: ${esc(e.planReason||'—')}</div>`:''}
-      ${noPhoto.filter(x=>x.key===e.key).map(x=>`<div class="msg warn">Sem foto do ticket (${fmtDate(x.date)}, ${x.n===1?'1 entrada':x.n+' entradas'}). Explicação: ${esc(x.reason||'—')}</div>`).join('')}
+      ${noPhoto.filter(x=>x.key===e.key).map(x=>{const ok=GS.photoOk[e.key],ask=GS.photoAsk[e.key];return `<div class="msg ${ok?'':'warn'}" style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><span>Sem foto do ticket (${fmtDate(x.date)}, ${x.n===1?'1 entrada':x.n+' entradas'}). Explicação: ${esc(x.reason||'—')}${ok?` Explicação aceite por ${esc(ok.by)} a ${esc(ok.at)}.`:''}${ask&&!ok?` Foto pedida por ${esc(ask.by)} a ${esc(ask.at)}: o jogador vê um aviso na app até a juntar.`:''}</span><span style="display:flex;gap:6px">${ok||ask?`<button type="button" class="btn sm" data-act="${ok?'gphOk':'gphAsk'}" data-key="${esc(e.key)}">Desfazer</button>`:`<button type="button" class="btn sm p" data-act="gphOk" data-key="${esc(e.key)}">Aceitar explicação</button><button type="button" class="btn sm" data-act="gphAsk" data-key="${esc(e.key)}">Pedir a foto ao jogador</button>`}</span></div>`}).join('')}
       ${e.method!=='direto'?`<div class="msg ${GS.satOk[e.key]?'':'warn'}" style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><span>Entrou com satélite/ticket: <b>${esc(e.satName||'—')}</b>${e.satDate?' a '+fmtDate(e.satDate):''}.${GS.satOk[e.key]?' Confirmado por '+esc(GS.satOk[e.key].by)+' a '+esc(GS.satOk[e.key].at)+'.':''}${GS.satNo[e.key]?` Recusado por ${esc(GS.satNo[e.key].by)} a ${esc(GS.satNo[e.key].at)}: a 1.ª entrada (${money(e.info.buyIn,cur)}) volta a contar e o jogador é avisado.`:''}</span><span style="display:flex;gap:6px">${GS.satOk[e.key]||GS.satNo[e.key]?`<button type="button" class="btn sm" data-act="${GS.satOk[e.key]?'gsat':'gsatNo'}" data-key="${esc(e.key)}">Desfazer</button>`:`<button type="button" class="btn sm p" data-act="gsat" data-key="${esc(e.key)}">Confirmar satélite</button><button type="button" class="btn sm" data-act="gsatNo" data-key="${esc(e.key)}">Recusar</button>`}</span></div>`:''}
       ${gAlert(e)?`<div class="msg warn">Alerta: ${esc(gAlert(e))} Confirmar com o jogador.</div>`:''}
       ${e.proofFile?`<div class="ls">Prova: foto ${esc(e.proofFile)}</div>`:e.proof?`<div class="ls">Prova: ${esc(e.proof)}${proofOk(e.proof)?'':' <span class="chip warn">não é link https://</span>'}</div>`:''}`}
