@@ -1239,7 +1239,7 @@ function phTicketBody(f,cur){
   const tk=PH.tk;let h=`<p class="ls" style="margin-top:0">Tira uma foto ao ticket do casino, ou escolhe na galeria um print da app de inscrição. O tracker lê o torneio e tu confirmas.</p>`;
   const rl=RL&&!SAMPLE_IMG;if(rl){h+=`<div class="msg info" style="margin-bottom:8px"><b>Leitura real.</b> A foto vai para o leitor da Polarize e a resposta chega em cerca de 40 segundos.<br><small id="p-rlst">${esc(rlSeenTxt())}</small></div><label class="l" for="p-rlcode">Código de teste</label><input class="i" id="p-rlcode" value="${esc(rlCode())}" autocomplete="off" autocapitalize="characters" style="margin-bottom:8px">`;setTimeout(rlLeitor,0)}
   h+=`<label class="btn p ph-big">📷 Tirar foto ou escolher da galeria<input type="file" accept="image/*" data-tk="1" hidden></label>`;
-  if(tk){if(tk.status==='reading')h+=`<div class="msg info ph-tkres" style="margin-top:8px">A ler a foto… Pode demorar até um minuto. Se o Claude pedir autorização, aceita.</div>`;
+  if(tk){if(tk.status==='reading')h+=`<div class="msg info ph-tkres" style="margin-top:8px">A ler a foto… Pode demorar até um minuto.${RL&&!SAMPLE_IMG?'':' Se o Claude pedir autorização, aceita.'}</div>`;
     else if(tk.status==='done'){const pe=findEvent(tk.match.fest,tk.match.evId).ev;h+=`<div class="ph-card ph-tkres"><div class="ls">Lido do ticket${tk.conf?' · confiança '+esc(tk.conf):''}</div><div class="lt">${esc(pe.no)} · ${esc(shortName(pe.name))}</div><div class="ls">${dayName(tk.match.day)} · ${fmtDate(tk.res.date||f.date)} · ${tkCostTxt(tk,pe,cur)}${tk.nth>1?` · <b>${tk.nth}.ª entrada</b> neste torneio`:''}</div>${tk.warn?`<div class="msg warn">${esc(tk.warn)}</div>`:''}<button type="button" class="btn p ph-big" data-act="phTkOk">Confirmar</button><button type="button" class="ph-link" data-act="phList">Não é este: escolher da lista</button></div>`}
     else if(tk.status==='multi'){const n=tk.pick.filter(Boolean).length;h+=`<div class="ph-card ph-tkres"><div class="lt">Li ${tk.items.length} torneios nesta imagem</div><div class="ls">Marca os que jogaste hoje.</div><div class="stack" style="gap:8px;margin-top:8px">${tk.items.map((it,i)=>{if(it.status!=='done')return `<div class="msg warn">${esc(it.msg||'Não consegui ler este.')}</div>`;const pe=findEvent(it.match.fest,it.match.evId).ev;
       return `<button type="button" class="btn" style="text-align:left;white-space:normal;${tk.pick[i]?'background:var(--ok-bg);border-color:var(--ok);color:inherit':'opacity:.55'}" data-act="phTkPick" data-i="${i}" aria-pressed="${tk.pick[i]}"><b>${tk.pick[i]?'☑':'☐'} ${esc(pe.no)} · ${esc(shortName(pe.name))}</b><br><span class="ls">${dayName(it.match.day)} · ${fmtDate(it.res.date||f.date)} · ${tkCostTxt(it,pe,cur)}${it.nth>1?` · ${it.nth}.ª entrada`:''}${it.res.estado==='eliminado'?' · eliminado':''}</span>${it.warn?`<br><span class="ls" style="color:var(--warn)">${esc(it.warn)}</span>`:''}</button>`}).join('')}</div>
@@ -1393,7 +1393,13 @@ function tkMatchAll(raw,name){raw=raw||{};const list=Array.isArray(raw.tickets)?
   if(list.length===1)return tkMatch(list[0],name);
   const items=list.map(r=>tkMatch(r,name));const seen={};items.forEach(it=>{if(it.status==='done'&&!it.cont){const k=it.match.evId;it.nth+=seen[k]||0;seen[k]=(seen[k]||0)+1}});
   return {status:'multi',name,items,pick:items.map(it=>it.status==='done'&&!it.warn)}}
-async function tkReadFile(file){PH.tk={status:'reading'};renderPhone();
+// Impressão digital da foto: a mesma foto enviada duas vezes não pode virar re-entry nem 2.º ticket.
+async function tkHash(file){try{const b=await crypto.subtle.digest('SHA-256',await file.arrayBuffer());return [...new Uint8Array(b)].slice(0,12).map(x=>x.toString(16).padStart(2,'0')).join('')}catch(e){return 'n:'+(file.name||'')+':'+file.size}}
+function tkDupOf(h){if(!h)return null;const ents=entriesNow();const ln=S.form.lines.find(l=>(l.tickets||[]).some(t=>t.hash===h));if(!ln)return null;const ev=lineEvent(ln,ents);return ev?shortName(ev.name):'outro torneio'}
+async function tkReadFile(file){PH.tk={status:'reading'};renderPhone();const h=await tkHash(file);const dup=tkDupOf(h);
+  if(dup){PH.tk={status:'error',msg:`Esta foto já está junta ao ${dup}. Se voltaste a entrar, tira uma foto ao ticket da nova entrada.`};renderPhone();return}
+  await tkReadFile2(file);if(PH.tk&&typeof PH.tk==='object')PH.tk.hash=h;renderPhone()}
+async function tkReadFile2(file){
   if((!SAMPLE||!SAMPLE_IMG)&&RL){await rlRead(file);return}
   if(!SAMPLE||!SAMPLE_IMG){PH.tk={status:'error',msg:'Aqui a leitura das fotos é simulada. Usa um ticket de exemplo ou escolhe da lista.'};renderPhone();return}
   const ac=new AbortController();const to=setTimeout(()=>ac.abort(),90000);
@@ -1411,11 +1417,11 @@ function tkConfirmOne(tk){const f=S.form;const ents=entriesNow();
   // Voucher ou ticket de satélite: a 1.ª entrada não é buy-in pago (usa o "Entrei com satélite/ticket" que já existe).
   if(tk.voucher&&ln.kind==='new'&&ent0(ln.bullets)<=1){ln.method='satelite';ln.satName=tk.res.voucher_origem||ln.satName||'';ln.satDate=tk.res.voucher_data||ln.satDate||''}
   const nE=Math.max(1,ent0(tk.res&&tk.res.entradas));if(nE>1&&!tk.cont&&!ex&&!ln.fl)ln.bullets=String(nE);
-  ln.tickets=(ln.tickets||[]).concat([{name:tk.name,read:tk.res}]);S.dirty=true;return {lid}}
+  ln.tickets=(ln.tickets||[]).concat([{name:tk.name,read:tk.res,hash:tk.hash||null}]);S.dirty=true;return {lid}}
 function tkConfirm(){const tk=PH.tk;if(!tk||tk.status!=='done')return;const r=tkConfirmOne(tk);if(r.msg){PH.tk={status:'error',msg:r.msg};renderPhone();return}
   PH.tk=null;PH.step='linha:'+r.lid;render()}
 function tkConfirmAll(){const tk=PH.tk;if(!tk||tk.status!=='multi')return;const errs=[];
-  tk.items.forEach((it,i)=>{if(tk.pick[i]&&it.status==='done'){const r=tkConfirmOne(it);if(r.msg)errs.push(r.msg)}});
+  tk.items.forEach((it,i)=>{if(tk.pick[i]&&it.status==='done'){it.hash=tk.hash;const r=tkConfirmOne(it);if(r.msg)errs.push(r.msg)}});
   PH.tk=errs.length?{status:'error',msg:errs.join(' ')}:null;PH.step='torneios';render()}
 
 /* ---- ações do telemóvel ---- */
