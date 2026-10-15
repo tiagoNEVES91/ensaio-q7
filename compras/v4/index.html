@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Compras de ação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:hsl(40 20% 95%);--card:hsl(40 33% 99%);--fg:hsl(30 10% 12%);--muted:hsl(35 8% 40%);
+  --line:hsl(40 12% 86%);--soft:hsl(40 18% 91%);--primary:hsl(45 90% 55%);--primary-fg:hsl(30 10% 10%);
+  --ok:hsl(150 45% 32%);--ok-bg:hsl(150 40% 93%);--warn:hsl(32 80% 38%);--warn-bg:hsl(40 85% 92%);
+  --err:hsl(0 60% 45%);--err-bg:hsl(0 70% 95%);--info:hsl(215 55% 40%);--info-bg:hsl(215 60% 94%);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:hsl(30 6% 6%);--card:hsl(30 6% 10%);--fg:hsl(40 15% 93%);--muted:hsl(35 6% 62%);
+  --line:hsl(30 5% 20%);--soft:hsl(30 5% 15%);--primary:hsl(45 90% 55%);--primary-fg:hsl(30 10% 8%);
+  --ok:hsl(150 45% 62%);--ok-bg:hsl(150 30% 14%);--warn:hsl(40 85% 62%);--warn-bg:hsl(35 40% 14%);
+  --err:hsl(0 70% 68%);--err-bg:hsl(0 35% 15%);--info:hsl(215 70% 72%);--info-bg:hsl(215 30% 15%);}}
+:root[data-theme="dark"]{
+  --bg:hsl(30 6% 6%);--card:hsl(30 6% 10%);--fg:hsl(40 15% 93%);--muted:hsl(35 6% 62%);
+  --line:hsl(30 5% 20%);--soft:hsl(30 5% 15%);--primary:hsl(45 90% 55%);--primary-fg:hsl(30 10% 8%);
+  --ok:hsl(150 45% 62%);--ok-bg:hsl(150 30% 14%);--warn:hsl(40 85% 62%);--warn-bg:hsl(35 40% 14%);
+  --err:hsl(0 70% 68%);--err-bg:hsl(0 35% 15%);--info:hsl(215 70% 72%);--info-bg:hsl(215 30% 15%);}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 Inter,system-ui,sans-serif;-webkit-text-size-adjust:100%}
+.app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:10px 16px}
+.top{display:flex;align-items:center;gap:8px}
+.top h1{font-size:19px;margin:0;flex:1;line-height:1.2}
+.top .who{font-size:12px;color:var(--muted);font-weight:500}
+.back{border:0;background:none;color:var(--fg);font-size:22px;padding:2px 8px 2px 0;cursor:pointer}
+.theme{border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:8px;font:600 13px Inter,sans-serif;padding:6px 10px;cursor:pointer}
+.banca{display:flex;gap:6px;overflow-x:auto;margin-top:8px;scrollbar-width:none}
+.banca::-webkit-scrollbar{display:none}
+.banca span{flex:none;font-size:12px;background:var(--soft);border-radius:6px;padding:3px 8px;color:var(--muted)}
+.banca b{color:var(--fg);font-weight:600}
+main{flex:1;padding:12px 16px 150px}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:7}
+nav.tabs .in{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs button{border:0;background:none;color:var(--muted);font:600 12px Inter,sans-serif;padding:9px 2px 10px;cursor:pointer;position:relative}
+nav.tabs button .ic{display:block;font-size:19px;line-height:1.1}
+nav.tabs button[aria-pressed="true"]{color:var(--fg)}
+nav.tabs button[aria-pressed="true"]::before{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;background:var(--primary);border-radius:0 0 3px 3px}
+nav.tabs .dot{position:absolute;top:6px;right:24%;width:8px;height:8px;border-radius:50%;background:var(--err)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);font:600 15px Inter,sans-serif;cursor:pointer}
+.btn.p{background:var(--primary);border-color:var(--primary);color:var(--primary-fg)}
+.btn.big{width:100%;min-height:52px;font-size:17px}
+.btn.sm{min-height:36px;padding:4px 10px;font-size:13px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:999px;padding:6px 12px;font:600 13px Inter,sans-serif;cursor:pointer;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.tag{display:inline-block;border-radius:6px;padding:1px 7px;font-size:12px;font-weight:600;background:var(--soft);color:var(--muted);white-space:nowrap}
+.tag.ok{background:var(--ok-bg);color:var(--ok)}.tag.warn{background:var(--warn-bg);color:var(--warn)}.tag.info{background:var(--info-bg);color:var(--info)}.tag.err{background:var(--err-bg);color:var(--err)}
+input.i,select.i,textarea.i{width:100%;min-height:46px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--fg);font:16px Inter,sans-serif;padding:8px 12px}
+select.i.sm{min-height:36px;font-size:14px;padding:4px 6px}
+label.l{display:block;font-weight:600;margin:14px 0 6px}
+.hint{font-size:13px;color:var(--muted);margin-top:4px}
+.h2{font-size:17px;font-weight:700;margin:18px 0 8px}
+.day{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:18px 0 8px}
+.t{display:block;width:100%;text-align:left;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:12px 14px;margin-bottom:8px;color:var(--fg);font:inherit;cursor:pointer}
+.t .nm{font-weight:600;line-height:1.3}
+.t .mt{font-size:13px;color:var(--muted);margin-top:4px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.hr{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.hr b{font-size:15px;white-space:nowrap}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px}
+.sum .r{display:flex;justify-content:space-between;gap:10px;padding:4px 0;font-size:15px}
+.sum .r .k{color:var(--muted)}
+.sum .r>span:last-child{white-space:nowrap}
+.sum .tot{border-top:1px solid var(--line);margin-top:6px;padding-top:8px;font-weight:700}
+.msg{border-radius:10px;padding:10px 12px;font-size:14px;margin:10px 0}
+.msg.ok{background:var(--ok-bg);color:var(--ok)}.msg.warn{background:var(--warn-bg);color:var(--warn)}.msg.err{background:var(--err-bg);color:var(--err)}.msg.info{background:var(--info-bg);color:var(--info)}
+.guia{background:var(--info-bg);color:var(--info);border-radius:12px;padding:10px 12px;font-size:14px;margin-bottom:12px;display:flex;gap:10px;align-items:center}
+.guia b{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.04em;opacity:.8}
+.guia .btn{flex:none;margin-left:auto}
+.step{display:grid;grid-template-columns:44px 1fr 44px;gap:8px;align-items:center}
+.step .v{text-align:center;font-size:20px;font-weight:700}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.foot{position:fixed;left:0;right:0;bottom:62px;z-index:6}
+.foot .in{max-width:480px;margin:0 auto;background:var(--card);border-top:1px solid var(--line);padding:10px 16px}
+.foot .line{display:flex;justify-content:space-between;font-size:14px;color:var(--muted);margin-bottom:8px}
+.foot .line b{color:var(--fg)}
+.empty{text-align:center;color:var(--muted);padding:26px 10px}
+.small{font-size:12px;color:var(--muted)}
+details summary{cursor:pointer;color:var(--muted);font-size:14px;margin-top:10px}
+ol.next{padding-left:20px;margin:8px 0 0}ol.next li{margin:5px 0}
+table.mx{width:100%;border-collapse:collapse;font-size:13px}
+table.mx th,table.mx td{border:1px solid var(--line);padding:5px 4px;text-align:center}
+table.mx th{background:var(--soft);font-weight:600}
+table.ex{width:100%;border-collapse:collapse;font-size:12px}
+table.ex th,table.ex td{border-bottom:1px solid var(--line);padding:6px 4px;text-align:right;white-space:nowrap}
+table.ex th:first-child,table.ex td:first-child{text-align:left;white-space:normal}
+.scroll{overflow-x:auto}
+.compra{border-left:4px solid var(--primary)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="top"><button class="back" id="back" hidden aria-label="Voltar">‹</button><h1 id="ttl">Vender ação</h1><button class="theme" id="themeBtn"></button></div>
+  <div class="banca" id="banca"></div>
+</header>
+<main id="main"></main>
+<div class="foot" id="foot" hidden><div class="in" id="footIn"></div></div>
+<nav class="tabs"><div class="in" id="tabs"></div></nav>
+</div>
+<script>
+const CAT={"gerado_em":"2026-10-15T07:45+01:00","fonte":"SharkScope activeTournaments","minimo":500.0,"torneios":[{"id":"ggnetwork:317455549","sala":"GGPoker","nome":"#4: Single Day High Roller - Bounty Freezeout","inicio":"2026-10-15T13:00+01:00","fim_late_reg":"2026-10-15T15:50+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":300000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318363033","sala":"GGPoker","nome":"#20: APT Online Main Event, $5M GTD [Day 1]","inicio":"2026-10-15T13:30+01:00","fim_late_reg":"2026-10-15T17:05+01:00","buyin":760.0,"rake":40.0,"moeda":"USD","garantido":null,"varios_dias":true,"estado":"Registering"},{"id":"ggnetwork:318594336","sala":"GGPoker","nome":"APT Online: $525 Bounty Builder Deepstack HR","inicio":"2026-10-15T13:30+01:00","fim_late_reg":"2026-10-15T16:45+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":100000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318594350","sala":"GGPoker","nome":"APT Online: $525 PLO Bounty Hunter HR","inicio":"2026-10-15T14:40+01:00","fim_late_reg":"2026-10-15T17:25+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":12500.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318594358","sala":"GGPoker","nome":"APT Online: $1,050 High Roller NLH","inicio":"2026-10-15T15:05+01:00","fim_late_reg":"2026-10-15T18:30+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":100000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318594361","sala":"GGPoker","nome":"APT Online: $888 Bounty Head Hunter HR [Single Re-Entry]","inicio":"2026-10-15T15:30+01:00","fim_late_reg":"2026-10-15T18:50+01:00","buyin":843.6,"rake":44.4,"moeda":"USD","garantido":50000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318594379","sala":"GGPoker","nome":"APT Online: $525 Bounty High Roller - Hyper Turbo","inicio":"2026-10-15T16:30+01:00","fim_late_reg":"2026-10-15T17:40+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":30000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:36191854","sala":"WPN","nome":"Big Poker Thursdays PKO - $60,000 GTD","inicio":"2026-10-15T16:30+01:00","fim_late_reg":"2026-10-15T19:45+01:00","buyin":600.0,"rake":30.0,"moeda":"USD","garantido":60000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593141","sala":"GGPoker","nome":"$500 Thursday Ocean KO","inicio":"2026-10-15T17:30+01:00","fim_late_reg":"2026-10-15T20:30+01:00","buyin":475.0,"rake":25.0,"moeda":"USD","garantido":400000.0,"varios_dias":false,"estado":"Registering"},{"id":"pokerstars:4038335403","sala":"PokerStars","nome":"$530 Bounty Builder High Roller [8-Max, Progressive KO], $30K Gtd","inicio":"2026-10-15T17:30+01:00","fim_late_reg":"2026-10-15T20:30+01:00","buyin":500.0,"rake":30.0,"moeda":"USD","garantido":30000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:36065491","sala":"WPN","nome":"Venom Special HR - $200,000 GTD","inicio":"2026-10-15T17:30+01:00","fim_late_reg":"2026-10-15T21:50+01:00","buyin":600.0,"rake":30.0,"moeda":"USD","garantido":200000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:35977137","sala":"WPN","nome":"Venom PKO - $5M GTD [Day 1D]","inicio":"2026-10-15T18:05+01:00","fim_late_reg":"2026-10-16T00:35+01:00","buyin":2500.0,"rake":150.0,"moeda":"USD","garantido":null,"varios_dias":true,"estado":"Registering"},{"id":"wpn:35977207","sala":"WPN","nome":"Venom PKO PLO - $1.5M GTD [Day 1D]","inicio":"2026-10-15T18:05+01:00","fim_late_reg":"2026-10-16T00:35+01:00","buyin":2500.0,"rake":150.0,"moeda":"USD","garantido":null,"varios_dias":true,"estado":"Registering"},{"id":"pokerstars:4038335408","sala":"PokerStars","nome":"$1,050 Thursday Thrill High Roller [8-Max, Progressive KO], $40K Gtd","inicio":"2026-10-15T18:30+01:00","fim_late_reg":"2026-10-15T21:30+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":40000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:36065608","sala":"WPN","nome":"Venom Special - $100,000 GTD","inicio":"2026-10-15T18:30+01:00","fim_late_reg":"2026-10-15T22:05+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":100000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593161","sala":"GGPoker","nome":"$1,050 Thursday Throwdown HR","inicio":"2026-10-15T19:00+01:00","fim_late_reg":"2026-10-15T22:30+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":250000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318649482","sala":"GGPoker","nome":"High Rollers PLO-NL $525","inicio":"2026-10-15T19:10+01:00","fim_late_reg":"2026-10-15T21:10+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":3500.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318660579","sala":"GGPoker","nome":"High Rollers NLH Classic $525","inicio":"2026-10-15T20:00+01:00","fim_late_reg":"2026-10-15T22:10+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":7500.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318669360","sala":"GGPoker","nome":"High Rollers PLO-NL Bounty $525","inicio":"2026-10-15T20:40+01:00","fim_late_reg":"2026-10-15T22:40+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":3000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:36065614","sala":"WPN","nome":"Venom Special - $60,000 GTD","inicio":"2026-10-15T21:05+01:00","fim_late_reg":"2026-10-16T00:35+01:00","buyin":600.0,"rake":30.0,"moeda":"USD","garantido":60000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318679729","sala":"GGPoker","nome":"High Rollers Bounty Encore $525","inicio":"2026-10-15T21:30+01:00","fim_late_reg":"2026-10-15T23:50+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":8000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593182","sala":"GGPoker","nome":"$525 Daily HEATER HR [Bounty Turbo 7-Max]","inicio":"2026-10-15T22:00+01:00","fim_late_reg":"2026-10-15T23:35+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":60000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:36065760","sala":"WPN","nome":"Venom Special - $50,000 GTD Turbo","inicio":"2026-10-16T00:05+01:00","fim_late_reg":"2026-10-16T02:15+01:00","buyin":600.0,"rake":30.0,"moeda":"USD","garantido":50000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593225","sala":"GGPoker","nome":"$525 Daily HR Wrap-Up [Bounty Edition]","inicio":"2026-10-16T01:05+01:00","fim_late_reg":"2026-10-16T02:45+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":20000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318363034","sala":"GGPoker","nome":"#20: APT Online Main Event, $5M GTD [Day 1]","inicio":"2026-10-16T13:30+01:00","fim_late_reg":"2026-10-16T17:05+01:00","buyin":760.0,"rake":40.0,"moeda":"USD","garantido":null,"varios_dias":true,"estado":"Registering"},{"id":"ggnetwork:318594408","sala":"GGPoker","nome":"APT Online: $525 Bounty Builder Deepstack HR","inicio":"2026-10-16T13:30+01:00","fim_late_reg":"2026-10-16T16:45+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":75000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318594428","sala":"GGPoker","nome":"APT Online: $1,050 High Roller NLH","inicio":"2026-10-16T15:05+01:00","fim_late_reg":"2026-10-16T18:30+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":50000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318841201","sala":"GGPoker","nome":"High Rollers Bounty Warm-Up $840","inicio":"2026-10-16T15:30+01:00","fim_late_reg":"2026-10-16T18:15+01:00","buyin":800.0,"rake":40.0,"moeda":"USD","garantido":12500.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593282","sala":"GGPoker","nome":"$525 Bounty Hunters HR [Ultradeep Turbo]","inicio":"2026-10-16T17:30+01:00","fim_late_reg":"2026-10-16T20:10+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":200000.0,"varios_dias":false,"estado":"Registering"},{"id":"pokerstars:4038335404","sala":"PokerStars","nome":"$530 Bounty Builder High Roller [8-Max, Progressive KO], $20K Gtd","inicio":"2026-10-16T17:30+01:00","fim_late_reg":"2026-10-16T20:30+01:00","buyin":500.0,"rake":30.0,"moeda":"USD","garantido":20000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:36200655","sala":"WPN","nome":"High Roller  - $20,000 GTD","inicio":"2026-10-16T18:05+01:00","fim_late_reg":"2026-10-16T20:15+01:00","buyin":600.0,"rake":30.0,"moeda":"USD","garantido":20000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593303","sala":"GGPoker","nome":"$1,050 Friday Night Fight HR [6-Max]","inicio":"2026-10-16T19:00+01:00","fim_late_reg":"2026-10-16T22:30+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":125000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318895440","sala":"GGPoker","nome":"High Rollers PLO-NL $525","inicio":"2026-10-16T19:10+01:00","fim_late_reg":"2026-10-16T21:10+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":3500.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318908848","sala":"GGPoker","nome":"High Rollers NLH Classic $525","inicio":"2026-10-16T20:00+01:00","fim_late_reg":"2026-10-16T22:10+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":7500.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318919203","sala":"GGPoker","nome":"High Rollers PLO-NL Bounty $525","inicio":"2026-10-16T20:40+01:00","fim_late_reg":"2026-10-16T22:40+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":3000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318932002","sala":"GGPoker","nome":"High Rollers Bounty Encore $525","inicio":"2026-10-16T21:30+01:00","fim_late_reg":"2026-10-16T23:50+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":5000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593330","sala":"GGPoker","nome":"$525 Daily HEATER HR [Bounty Turbo 7-Max]","inicio":"2026-10-16T22:00+01:00","fim_late_reg":"2026-10-16T23:35+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":30000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:36203247","sala":"WPN","nome":"High Roller - $25,000 GTD","inicio":"2026-10-16T23:05+01:00","fim_late_reg":"2026-10-17T01:15+01:00","buyin":600.0,"rake":30.0,"moeda":"USD","garantido":25000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593377","sala":"GGPoker","nome":"$525 Daily HR Wrap-Up [Bounty Edition]","inicio":"2026-10-17T01:05+01:00","fim_late_reg":"2026-10-17T02:45+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":20000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318363035","sala":"GGPoker","nome":"#20: APT Online Main Event, $5M GTD [Day 1]","inicio":"2026-10-17T13:30+01:00","fim_late_reg":"2026-10-17T17:05+01:00","buyin":760.0,"rake":40.0,"moeda":"USD","garantido":null,"varios_dias":true,"estado":"Registering"},{"id":"ggnetwork:318594475","sala":"GGPoker","nome":"APT Online: $525 Bounty Builder Deepstack HR","inicio":"2026-10-17T13:30+01:00","fim_late_reg":"2026-10-17T16:45+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":75000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318594490","sala":"GGPoker","nome":"APT Online: $525 PLO Bounty Hunter HR","inicio":"2026-10-17T14:40+01:00","fim_late_reg":"2026-10-17T17:25+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":12500.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318594491","sala":"GGPoker","nome":"APT Online: $1,050 High Roller NLH","inicio":"2026-10-17T15:05+01:00","fim_late_reg":"2026-10-17T18:30+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":50000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318594506","sala":"GGPoker","nome":"APT Online: $888 Bounty Head Hunter HR [Single Re-Entry]","inicio":"2026-10-17T15:30+01:00","fim_late_reg":"2026-10-17T18:50+01:00","buyin":843.6,"rake":44.4,"moeda":"USD","garantido":30000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593417","sala":"GGPoker","nome":"$500 Saturday Ocean KO [6-Max]","inicio":"2026-10-17T16:30+01:00","fim_late_reg":"2026-10-17T19:30+01:00","buyin":475.0,"rake":25.0,"moeda":"USD","garantido":200000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318594517","sala":"GGPoker","nome":"APT Online: $525 Bounty High Roller - Hyper Turbo","inicio":"2026-10-17T16:30+01:00","fim_late_reg":"2026-10-17T17:40+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":25000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593431","sala":"GGPoker","nome":"$525 Bounty Hunters HR [Big Bounties]","inicio":"2026-10-17T17:30+01:00","fim_late_reg":"2026-10-17T21:00+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":250000.0,"varios_dias":false,"estado":"Registering"},{"id":"pokerstars:4038335405","sala":"PokerStars","nome":"$530 Bounty Builder High Roller [8-Max, Progressive KO], $25K Gtd","inicio":"2026-10-17T17:30+01:00","fim_late_reg":"2026-10-17T20:30+01:00","buyin":500.0,"rake":30.0,"moeda":"USD","garantido":25000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593444","sala":"GGPoker","nome":"$1,050 Saturday Secret KO HR [Mystery Bounty]","inicio":"2026-10-17T19:00+01:00","fim_late_reg":"2026-10-17T22:40+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":150000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319146182","sala":"GGPoker","nome":"High Rollers PLO-NL $525","inicio":"2026-10-17T19:10+01:00","fim_late_reg":"2026-10-17T21:10+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":3500.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319157089","sala":"GGPoker","nome":"High Rollers NLH Classic $525","inicio":"2026-10-17T20:00+01:00","fim_late_reg":"2026-10-17T22:10+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":7500.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319165867","sala":"GGPoker","nome":"High Rollers PLO-NL Bounty $525","inicio":"2026-10-17T20:40+01:00","fim_late_reg":"2026-10-17T22:40+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":3000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319176663","sala":"GGPoker","nome":"High Rollers Bounty Encore $525","inicio":"2026-10-17T21:30+01:00","fim_late_reg":"2026-10-17T23:50+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":5000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593471","sala":"GGPoker","nome":"$525 Daily HEATER HR [Bounty Turbo 7-Max]","inicio":"2026-10-17T22:00+01:00","fim_late_reg":"2026-10-17T23:35+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":25000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593495","sala":"GGPoker","nome":"$525 Daily HR Wrap-Up [Bounty Edition]","inicio":"2026-10-18T01:05+01:00","fim_late_reg":"2026-10-18T02:45+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":20000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318363036","sala":"GGPoker","nome":"#20: APT Online Main Event, $5M GTD [Day 1]","inicio":"2026-10-18T13:30+01:00","fim_late_reg":"2026-10-18T17:05+01:00","buyin":760.0,"rake":40.0,"moeda":"USD","garantido":null,"varios_dias":true,"estado":"Registering"},{"id":"ggnetwork:318594564","sala":"GGPoker","nome":"APT Online: $525 Bounty Builder HR Asia","inicio":"2026-10-18T13:30+01:00","fim_late_reg":"2026-10-18T16:40+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":250000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:317455552","sala":"GGPoker","nome":"#7: APT Online High Roller [2-Day Event]","inicio":"2026-10-18T14:00+01:00","fim_late_reg":"2026-10-18T18:05+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":600000.0,"varios_dias":true,"estado":"Registering"},{"id":"ggnetwork:318594577","sala":"GGPoker","nome":"APT Online: $600 Sunday 6-Max Challenge HR","inicio":"2026-10-18T15:05+01:00","fim_late_reg":"2026-10-18T18:05+01:00","buyin":570.0,"rake":30.0,"moeda":"USD","garantido":200000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593552","sala":"GGPoker","nome":"$840 Sunday Bounty Warm-Up HR","inicio":"2026-10-18T15:30+01:00","fim_late_reg":"2026-10-18T19:00+01:00","buyin":800.0,"rake":40.0,"moeda":"USD","garantido":60000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:36065624","sala":"WPN","nome":"Venom Special HR - $250,000 GTD","inicio":"2026-10-18T15:30+01:00","fim_late_reg":"2026-10-18T19:05+01:00","buyin":600.0,"rake":30.0,"moeda":"USD","garantido":250000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318594580","sala":"GGPoker","nome":"APT Online: $1,050 Sunday High Roller","inicio":"2026-10-18T16:05+01:00","fim_late_reg":"2026-10-18T19:30+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":300000.0,"varios_dias":false,"estado":"Registering"},{"id":"pokerstars:4038335398","sala":"PokerStars","nome":"$1,050 Sunday Warm-Up High Roller [8-Max], $20K Gtd / Adjusted Late Reg!","inicio":"2026-10-18T16:05+01:00","fim_late_reg":"2026-10-18T18:35+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":20000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318594590","sala":"GGPoker","nome":"APT Online: $1,050 Sunday Bounty HR - Hyper Turbo","inicio":"2026-10-18T16:30+01:00","fim_late_reg":"2026-10-18T17:40+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":75000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319348889","sala":"GGPoker","nome":"Sunday CRAZY EIGHTS HR $888","inicio":"2026-10-18T17:05+01:00","fim_late_reg":"2026-10-18T20:35+01:00","buyin":843.6,"rake":44.4,"moeda":"USD","garantido":20000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:36192620","sala":"WPN","nome":"Sunday High Roller - $500,000 GTD","inicio":"2026-10-18T17:05+01:00","fim_late_reg":"2026-10-18T21:25+01:00","buyin":600.0,"rake":30.0,"moeda":"USD","garantido":500000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:36065785","sala":"WPN","nome":"VSpecial Sunday High Roller - $600,000 GTD","inicio":"2026-10-18T17:05+01:00","fim_late_reg":"2026-10-18T21:25+01:00","buyin":600.0,"rake":30.0,"moeda":"USD","garantido":600000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593571","sala":"GGPoker","nome":"$525 Bounty Hunters HR Main Event, $1.5M GTD","inicio":"2026-10-18T17:30+01:00","fim_late_reg":"2026-10-18T21:05+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":1500000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319353890","sala":"GGPoker","nome":"Bounty Hunters Super High Roller $5,250","inicio":"2026-10-18T17:30+01:00","fim_late_reg":"2026-10-18T20:05+01:00","buyin":5000.0,"rake":250.0,"moeda":"USD","garantido":100000.0,"varios_dias":false,"estado":"Registering"},{"id":"pokerstars:4038335406","sala":"PokerStars","nome":"$530 Bounty Builder High Roller [8-Max, Progressive KO], $70K Gtd","inicio":"2026-10-18T17:30+01:00","fim_late_reg":"2026-10-18T20:30+01:00","buyin":500.0,"rake":30.0,"moeda":"USD","garantido":70000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593589","sala":"GGPoker","nome":"$525 [PLO] Sunday Bounty Hunters HR Main","inicio":"2026-10-18T17:40+01:00","fim_late_reg":"2026-10-18T20:45+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":100000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319360266","sala":"GGPoker","nome":"GGMasters High Rollers $1,050, $750K GTD [2-Day Event]","inicio":"2026-10-18T18:00+01:00","fim_late_reg":"2026-10-18T22:05+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":750000.0,"varios_dias":true,"estado":"Registering"},{"id":"wpn:36199171","sala":"WPN","nome":"The Sunday Banana - $400,000 GTD","inicio":"2026-10-18T18:05+01:00","fim_late_reg":"2026-10-18T22:25+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":400000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:35977135","sala":"WPN","nome":"Venom PKO - $5M GTD [Day 1E]","inicio":"2026-10-18T18:05+01:00","fim_late_reg":"2026-10-19T00:35+01:00","buyin":2500.0,"rake":150.0,"moeda":"USD","garantido":null,"varios_dias":true,"estado":"Registering"},{"id":"wpn:35977209","sala":"WPN","nome":"Venom PKO PLO - $1.5M GTD [Day 1E]","inicio":"2026-10-18T18:05+01:00","fim_late_reg":"2026-10-19T00:35+01:00","buyin":2500.0,"rake":150.0,"moeda":"USD","garantido":null,"varios_dias":true,"estado":"Registering"},{"id":"wpn:36065788","sala":"WPN","nome":"Venom Special Sunday Banana - $500,000 GTD","inicio":"2026-10-18T18:05+01:00","fim_late_reg":"2026-10-18T22:25+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":500000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319366683","sala":"GGPoker","nome":"Sunday High Rollers Bounty Very Big Game $2,500","inicio":"2026-10-18T18:30+01:00","fim_late_reg":"2026-10-18T21:30+01:00","buyin":2375.0,"rake":125.0,"moeda":"USD","garantido":25000.0,"varios_dias":false,"estado":"Registering"},{"id":"pokerstars:4038335409","sala":"PokerStars","nome":"$1,050 Sunday High Roller [8-Max, Progressive KO], $60K Gtd","inicio":"2026-10-18T18:30+01:00","fim_late_reg":"2026-10-18T21:30+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":60000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319373427","sala":"GGPoker","nome":"GGMillion$ High Rollers $10,000, $2M GTD [2-Day Event]","inicio":"2026-10-18T19:00+01:00","fim_late_reg":"2026-10-19T00:25+01:00","buyin":9700.0,"rake":300.0,"moeda":"USD","garantido":2000000.0,"varios_dias":true,"estado":"Registering"},{"id":"ggnetwork:319374603","sala":"GGPoker","nome":"NLH Sunday Classic $525","inicio":"2026-10-18T19:05+01:00","fim_late_reg":"2026-10-18T22:40+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":15000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318594852","sala":"GGPoker","nome":"PLO Sunday Classic HR Main $1,050","inicio":"2026-10-18T19:10+01:00","fim_late_reg":"2026-10-18T22:15+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":100000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593599","sala":"GGPoker","nome":"$1,000 Sunday Ocean KO","inicio":"2026-10-18T19:30+01:00","fim_late_reg":"2026-10-18T23:00+01:00","buyin":950.0,"rake":50.0,"moeda":"USD","garantido":450000.0,"varios_dias":false,"estado":"Registering"},{"id":"pokerstars:4038335412","sala":"PokerStars","nome":"$530 PLO Sunday High Roller [6-Max], $10K Gtd","inicio":"2026-10-18T19:30+01:00","fim_late_reg":"2026-10-18T22:05+01:00","buyin":500.0,"rake":30.0,"moeda":"USD","garantido":10000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:36164305","sala":"WPN","nome":"Phil's Thrill","inicio":"2026-10-18T19:30+01:00","fim_late_reg":"2026-10-18T21:40+01:00","buyin":10000.0,"rake":300.0,"moeda":"USD","garantido":null,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593602","sala":"GGPoker","nome":"$1,500 Sunday HR Main Event [Bounty Edition]","inicio":"2026-10-18T20:00+01:00","fim_late_reg":"2026-10-18T23:30+01:00","buyin":1425.0,"rake":75.0,"moeda":"USD","garantido":400000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319386725","sala":"GGPoker","nome":"GGMillion$ Pot-Limit Omaha $10,000, $1M GTD","inicio":"2026-10-18T20:00+01:00","fim_late_reg":"2026-10-19T00:05+01:00","buyin":9700.0,"rake":300.0,"moeda":"USD","garantido":1000000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:36199550","sala":"WPN","nome":"Mini Phil's Thrill - $200,000 GTD","inicio":"2026-10-18T20:30+01:00","fim_late_reg":"2026-10-18T22:40+01:00","buyin":2500.0,"rake":150.0,"moeda":"USD","garantido":200000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319400808","sala":"GGPoker","nome":"Sunday LUCKY SEVENS Turbo HR $777 [7-Max]","inicio":"2026-10-18T21:05+01:00","fim_late_reg":"2026-10-18T23:05+01:00","buyin":738.15,"rake":38.85,"moeda":"USD","garantido":20000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319401030","sala":"GGPoker","nome":"$1,050 Deadline to GGMillion$ HR $10,000, $2M GTD, 2 Seats","inicio":"2026-10-18T21:06+01:00","fim_late_reg":"2026-10-18T21:46+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":20000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319408191","sala":"GGPoker","nome":"High Rollers Bounty Sunday Encore $525","inicio":"2026-10-18T21:40+01:00","fim_late_reg":"2026-10-19T00:30+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":12500.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593642","sala":"GGPoker","nome":"$525 Sunday HEATER HR [Bounty Turbo]","inicio":"2026-10-18T22:00+01:00","fim_late_reg":"2026-10-18T23:35+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":100000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:36194721","sala":"WPN","nome":"Venom Special - $80,000 GTD MB 6-Max","inicio":"2026-10-18T22:05+01:00","fim_late_reg":"2026-10-19T00:15+01:00","buyin":600.0,"rake":30.0,"moeda":"USD","garantido":80000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319413378","sala":"GGPoker","nome":"$1,050 Last Chance to GGMillion$ HR $10,000, $2M GTD, 2 Seats","inicio":"2026-10-18T22:06+01:00","fim_late_reg":"2026-10-18T22:46+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":20000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319414094","sala":"GGPoker","nome":"$1,050 Deadline to GGMillion$ PLO $10,000, $1M GTD, 2 Seats","inicio":"2026-10-18T22:10+01:00","fim_late_reg":"2026-10-18T22:50+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":20000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319424625","sala":"GGPoker","nome":"$1,050 Last Chance to GGMillion$ HR $10,000, $2M GTD, 2 Seats","inicio":"2026-10-18T23:06+01:00","fim_late_reg":"2026-10-18T23:31+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":20000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319434164","sala":"GGPoker","nome":"Sunday Saver HR $1,500 [Hyper]","inicio":"2026-10-19T00:05+01:00","fim_late_reg":"2026-10-19T01:10+01:00","buyin":1425.0,"rake":75.0,"moeda":"USD","garantido":50000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:318593668","sala":"GGPoker","nome":"$525 Sunday HR Wrap-Up [Bounty Edition]","inicio":"2026-10-19T01:05+01:00","fim_late_reg":"2026-10-19T02:45+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":40000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319442042","sala":"GGPoker","nome":"High Rollers Sunday Wrap-Up $525","inicio":"2026-10-19T01:05+01:00","fim_late_reg":"2026-10-19T03:20+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":30000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319448803","sala":"GGPoker","nome":"High Rollers Sunday Closer $1,050","inicio":"2026-10-19T02:05+01:00","fim_late_reg":"2026-10-19T03:30+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":20000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319452881","sala":"GGPoker","nome":"Sunday Last Call $1,500 [Hyper]","inicio":"2026-10-19T02:45+01:00","fim_late_reg":"2026-10-19T03:50+01:00","buyin":1425.0,"rake":75.0,"moeda":"USD","garantido":25000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319566615","sala":"GGPoker","nome":"High Rollers Bounty Warm-Up $840","inicio":"2026-10-19T15:30+01:00","fim_late_reg":"2026-10-19T18:15+01:00","buyin":800.0,"rake":40.0,"moeda":"USD","garantido":12500.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:36065895","sala":"WPN","nome":"Venom Special PKO - $100,000 GTD","inicio":"2026-10-19T16:15+01:00","fim_late_reg":"2026-10-19T19:30+01:00","buyin":600.0,"rake":30.0,"moeda":"USD","garantido":100000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:36065501","sala":"WPN","nome":"Venom Special - $500,000 GTD","inicio":"2026-10-19T17:30+01:00","fim_late_reg":"2026-10-19T21:50+01:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":500000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:35977133","sala":"WPN","nome":"Venom PKO - $5,000,000 GTD [MAIN]","inicio":"2026-10-19T18:05+01:00","fim_late_reg":null,"buyin":2500.0,"rake":150.0,"moeda":"USD","garantido":5000000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:35977206","sala":"WPN","nome":"Venom PKO PLO - $1,500,000 GTD [Day 2]","inicio":"2026-10-19T18:05+01:00","fim_late_reg":null,"buyin":2500.0,"rake":150.0,"moeda":"USD","garantido":1500000.0,"varios_dias":true,"estado":"Registering"},{"id":"wpn:36065527","sala":"WPN","nome":"Venom Special - $400,000 GTD","inicio":"2026-10-19T18:05+01:00","fim_late_reg":"2026-10-19T22:25+01:00","buyin":2500.0,"rake":150.0,"moeda":"USD","garantido":400000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:36066612","sala":"WPN","nome":"Venom Special PKO - $200,000 GTD","inicio":"2026-10-19T18:30+01:00","fim_late_reg":"2026-10-19T22:50+01:00","buyin":600.0,"rake":30.0,"moeda":"USD","garantido":200000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319617473","sala":"GGPoker","nome":"High Rollers PLO-NL $525","inicio":"2026-10-19T19:10+01:00","fim_late_reg":"2026-10-19T21:10+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":3500.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319629932","sala":"GGPoker","nome":"High Rollers NLH Classic $525","inicio":"2026-10-19T20:00+01:00","fim_late_reg":"2026-10-19T22:10+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":7500.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319639845","sala":"GGPoker","nome":"High Rollers PLO-NL Bounty $525","inicio":"2026-10-19T20:40+01:00","fim_late_reg":"2026-10-19T22:40+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":3000.0,"varios_dias":false,"estado":"Registering"},{"id":"wpn:36065631","sala":"WPN","nome":"Venom Special - $75,000 GTD","inicio":"2026-10-19T21:05+01:00","fim_late_reg":"2026-10-20T00:35+01:00","buyin":600.0,"rake":30.0,"moeda":"USD","garantido":75000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319652154","sala":"GGPoker","nome":"High Rollers Bounty Encore $525","inicio":"2026-10-19T21:30+01:00","fim_late_reg":"2026-10-19T23:50+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":8000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319809645","sala":"GGPoker","nome":"High Rollers Bounty Warm-Up $840","inicio":"2026-10-20T15:30+01:00","fim_late_reg":"2026-10-20T18:15+01:00","buyin":800.0,"rake":40.0,"moeda":"USD","garantido":12500.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319853975","sala":"GGPoker","nome":"High Rollers PLO-NL $525","inicio":"2026-10-20T19:10+01:00","fim_late_reg":"2026-10-20T21:10+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":3500.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319864764","sala":"GGPoker","nome":"High Rollers NLH Classic $525","inicio":"2026-10-20T20:00+01:00","fim_late_reg":"2026-10-20T22:10+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":7500.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319872969","sala":"GGPoker","nome":"High Rollers PLO-NL Bounty $525","inicio":"2026-10-20T20:40+01:00","fim_late_reg":"2026-10-20T22:40+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":3000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:319883063","sala":"GGPoker","nome":"High Rollers Bounty Encore $525","inicio":"2026-10-20T21:30+01:00","fim_late_reg":"2026-10-20T23:50+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":8000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:320047397","sala":"GGPoker","nome":"High Rollers Bounty Warm-Up $840","inicio":"2026-10-21T15:30+01:00","fim_late_reg":"2026-10-21T18:15+01:00","buyin":800.0,"rake":40.0,"moeda":"USD","garantido":12500.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:320096092","sala":"GGPoker","nome":"High Rollers PLO-NL $525","inicio":"2026-10-21T19:10+01:00","fim_late_reg":"2026-10-21T21:10+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":3500.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:320107780","sala":"GGPoker","nome":"High Rollers NLH Classic $525","inicio":"2026-10-21T20:00+01:00","fim_late_reg":"2026-10-21T22:10+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":7500.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:320117081","sala":"GGPoker","nome":"High Rollers PLO-NL Bounty $525","inicio":"2026-10-21T20:40+01:00","fim_late_reg":"2026-10-21T22:40+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":3000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:320128080","sala":"GGPoker","nome":"High Rollers Bounty Encore $525","inicio":"2026-10-21T21:30+01:00","fim_late_reg":"2026-10-21T23:50+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":8000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:317455562","sala":"GGPoker","nome":"#10: Single Day High Roller - Double Stack","inicio":"2026-10-22T13:00+01:00","fim_late_reg":"2026-10-22T16:05+01:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":400000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:317455575","sala":"GGPoker","nome":"#13: Bounty Hunters High Roller [2-Day Event]","inicio":"2026-10-25T13:00+00:00","fim_late_reg":"2026-10-25T17:05+00:00","buyin":1000.0,"rake":50.0,"moeda":"USD","garantido":600000.0,"varios_dias":true,"estado":"Registering"},{"id":"ggnetwork:317455577","sala":"GGPoker","nome":"#16: Masters Omaha - PLO Bounty","inicio":"2026-10-29T12:00+00:00","fim_late_reg":"2026-10-29T14:45+00:00","buyin":500.0,"rake":25.0,"moeda":"USD","garantido":200000.0,"varios_dias":false,"estado":"Registering"},{"id":"ggnetwork:317455590","sala":"GGPoker","nome":"#19: APT Online Super High Roller [2-Day Event]","inicio":"2026-11-01T13:00+00:00","fim_late_reg":"2026-11-01T17:35+00:00","buyin":2850.0,"rake":150.0,"moeda":"USD","garantido":1000000.0,"varios_dias":true,"estado":"Registering"},{"id":"ggnetwork:318362951","sala":"GGPoker","nome":"#20: APT Online Main Event, $5M GTD [Day 2]","inicio":"2026-11-01T13:05+00:00","fim_late_reg":null,"buyin":760.0,"rake":40.0,"moeda":"USD","garantido":5000000.0,"varios_dias":true,"estado":"Registering"}]};
+const LIMITE_HORAS=8;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const r2=v=>Math.round(v*100)/100;
+const grp=v=>{const [i,dd]=Math.abs(r2(v)).toFixed(2).split('.');return (v<0?'−':'')+i.replace(/\B(?=(\d{3})+(?!\d))/g,' ')+(dd==='00'?'':','+dd)};
+const money=(v,c='USD')=>{const s=grp(v);return s.startsWith('−')?'−'+(c==='EUR'?'€':'$')+s.slice(1):(c==='EUR'?'€':'$')+s};
+const num=s=>{const t=String(s??'').trim().replace(/\s/g,'').replace(',','.');return t===''?NaN:Number(t)};
+const pctTxt=p=>Math.round(p*100)+'%';
+const curto=n=>n.replace(/,\s*\$[\d.,]+[KM]?\s*GTD/i,'').replace(/\s+-\s+\$[\d,]+(,\d+)*\s*GTD/i,'').trim();
+
+// ---------------- estado da simulação ----------------
+const NOVO=()=>({
+  jogador:'Jogador A',nivel:6.5,mes:'outubro',contrato:false,
+  salas:[{id:'gg',nome:'GGPoker.com USD',rede:'GGPoker',moeda:'USD',saldo:25150,compra:0},
+         {id:'ps',nome:'PokerStars.com EUR',rede:'PokerStars',moeda:'EUR',saldo:8000,compra:0},
+         {id:'wpn',nome:'WPN',rede:'WPN',moeda:'USD',saldo:6000,compra:0}],
+  luxon:{USD:0,EUR:0},makeup:{USD:0,EUR:0},
+  compras:[],ops:[],sessoes:[],
+  matriz:{niveis:[{n:'até 5,9',max:5.99},{n:'6 a 6,9',max:6.99},{n:'7 ou mais',max:99}],
+    faixas:[{n:'até $1 100',max:1100},{n:'até $5 300',max:5300},{n:'até $10 300',max:10300},{n:'acima',max:1e9}],
+    celulas:[[{p:.5,v:600},{p:.5,v:2700},{p:.4,v:4200},{p:0,v:0}],
+             [{p:.6,v:700},{p:.6,v:3200},{p:.6,v:6200},{p:.5,v:8000}],
+             [{p:.7,v:800},{p:.7,v:3800},{p:.7,v:7300},{p:.6,v:15000}]],
+    gtdMult:20,abertoMax:20000}
+});
+let S;try{S=JSON.parse(localStorage.getItem('compras-v4')||'null')}catch(e){}
+if(!S||!S.salas)S=NOVO();
+let UI={tab:'vender',step:'lista',sala:'todas',dia:'todos',q:'',sel:null,pct:.5,ent:1,rb:'',eur:false,fx:.86,fxData:null,
+  sess:null,op:null,flash:''};
+const guardar=()=>{try{localStorage.setItem('compras-v4',JSON.stringify(S))}catch(e){}};
+fetch('https://api.frankfurter.app/latest?from=USD&to=EUR').then(r=>r.json()).then(j=>{UI.fx=j.rates.EUR;UI.fxData=j.date;render()}).catch(()=>{});
+
+// ---------------- tema ----------------
+function applyTheme(t,keep){document.documentElement.setAttribute('data-theme',t);$('#themeBtn').textContent=t==='dark'?'☀ Claro':'☾ Escuro';if(keep)try{localStorage.setItem('compras-v4-tema',t)}catch(e){}}
+const curTheme=()=>document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+(()=>{let s=null;try{s=localStorage.getItem('compras-v4-tema')}catch(e){}applyTheme(s==='light'||s==='dark'?s:curTheme())})();
+$('#themeBtn').onclick=()=>applyTheme(curTheme()==='dark'?'light':'dark',true);
+
+// ---------------- datas ----------------
+const d=iso=>new Date(iso);
+const hm=dt=>dt.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Lisbon'});
+const diaKey=dt=>dt.toLocaleDateString('en-CA',{timeZone:'Europe/Lisbon'});
+const diaNome=k=>{const hoje=diaKey(new Date()),am=diaKey(new Date(Date.now()+864e5));if(k===hoje)return 'Hoje';if(k===am)return 'Amanhã';const x=new Date(k+'T12:00:00Z');return x.toLocaleDateString('pt-PT',{weekday:'short'}).replace('.','')+' '+x.toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit'})};
+const prazo=t=>new Date(d(t.inicio).getTime()-LIMITE_HORAS*36e5);
+const aberto=t=>Date.now()<prazo(t).getTime();
+const hojeTxt=()=>new Date().toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+// ---------------- regras ----------------
+const salaDaRede=rede=>S.salas.find(s=>s.rede===rede);
+// As contas da folha "Controlo compras ação" / formulário do Asana:
+//   RB por entrada (K) = rake × RB% × %venda ; a enviar (L) = entradas × (%venda × (buy-in + rake) − K)
+function contas(t,pct,ent,rb,moedaEnvio,fx){
+  const rbEntrada=t.rake*rb*pct,porEntradaUSD=pct*(t.buyin+t.rake)-rbEntrada;
+  const k=moedaEnvio==='EUR'?fx:1;
+  return {rbEntrada,porEntrada:r2(porEntradaUSD*k),valor:r2(ent*porEntradaUSD*k),usd:r2(ent*porEntradaUSD),parte:ent*pct*(t.buyin+t.rake),rbTotal:ent*rbEntrada};
+}
+const emAberto=()=>S.compras.filter(c=>['aprovada','enviada','na_sala','aberta'].includes(c.estado)).reduce((a,c)=>a+c.usd,0);
+function tipoDe(t){return /bounty|pko|ko\b|knockout/i.test(t.nome)?'bounty':t.varios_dias?'varios':'normal'}
+function avaliar(t,pct,usd){
+  const M=S.matriz;const iN=M.niveis.findIndex(x=>S.nivel<=x.max);const bi=t.buyin+t.rake;const iF=M.faixas.findIndex(x=>bi<=x.max);
+  const c=M.celulas[iN][iF];const out=[];
+  out.push(aberto(t)?['ok',`Dentro do prazo (até ${LIMITE_HORAS} h antes)`]:['err','Prazo fechado']);
+  out.push(c.p===0?['warn',`Nível ${String(S.nivel).replace('.',',')} não tem compras aprovadas sozinhas nesta faixa de buy-in`]:
+    pct<=c.p+1e-9?['ok',`% até ${pctTxt(c.p)} (nível ${M.niveis[iN].n}, buy-in ${M.faixas[iF].n})`]:['warn',`% acima de ${pctTxt(c.p)} para o teu nível nesta faixa`]);
+  if(c.p>0)out.push(usd<=c.v+.005?['ok',`Valor até ${money(c.v)}`]:['warn',`Valor acima de ${money(c.v)} para o teu nível nesta faixa`]);
+  const gtdMin=M.gtdMult*bi;out.push(!t.garantido||t.garantido>=gtdMin?['ok',`Garantido de pelo menos ${M.gtdMult}× o buy-in`]:['warn',`Garantido baixo (${money(t.garantido)}; mínimo ${money(gtdMin)})`]);
+  const ab=emAberto()+usd;out.push(ab<=M.abertoMax?['ok',`Total em aberto até ${money(M.abertoMax)}`]:['warn',`Ficavas com ${money(ab)} em aberto (máximo ${money(M.abertoMax)})`]);
+  return out;
+}
+
+// ---------------- guia da simulação ----------------
+function guia(){
+  const c=S.compras.filter(x=>x.estado!=='recusada'&&x.estado!=='cancelada');
+  const ult=c[c.length-1];
+  if(!ult)return ['Passo 1','Pede uma compra de ação: escolhe um torneio da lista (por ex. o GGMillion$ de domingo).','vender'];
+  const m={revisao:['Gestão','O pedido ficou fora da matriz: a gestão aprova ou recusa.','gestao'],
+    aprovada:['Gestão','A Polarize envia o valor para a Luxon do jogador (o Tiago paga).','gestao'],
+    enviada:['Passo 2','Recebeste o dinheiro na Luxon. Põe-no na sala, em Operações.','ops'],
+    na_sala:['Passo 3','Joga e regista a sessão: experimenta "eliminado", "ITM" ou "não joguei".','sessao'],
+    aberta:['Passo 3','O torneio continua noutro dia: regista a sessão do dia seguinte.','sessao'],
+    a_devolver:['Passo 4','Devolve à Polarize o que é dela, em Operações.','ops'],
+    devolucao_enviada:['Gestão','A gestão confirma que o dinheiro chegou.','gestao'],
+    fechada:['Feito','Compra fechada. Vê o extrato do mês em Gestão, ou pede outra.','gestao']};
+  return m[ult.estado]||null;
+}
+const pendentesJogador=()=>S.compras.filter(c=>['enviada','a_devolver'].includes(c.estado)).length;
+const pendentesGestao=()=>S.compras.filter(c=>['revisao','aprovada','devolucao_enviada'].includes(c.estado)).length;
+
+// ---------------- ecrãs: vender ----------------
+function vLista(){
+  const tors=(CAT?.torneios||[]).filter(t=>d(t.inicio).getTime()>Date.now()-36e5);
+  const dias=[...new Set(tors.map(t=>diaKey(d(t.inicio))))].slice(0,10);
+  const fechados=tors.filter(t=>!aberto(t)&&(UI.sala==='todas'||t.sala===UI.sala)).length;
+  const L=tors.filter(t=>aberto(t)&&(UI.sala==='todas'||t.sala===UI.sala)&&(UI.dia==='todos'||diaKey(d(t.inicio))===UI.dia)&&(!UI.q||t.nome.toLowerCase().includes(UI.q.toLowerCase())));
+  let h=`<input class="i" id="q" placeholder="Procurar torneio (ex.: GGMillion, Venom)" value="${esc(UI.q)}" autocomplete="off">
+  <div class="chips" style="margin-top:10px">${['todas','GGPoker','PokerStars','WPN'].map(s=>`<button class="chip" data-sala="${s}" aria-pressed="${UI.sala===s}">${s==='todas'?'Todas as salas':s}</button>`).join('')}</div>
+  <div class="chips" style="margin-top:6px"><button class="chip" data-dia="todos" aria-pressed="${UI.dia==='todos'}">Todos os dias</button>${dias.map(k=>`<button class="chip" data-dia="${k}" aria-pressed="${UI.dia===k}">${diaNome(k)}</button>`).join('')}</div>`;
+  if(fechados)h+=`<p class="small" style="margin:10px 0 0">${fechados} ${fechados===1?'torneio já fechou':'torneios já fecharam'} o prazo (pede-se até ${LIMITE_HORAS} h antes do início).</p>`;
+  if(!L.length)return h+`<div class="empty">Nenhum torneio com estes filtros.</div>`;
+  let ult='';
+  for(const t of L.slice(0,120)){
+    const k=diaKey(d(t.inicio));if(k!==ult){h+=`<div class="day">${diaNome(k)}</div>`;ult=k}
+    h+=`<button class="t" data-id="${esc(t.id)}"><div class="hr"><span class="nm">${esc(curto(t.nome))}</span><b>${money(t.buyin+t.rake)}</b></div>
+      <div class="mt"><span>${hm(d(t.inicio))} · ${esc(t.sala)}</span>${t.garantido?`<span class="tag">GTD ${money(t.garantido)}</span>`:''}${t.varios_dias?'<span class="tag info">vários dias</span>':''}<span class="tag ok">pedir até ${hm(prazo(t))}</span></div></button>`;
+  }
+  return h+`<p class="small" style="margin-top:14px">Lista da SharkScope de ${esc(new Date(CAT.gerado_em).toLocaleString('pt-PT',{timeZone:'Europe/Lisbon',dateStyle:'short',timeStyle:'short'}))} (GG, PokerStars, WPN; buy-in a partir de $500, sem satélites).</p>`;
+}
+function vPedido(){
+  const t=UI.sel,sala=salaDaRede(t.sala),rb=num(UI.rb)/100,rbOk=rb>=0&&rb<=1;
+  const moeda=sala.moeda;const c=contas(t,UI.pct,UI.ent,rbOk?rb:0,moeda,UI.fx);
+  let h=`<div class="card"><div style="font-weight:700">${esc(curto(t.nome))}</div>
+    <div class="small" style="margin-top:4px">${esc(t.sala)} · ${diaNome(diaKey(d(t.inicio)))} às ${hm(d(t.inicio))} · late reg até ${t.fim_late_reg?hm(d(t.fim_late_reg)):'—'}</div>
+    <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><span class="tag">buy-in ${money(t.buyin)}</span><span class="tag">rake ${money(t.rake)}</span>${t.varios_dias?'<span class="tag info">vários dias</span>':''}</div></div>
+  <label class="l">Que % vendes à Polarize?</label>
+  <div class="g4">${[.3,.4,.5,.6].map(p=>`<button class="btn${UI.pct===p?' p':''}" data-pct="${p}">${pctTxt(p)}</button>`).join('')}</div>
+  <div class="g4" style="margin-top:6px">${[.45,.55,.7,.8].map(p=>`<button class="btn${UI.pct===p?' p':''}" data-pct="${p}">${pctTxt(p)}</button>`).join('')}</div>
+  <label class="l">Quantas entradas?</label>
+  <div class="step"><button class="btn" data-ent="-1">−</button><div class="v">${UI.ent}</div><button class="btn" data-ent="1">+</button></div>
+  <div class="hint">Conta as re-entradas que podes fazer. As que não usares voltam à Polarize.</div>
+  <label class="l" for="rb">O teu rakeback na ${esc(t.sala)} (%)</label>
+  <input class="i" id="rb" inputmode="decimal" placeholder="ex.: 40" value="${esc(UI.rb)}" autocomplete="off">`;
+  if(moeda==='EUR')h+=`<div class="msg info">A tua ${esc(sala.nome)} é em euros: o torneio é em dólares e a Polarize envia em euros, ao câmbio de hoje (${String(UI.fx).replace('.',',')}${UI.fxData?' · BCE '+UI.fxData:''}).</div>`;
+  if(rbOk&&UI.rb!==''){
+    h+=`<div class="card sum" style="margin-top:14px">
+      <div class="r"><span class="k">${pctTxt(UI.pct)} de ${UI.ent} ${UI.ent===1?'entrada':'entradas'} de ${money(t.buyin+t.rake)}</span><span>${money(c.parte)}</span></div>
+      <div class="r"><span class="k">Menos o rakeback da Polarize (${money(t.rake)} × ${String(r2(rb*100)).replace('.',',')}% × ${pctTxt(UI.pct)}${UI.ent>1?' × '+UI.ent:''})</span><span>−${money(c.rbTotal)}</span></div>
+      <div class="r tot"><span>Recebes na Luxon</span><span>${money(c.valor,moeda)}</span></div>${moeda==='EUR'?`<div class="small">= ${money(c.usd)} ao câmbio de hoje</div>`:''}</div>`;
+    const ck=avaliar(t,UI.pct,c.usd);const passa=ck.every(x=>x[0]==='ok');
+    h+=`<div class="card"><div style="font-weight:700;margin-bottom:6px">${passa?'✓ A matriz aprova sozinha':'Vai para a gestão aprovar'}</div>${ck.map(([k,txt])=>`<div class="small" style="margin:3px 0;color:var(--${k==='ok'?'ok':k==='warn'?'warn':'err'})">${k==='ok'?'✓':k==='warn'?'!':'✕'} ${esc(txt)}</div>`).join('')}</div>`;
+  }
+  return h;
+}
+function vContrato(){
+  return `<div class="card"><div style="font-weight:700;font-size:17px">Contrato de compras de ação · ${esc(S.mes)}</div>
+  <p style="margin:8px 0">Aceitas uma vez por mês e cobre todas as compras que fizeres em ${esc(S.mes)}. Não ficas à espera de assinar cada uma.</p>
+  <ol class="next"><li>A Polarize compra a % que escolheres de cada torneio, pelo valor calculado (buy-in + rake, menos a parte dela no rakeback).</li>
+  <li>O dinheiro da compra fica na sala <b>fora da banca do deal</b> e só serve para esse torneio.</li>
+  <li>Entradas não usadas e a % da Polarize no prémio (bounties incluídos) devolvem-se no dia em que registas a sessão.</li>
+  <li>Depois de começar o torneio a compra é firme.</li>
+  <li>No fim do mês recebes o extrato com todas as compras, que fica a fazer parte deste contrato.</li></ol>
+  <p class="small">Texto de exemplo. O contrato real é definido com o David.</p></div>
+  <button class="btn p big" data-act="aceitarContrato">Aceito o contrato de ${esc(S.mes)}</button>`;
+}
+function vEnviado(c){
+  const st={aprovada:['ok','Pedido aprovado pela matriz'],revisao:['warn','Pedido enviado para a gestão aprovar']}[c.estado]||['ok','Pedido feito'];
+  return `<div class="msg ${st[0]}" style="font-size:16px"><b>${st[1]}</b><br>${esc(curto(c.nome))} · ${pctTxt(c.pct)} · ${c.ent} ${c.ent===1?'entrada':'entradas'} · ${money(c.valor,c.moeda)}</div>
+  <div class="card"><b>O que acontece a seguir</b><ol class="next">
+    ${c.estado==='revisao'?'<li>A gestão aprova ou recusa antes do prazo.</li>':''}
+    <li>A Polarize envia <b>${money(c.valor,c.moeda)}</b> para a tua Luxon.</li>
+    <li>Em Operações, pões esse valor na ${esc(c.salaNome)}. Fica marcado como dinheiro da compra, <b>não</b> como banca.</li>
+    <li>Registas a sessão como sempre. O tracker separa sozinho o que é da compra.</li></ol></div>
+  <button class="btn big" data-go="ops">Ir para Operações</button>`;
+}
+
+// ---------------- ecrãs: operações ----------------
+function vOps(){
+  let h='';
+  const env=S.compras.filter(c=>c.estado==='enviada'),dev=S.compras.filter(c=>c.estado==='a_devolver');
+  if(env.length||dev.length)h+=`<div class="h2" style="margin-top:4px">Ação necessária</div>`;
+  for(const c of env)h+=`<div class="card compra"><div class="hr"><span style="font-weight:600">Pôr na sala o dinheiro da compra</span><b>${money(c.valor,c.moeda)}</b></div>
+    <div class="small" style="margin:4px 0 8px">${esc(curto(c.nome))} · da Luxon Pay ${c.moeda} para a ${esc(c.salaNome)}</div>
+    <button class="btn p" data-op="pôr" data-pid="${c.pid}">Já pus na sala</button></div>`;
+  for(const c of dev)h+=`<div class="card compra"><div class="hr"><span style="font-weight:600">Devolver à Polarize</span><b>${money(c.devolver,c.moeda)}</b></div>
+    <div class="small" style="margin:4px 0 8px">${esc(curto(c.nome))}: ${c.devPremio?`${pctTxt(c.pct)} do prémio (${money(c.devPremio,c.moeda)})`:''}${c.devPremio&&c.devEntradas?' + ':''}${c.devEntradas?`${c.ent-c.usadas} ${c.ent-c.usadas===1?'entrada não usada':'entradas não usadas'} (${money(c.devEntradas,c.moeda)})`:''}</div>
+    <button class="btn p" data-op="dev" data-pid="${c.pid}">Devolver</button></div>`;
+  h+=`<div class="h2">Operações</div>`;
+  if(!S.ops.length)h+=`<div class="empty">Ainda não há operações.</div>`;
+  for(const o of S.ops.slice().reverse())h+=`<div class="card"><div class="hr"><span style="font-weight:600">${esc(o.tipo)}</span><b>${money(o.valor,o.moeda)}</b></div>
+    <div class="small" style="margin-top:3px">${esc(o.desc)}</div><div style="margin-top:6px;display:flex;gap:6px;align-items:center"><span class="tag ${o.estado==='Finalizado'?'ok':'warn'}">${esc(o.estado)}</span><span class="small">${esc(o.data)}</span></div></div>`;
+  return h;
+}
+function vOpForm(){
+  const c=S.compras.find(x=>x.pid===UI.op.pid);
+  if(UI.op.tipo==='pôr')return `<div class="card"><div style="font-weight:700">Pôr na sala o dinheiro da compra</div>
+    <div class="small" style="margin-top:4px">${esc(curto(c.nome))}</div></div>
+    <div class="card sum"><div class="r"><span class="k">Origem</span><span>Luxon Pay ${c.moeda}</span></div><div class="r"><span class="k">Destino</span><span>${esc(c.salaNome)}</span></div>
+    <div class="r tot"><span>Montante</span><span>${money(c.valor,c.moeda)}</span></div></div>
+    <div class="msg info">Não é uma transferência para a banca: o tracker guarda este valor à parte, como <b>dinheiro da compra</b> nesta sala. O teu saldo do deal não muda.</div>
+    <button class="btn p big" data-act="confirmarPor">Confirmar</button>`;
+  return `<div class="card"><div style="font-weight:700">Devolver à Polarize</div><div class="small" style="margin-top:4px">${esc(curto(c.nome))}</div></div>
+    <div class="card sum">${c.devPremio?`<div class="r"><span class="k">${pctTxt(c.pct)} do prémio de ${money(c.premio,c.moeda)}</span><span>${money(c.devPremio,c.moeda)}</span></div>`:''}
+    ${c.devEntradas?`<div class="r"><span class="k">${c.ent-c.usadas} ${c.ent-c.usadas===1?'entrada não usada':'entradas não usadas'}</span><span>${money(c.devEntradas,c.moeda)}</span></div>`:''}
+    <div class="r tot"><span>A devolver</span><span>${money(c.devolver,c.moeda)}</span></div></div>
+    <ol class="next"><li>Levanta ${money(c.devolver,c.moeda)} da ${esc(c.salaNome)} para a tua Luxon Pay ${c.moeda}.</li><li>Envia para a Luxon da Polarize.</li><li>Junta o print do envio.</li></ol>
+    <label class="l">Print do envio</label><label class="btn" style="width:100%">📎 Escolher imagem<input type="file" accept="image/*" hidden id="printDev"></label>
+    <div class="hint" id="printNome">${UI.op.print?esc(UI.op.print):'Sem print, a gestão não consegue conferir.'}</div>
+    <button class="btn p big" style="margin-top:14px" data-act="confirmarDev" ${UI.op.print?'':'disabled'}>Já enviei</button>`;
+}
+
+// ---------------- ecrãs: sessão ----------------
+function novaSessao(){
+  const salas=S.salas.filter(s=>s.compra>0).map(s=>s.id);if(!salas.length)salas.push('gg');
+  UI.sess={inicio:'',fim:'',ntorneios:'',salas:salas.map(id=>({id,final:''})),compras:{}};
+}
+function compraDaSala(id){return S.compras.filter(c=>c.salaId===id&&['na_sala','aberta'].includes(c.estado))}
+function calcSala(row){
+  // saldo do deal = saldo final real − dinheiro da compra que continua na sala − o que se devolve à Polarize
+  const s=S.salas.find(x=>x.id===row.id);const fin=num(row.final);
+  let keep=0,novoDev=0;const falta=[];
+  const pend=r2(S.compras.filter(c=>c.salaId===s.id&&c.estado==='a_devolver').reduce((a,c)=>a+c.devolver,0));
+  for(const c of compraDaSala(s.id)){
+    const r=UI.sess.compras[c.pid];
+    if(!r||!r.estado){falta.push(c);keep+=c.naSala;continue}
+    if(r.estado==='nao'){keep+=c.naSala;continue}
+    const usadas=Math.min(c.ent,(c.usadas||0)+(r.usadas||1));
+    const restoEnt=r2((c.ent-usadas)*c.porEntrada);
+    const pITM=r2((num(r.premio)||0)*c.pct+(c.devPremioAcum||0));
+    if(c.varios_dias&&r.acabou==='nao')keep+=restoEnt+pITM;else novoDev+=restoEnt+pITM;
+  }
+  keep=r2(keep+pend);novoDev=r2(novoDev);
+  const finalDeal=isNaN(fin)?NaN:r2(fin-keep-novoDev);
+  return {s,fin,keep,novoDev,finalDeal,pl:isNaN(finalDeal)?NaN:r2(finalDeal-s.saldo),falta};
+}
+function vSessao(){
+  if(!UI.sess)novaSessao();const F=UI.sess;
+  let h=`<div class="small" style="margin-bottom:8px">Como no tracker: <b>Nova Sessão</b>. O que é novo está nos cartões amarelos.</div>
+  <label class="l">Data da Sessão</label><input class="i" value="${hojeTxt()}" disabled><div class="hint">Só pode haver uma sessão por dia</div>
+  <div class="g2"><div><label class="l">Hora de Início</label><input class="i" id="sIni" placeholder="HH:MM (24h)" value="${esc(F.inicio)}" inputmode="numeric"></div>
+  <div><label class="l">Hora de Fim</label><input class="i" id="sFim" placeholder="HH:MM (24h)" value="${esc(F.fim)}" inputmode="numeric"></div></div>
+  <div class="h2">Salas onde jogaste</div>`;
+  F.salas.forEach((row,i)=>{
+    const s=S.salas.find(x=>x.id===row.id);const cs=compraDaSala(s.id);const k=calcSala(row);
+    h+=`<div class="card"><div class="hr"><select class="i sm" data-salarow="${i}" style="width:auto">${S.salas.map(x=>`<option value="${x.id}"${x.id===s.id?' selected':''}>${esc(x.nome)}</option>`).join('')}</select>${F.salas.length>1?`<button class="btn sm" data-rmsala="${i}">✕</button>`:''}</div>
+      <div class="small" style="margin-top:6px">Saldo: <b>${money(s.saldo,s.moeda)}</b>${!isNaN(k.pl)?` <span style="color:var(--${k.pl>=0?'ok':'err'})">(${k.pl>=0?'+':''}${money(k.pl,s.moeda)})</span>`:''}</div>`;
+    if(s.compra>0)h+=`<div class="msg warn" style="margin:8px 0 0"><b>Nesta sala tens também ${money(s.compra,s.moeda)} de compras de ação.</b> O saldo real da sala deve ser ${money(s.saldo+s.compra,s.moeda)}. Escreve no Saldo Final o que lá está, com tudo: o tracker separa.</div>`;
+    h+=`<label class="l">Saldo Final</label><input class="i" inputmode="decimal" data-final="${i}" value="${esc(row.final)}" placeholder="${s.moeda==='EUR'?'€':'$'}">`;
+    for(const c of cs){
+      const r=F.compras[c.pid]||{};const rest=c.ent-(c.usadas||0);
+      h+=`<div class="card compra" style="margin:10px 0 0;background:var(--soft)"><div style="font-weight:700">Compra de ação · ${esc(curto(c.nome))}</div>
+        <div class="small">${pctTxt(c.pct)} da Polarize · ${rest} ${rest===1?'entrada por usar':'entradas por usar'}${c.estado==='aberta'?' · continua de um dia anterior':''}</div>
+        <div class="seg" style="margin-top:8px"><button class="btn sm${r.estado==='nao'?' p':''}" data-cj="${c.pid}" data-v="nao">Não joguei hoje</button><button class="btn sm${r.estado==='sim'?' p':''}" data-cj="${c.pid}" data-v="sim">Joguei</button></div>`;
+      if(r.estado==='sim'){
+        h+=`<label class="l">Entradas usadas hoje</label><div class="step"><button class="btn" data-cu="${c.pid}" data-v="-1">−</button><div class="v">${r.usadas||1}</div><button class="btn" data-cu="${c.pid}" data-v="1">+</button></div>
+          <label class="l">Prémio total, com bounties (${c.moeda==='EUR'?'€, como entrou na sala':'$'})</label><input class="i" inputmode="decimal" data-cp="${c.pid}" value="${esc(r.premio??'')}" placeholder="0 se não houve prémio">
+          ${c.varios_dias?`<label class="l">O torneio acabou para ti?</label><div class="seg"><button class="btn sm${r.acabou!=='nao'?' p':''}" data-ca="${c.pid}" data-v="sim">Acabou</button><button class="btn sm${r.acabou==='nao'?' p':''}" data-ca="${c.pid}" data-v="nao">Continua noutro dia</button></div>`:''}`;
+      }
+      h+=`</div>`;
+    }
+    if(!isNaN(k.fin)&&cs.length&&!k.falta.length){
+      h+=`<div class="sum" style="margin-top:10px"><div class="r"><span class="k">Saldo final na sala</span><span>${money(k.fin,s.moeda)}</span></div>
+        ${k.keep?`<div class="r"><span class="k">− dinheiro da compra que fica na sala</span><span>−${money(k.keep,s.moeda)}</span></div>`:''}
+        ${k.novoDev?`<div class="r"><span class="k">− a devolver à Polarize</span><span>−${money(k.novoDev,s.moeda)}</span></div>`:''}
+        <div class="r tot"><span>Saldo do deal</span><span>${money(k.finalDeal,s.moeda)}</span></div></div>`;
+    }
+    h+=`</div>`;
+  });
+  h+=`<button class="btn" data-act="novaSala" style="width:100%">+ Nova sala</button>
+  <label class="l">N° de torneios</label><input class="i" id="sNt" inputmode="numeric" value="${esc(F.ntorneios)}">`;
+  return h;
+}
+function sessaoValida(){
+  const F=UI.sess;if(!F)return 'Falta preencher';
+  if(!/^\d{2}:\d{2}$/.test(F.inicio)||!/^\d{2}:\d{2}$/.test(F.fim))return 'Faltam as horas (HH:MM)';
+  for(const row of F.salas){const k=calcSala(row);if(isNaN(k.fin))return 'Falta o Saldo Final';if(k.falta.length)return 'Diz como correu a compra';if(k.finalDeal<0)return 'O saldo do deal não pode ser negativo'}
+  if(!(num(F.ntorneios)>0))return 'Falta o N° de torneios';
+  return '';
+}
+function criarSessao(){
+  const F=UI.sess;const linhas=[];
+  for(const row of F.salas){
+    const k=calcSala(row),s=k.s;
+    for(const c of compraDaSala(s.id)){
+      const r=F.compras[c.pid];if(!r||r.estado==='nao')continue;
+      c.usadas=Math.min(c.ent,(c.usadas||0)+(r.usadas||1));
+      const premio=num(r.premio)||0;c.premio=r2((c.premio||0)+premio);
+      const restoEnt=r2((c.ent-c.usadas)*c.porEntrada);
+      const acum=r2((c.devPremioAcum||0)+premio*c.pct);
+      if(c.varios_dias&&r.acabou==='nao'){c.devPremioAcum=acum;c.naSala=r2(restoEnt+acum);c.estado='aberta'}
+      else{c.devPremio=acum;c.devEntradas=restoEnt;c.devolver=r2(acum+restoEnt);c.naSala=0;c.estado=c.devolver>0?'a_devolver':'fechada'}
+    }
+    s.compra=r2(compraDaSala(s.id).reduce((a,c)=>a+c.naSala,0)+S.compras.filter(c=>c.salaId===s.id&&c.estado==='a_devolver').reduce((a,c)=>a+c.devolver,0));
+    linhas.push({sala:s.nome,moeda:s.moeda,inicial:s.saldo,finalReal:k.fin,finalDeal:k.finalDeal,pl:k.pl});
+    S.makeup[s.moeda]=r2(S.makeup[s.moeda]+k.pl);s.saldo=k.finalDeal;
+  }
+  S.sessoes.push({data:hojeTxt(),linhas});UI.sess=null;guardar();
+  UI.flash='Sessão criada com sucesso';render();window.scrollTo(0,0);
+}
+function vSessoes(){
+  if(!S.sessoes.length)return '';
+  return `<div class="h2">Sessões registadas</div>`+S.sessoes.slice().reverse().map(x=>`<div class="card"><b>${esc(x.data)}</b>${x.linhas.map(l=>`<div class="small" style="margin-top:4px">${esc(l.sala)}: saldo final ${money(l.finalReal,l.moeda)} → deal ${money(l.finalDeal,l.moeda)} · P&L <b style="color:var(--${l.pl>=0?'ok':'err'})">${l.pl>=0?'+':''}${money(l.pl,l.moeda)}</b></div>`).join('')}</div>`).join('');
+}
+
+// ---------------- ecrãs: gestão ----------------
+function vGestao(){
+  let h='';
+  const rev=S.compras.filter(c=>c.estado==='revisao'),apr=S.compras.filter(c=>c.estado==='aprovada'),conf=S.compras.filter(c=>c.estado==='devolucao_enviada');
+  h+=`<div class="h2" style="margin-top:4px">Por decidir</div>`;
+  if(!rev.length)h+=`<div class="small">Nada: tudo o que entrou passou na matriz.</div>`;
+  for(const c of rev)h+=`<div class="card"><div class="hr"><span style="font-weight:600">${esc(curto(c.nome))}</span><b>${money(c.valor,c.moeda)}</b></div>
+    <div class="small">${esc(S.jogador)} · nível ${String(S.nivel).replace('.',',')} · ${pctTxt(c.pct)} · ${c.ent} ${c.ent===1?'entrada':'entradas'}</div>
+    ${c.motivos.map(m=>`<div class="small" style="color:var(--warn)">! ${esc(m)}</div>`).join('')}
+    <div class="seg" style="margin-top:8px"><button class="btn sm p" data-g="aprovar" data-pid="${c.pid}">Aprovar</button><button class="btn sm" data-g="recusar" data-pid="${c.pid}">Recusar</button></div></div>`;
+  h+=`<div class="h2">Por enviar (Luxon)</div>`;
+  if(!apr.length)h+=`<div class="small">Nada por enviar.</div>`;
+  for(const c of apr)h+=`<div class="card"><div class="hr"><span style="font-weight:600">${esc(curto(c.nome))}</span><b>${money(c.valor,c.moeda)}</b></div>
+    <div class="small">${esc(S.jogador)} · para a Luxon Pay ${c.moeda} · ${c.aprov==='matriz'?'aprovada pela matriz':'aprovada pela gestão'}</div>
+    <button class="btn sm p" style="margin-top:8px" data-g="enviar" data-pid="${c.pid}">Enviei ${money(c.valor,c.moeda)}</button></div>`;
+  h+=`<div class="h2">Devoluções por confirmar</div>`;
+  if(!conf.length)h+=`<div class="small">Nenhuma.</div>`;
+  for(const c of conf)h+=`<div class="card"><div class="hr"><span style="font-weight:600">${esc(curto(c.nome))}</span><b>${money(c.devolver,c.moeda)}</b></div>
+    <div class="small">${esc(S.jogador)} · print: ${esc(c.print||'—')}</div><button class="btn sm p" style="margin-top:8px" data-g="receber" data-pid="${c.pid}">Confirmar Receção</button></div>`;
+  h+=vMatriz()+vExtrato();
+  return h;
+}
+function vMatriz(){
+  const M=S.matriz;
+  let h=`<div class="h2">Matriz de aprovação</div><div class="small" style="margin-bottom:8px">Cada célula: % máxima e valor máximo que a matriz aprova sozinha, por nível do jogador e buy-in. Fora disto vai para a gestão. Valores de exemplo, para afinar.</div>
+  <div class="scroll"><table class="mx"><tr><th>Nível</th>${M.faixas.map(f=>`<th>${esc(f.n)}</th>`).join('')}</tr>`;
+  M.niveis.forEach((n,i)=>{h+=`<tr><th>${esc(n.n)}</th>${M.faixas.map((f,j)=>{const c=M.celulas[i][j];return `<td><select class="i sm" data-mx="${i},${j},p">${[0,.3,.4,.5,.6,.7,.8].map(p=>`<option value="${p}"${c.p===p?' selected':''}>${p?pctTxt(p):'—'}</option>`).join('')}</select>${c.p?`<div class="small">${money(c.v)}</div>`:''}</td>`}).join('')}</tr>`});
+  h+=`</table></div>
+  <div class="g2" style="margin-top:8px"><div><label class="l" style="margin-top:4px">Garantido mínimo (× buy-in)</label><input class="i" data-mxg="gtdMult" inputmode="numeric" value="${M.gtdMult}"></div>
+  <div><label class="l" style="margin-top:4px">Máximo em aberto por jogador</label><input class="i" data-mxg="abertoMax" inputmode="numeric" value="${M.abertoMax}"></div></div>
+  <label class="l">Nível do ${esc(S.jogador)} (para testar)</label><div class="chips">${[5.5,6,6.5,7,7.5].map(n=>`<button class="chip" data-nivel="${n}" aria-pressed="${S.nivel===n}">${String(n).replace('.',',')}</button>`).join('')}</div>`;
+  return h;
+}
+function vExtrato(){
+  const cs=S.compras.filter(c=>!['recusada','cancelada','revisao'].includes(c.estado));
+  let h=`<div class="h2">Extrato de ${esc(S.mes)} · ${esc(S.jogador)}</div><div class="small" style="margin-bottom:8px">É o anexo do contrato do mês. Contrato: ${S.contrato?'<b style="color:var(--ok)">aceite</b>':'<b style="color:var(--warn)">por aceitar</b>'}.</div>`;
+  if(!cs.length)return h+`<div class="small">Ainda sem compras.</div>`;
+  h+=`<div class="scroll"><table class="ex"><tr><th>Torneio</th><th>%</th><th>Ent.</th><th>Enviado</th><th>Prémio</th><th>Devolvido</th><th>Estado</th></tr>${cs.map(c=>`<tr><td>${esc(curto(c.nome))}</td><td>${pctTxt(c.pct)}</td><td>${c.usadas||0}/${c.ent}</td><td>${money(c.valor,c.moeda)}</td><td>${c.premio?money(c.premio,c.moeda):'—'}</td><td>${c.estado==='fechada'&&c.devolver?money(c.devolver,c.moeda):c.estado==='a_devolver'||c.estado==='devolucao_enviada'?'por receber':'—'}</td><td>${esc(ESTADOS[c.estado])}</td></tr>`).join('')}</table></div>`;
+  return h;
+}
+const ESTADOS={revisao:'em revisão',aprovada:'aprovada',enviada:'enviada',na_sala:'na sala',aberta:'a decorrer',a_devolver:'a devolver',devolucao_enviada:'devolução enviada',fechada:'fechada',recusada:'recusada',cancelada:'cancelada'};
+
+// ---------------- render ----------------
+function render(){
+  $('#banca').innerHTML=S.salas.map(s=>`<span>${esc(s.rede)} <b>${money(s.saldo,s.moeda)}</b>${s.compra?` + compra ${money(s.compra,s.moeda)}`:''}</span>`).join('')+`<span>Makeup <b>${money(S.makeup.USD)}</b>${S.makeup.EUR?` · ${money(S.makeup.EUR,'EUR')}`:''}</span>`;
+  const T=[['vender','🎯','Vender ação',0],['sessao','📝','Sessão',0],['ops','💸','Operações',pendentesJogador()],['gestao','🛡','Gestão',pendentesGestao()]];
+  $('#tabs').innerHTML=T.map(([k,ic,n,p])=>`<button data-tab="${k}" aria-pressed="${UI.tab===k}"><span class="ic">${ic}</span>${n}${p?'<span class="dot"></span>':''}</button>`).join('');
+  const sub=UI.tab==='vender'&&UI.step!=='lista'||UI.tab==='ops'&&UI.op;
+  $('#back').hidden=!sub;
+  $('#ttl').textContent=UI.tab==='vender'?(UI.step==='pedido'?'Pedido de compra':UI.step==='contrato'?'Contrato do mês':UI.step==='enviado'?'Pedido feito':'Vender ação'):UI.tab==='sessao'?'Nova Sessão':UI.tab==='ops'?(UI.op?(UI.op.tipo==='pôr'?'Pôr na sala':'Devolver à Polarize'):'Operações'):'Gestão';
+  let h='';const g=guia();
+  if(g&&!(UI.tab==='vender'&&UI.step!=='lista'))h+=`<div class="guia"><div><b>${esc(g[0])}</b>${esc(g[1])}</div>${g[2]!==UI.tab?`<button class="btn sm" data-tab="${g[2]}">Ir</button>`:''}</div>`;
+  if(UI.flash){h+=`<div class="msg ok">${esc(UI.flash)}</div>`;UI.flash=''}
+  if(UI.tab==='vender')h+=UI.step==='pedido'?vPedido():UI.step==='contrato'?vContrato():UI.step==='enviado'?vEnviado(S.compras[S.compras.length-1]):vLista();
+  else if(UI.tab==='sessao')h+=vSessao()+vSessoes();
+  else if(UI.tab==='ops')h+=UI.op?vOpForm():vOps();
+  else h+=vGestao()+`<button class="btn" style="width:100%;margin-top:20px" data-act="reset">Recomeçar a simulação</button>`;
+  $('#main').innerHTML=h;foot();ligar();
+}
+function foot(){
+  const f=$('#foot'),fi=$('#footIn');
+  if(UI.tab==='vender'&&UI.step==='pedido'){
+    const t=UI.sel,rb=num(UI.rb)/100,ok=UI.rb!==''&&rb>=0&&rb<=1&&aberto(t);const sala=salaDaRede(t.sala);
+    const v=ok?money(contas(t,UI.pct,UI.ent,rb,sala.moeda,UI.fx).valor,sala.moeda):'—';
+    f.hidden=false;fi.innerHTML=`<div class="line"><span>Recebes</span><b>${v}</b></div><button class="btn p big" data-act="pedir" ${ok?'':'disabled'}>${!aberto(t)?'Prazo fechado':UI.rb===''?'Falta o teu rakeback':'Pedir compra'}</button>`;return}
+  if(UI.tab==='sessao'){const e=sessaoValida();let pl='';
+    if(UI.sess)for(const row of UI.sess.salas){const k=calcSala(row);if(!isNaN(k.pl))pl+=`${pl?' · ':''}${k.s.rede} <b style="color:var(--${k.pl>=0?'ok':'err'})">${k.pl>=0?'+':''}${money(k.pl,k.s.moeda)}</b>`}
+    f.hidden=false;fi.innerHTML=`<div class="line"><span>P&L do deal</span><span>${pl||'—'}</span></div><button class="btn p big" data-act="criarSessao" ${e?'disabled':''}>${e||'Criar Sessão'}</button>`;return}
+  f.hidden=true;
+}
+function ligar(){
+  const keep=(id,fn)=>{const el=document.getElementById(id);if(el)el.oninput=e=>{fn(e.target.value);const pos=e.target.selectionStart;render();const n=document.getElementById(id);if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(x){}}}};
+  keep('q',v=>UI.q=v);keep('rb',v=>UI.rb=v.replace(/[^\d.,]/g,''));
+  const fh=v=>{const t=v.replace(/\D/g,'').slice(0,4);return t.length===4?t.slice(0,2)+':'+t.slice(2):t};
+  keep('sIni',v=>UI.sess.inicio=fh(v));keep('sFim',v=>UI.sess.fim=fh(v));keep('sNt',v=>UI.sess.ntorneios=v.replace(/\D/g,''));
+  document.querySelectorAll('[data-final]').forEach(el=>{el.id='fin'+el.dataset.final;keep(el.id,v=>UI.sess.salas[+el.dataset.final].final=v)});
+  document.querySelectorAll('[data-cp]').forEach(el=>{el.id='cp'+el.dataset.cp;keep(el.id,v=>{(UI.sess.compras[el.dataset.cp]||={}).premio=v})});
+  document.querySelectorAll('[data-salarow]').forEach(el=>el.onchange=e=>{UI.sess.salas[+el.dataset.salarow].id=e.target.value;render()});
+  document.querySelectorAll('[data-mx]').forEach(el=>el.onchange=e=>{const [i,j]=el.dataset.mx.split(',').map(Number);const c=S.matriz.celulas[i][j];c.p=parseFloat(e.target.value);if(c.p&&!c.v)c.v=5000;guardar();render()});
+  document.querySelectorAll('[data-mxg]').forEach(el=>el.onchange=e=>{const v=num(e.target.value);if(v>0){S.matriz[el.dataset.mxg]=v;guardar()}render()});
+  const pf=document.getElementById('printDev');if(pf)pf.onchange=e=>{const f=e.target.files&&e.target.files[0];if(f){UI.op.print=f.name;render()}};
+}
+function pedir(){
+  const t=UI.sel,sala=salaDaRede(t.sala),rb=num(UI.rb)/100;
+  if(!S.contrato){UI.step='contrato';render();window.scrollTo(0,0);return}
+  const c=contas(t,UI.pct,UI.ent,rb,sala.moeda,UI.fx);const ck=avaliar(t,UI.pct,c.usd);const passa=ck.every(x=>x[0]==='ok');
+  S.compras.push({pid:Date.now().toString(36),id:t.id,nome:t.nome,sala:t.sala,salaId:sala.id,salaNome:sala.nome,inicio:t.inicio,varios_dias:t.varios_dias,
+    pct:UI.pct,ent:UI.ent,rb,moeda:sala.moeda,valor:c.valor,usd:c.usd,porEntrada:c.porEntrada,estado:passa?'aprovada':'revisao',aprov:passa?'matriz':null,
+    motivos:ck.filter(x=>x[0]!=='ok').map(x=>x[1]),usadas:0,naSala:0,premio:0});
+  guardar();UI.step='enviado';render();window.scrollTo(0,0);
+}
+const agora=()=>new Date().toLocaleString('pt-PT',{dateStyle:'short',timeStyle:'short'});
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;const ds=b.dataset;
+  if(ds.tab){UI.tab=ds.tab;UI.op=null;if(ds.tab==='vender')UI.step='lista';render();window.scrollTo(0,0);return}
+  if(b.id==='back'){if(UI.tab==='ops')UI.op=null;else UI.step=UI.step==='contrato'?'pedido':'lista';render();return}
+  if(ds.go){UI.tab=ds.go;UI.op=null;render();window.scrollTo(0,0);return}
+  if(ds.sala){UI.sala=ds.sala;render();return}
+  if(ds.dia){UI.dia=ds.dia;render();return}
+  if(ds.id){const t=CAT.torneios.find(x=>x.id===ds.id);if(!t||!aberto(t))return;UI.sel=t;UI.pct=.5;UI.ent=1;UI.rb=(S.rbSala||{})[t.sala]||'';UI.step='pedido';render();window.scrollTo(0,0);return}
+  if(ds.pct){UI.pct=parseFloat(ds.pct);render();return}
+  if(ds.ent&&UI.tab==='vender'){UI.ent=Math.max(1,Math.min(20,UI.ent+parseInt(ds.ent,10)));render();return}
+  if(ds.nivel){S.nivel=parseFloat(ds.nivel);guardar();render();return}
+  const a=ds.act;
+  if(a==='pedir'){(S.rbSala||={})[UI.sel.sala]=UI.rb;pedir();return}
+  if(a==='aceitarContrato'){S.contrato=true;guardar();pedir();return}
+  if(a==='reset'){S=NOVO();guardar();UI.tab='vender';UI.step='lista';UI.sess=null;UI.op=null;render();window.scrollTo(0,0);return}
+  if(ds.op){UI.op={tipo:ds.op,pid:ds.pid};render();window.scrollTo(0,0);return}
+  if(a==='confirmarPor'){const c=S.compras.find(x=>x.pid===UI.op.pid);S.luxon[c.moeda]=r2(S.luxon[c.moeda]-c.valor);c.estado='na_sala';c.naSala=c.valor;
+    const s=S.salas.find(x=>x.id===c.salaId);s.compra=r2(s.compra+c.valor);
+    S.ops.push({tipo:'Compra de ação → sala',desc:`${curto(c.nome)} · Luxon Pay ${c.moeda} → ${c.salaNome} (fora da banca)`,valor:c.valor,moeda:c.moeda,estado:'Finalizado',data:agora()});
+    UI.op=null;UI.flash='Dinheiro da compra registado na sala. A tua banca do deal não mudou.';guardar();render();return}
+  if(a==='confirmarDev'){const c=S.compras.find(x=>x.pid===UI.op.pid);c.estado='devolucao_enviada';c.print=UI.op.print;
+    const s=S.salas.find(x=>x.id===c.salaId);s.compra=r2(Math.max(0,s.compra-c.devolver));
+    S.ops.push({tipo:'Devolução de compra de ação',desc:`${curto(c.nome)} · ${c.salaNome} → Luxon → Polarize`,valor:c.devolver,moeda:c.moeda,estado:'Pendente',data:agora(),pid:c.pid});
+    UI.op=null;UI.flash='Devolução enviada. A gestão confirma a receção.';guardar();render();return}
+  if(ds.g){const c=S.compras.find(x=>x.pid===ds.pid);
+    if(ds.g==='aprovar'){c.estado='aprovada';c.aprov='gestao'}
+    if(ds.g==='recusar'){c.estado='recusada'}
+    if(ds.g==='enviar'){c.estado='enviada';S.luxon[c.moeda]=r2(S.luxon[c.moeda]+c.valor);S.ops.push({tipo:'Compra de ação recebida',desc:`${curto(c.nome)} · ${pctTxt(c.pct)} · Polarize → Luxon Pay ${c.moeda}`,valor:c.valor,moeda:c.moeda,estado:'Finalizado',data:agora()})}
+    if(ds.g==='receber'){c.estado='fechada';const o=S.ops.find(x=>x.pid===c.pid&&x.estado==='Pendente');if(o)o.estado='Finalizado'}
+    guardar();render();return}
+  if(a==='criarSessao'){if(!sessaoValida())criarSessao();return}
+  if(a==='novaSala'){const livre=S.salas.find(s=>!UI.sess.salas.some(r=>r.id===s.id));if(livre){UI.sess.salas.push({id:livre.id,final:''});render()}return}
+  if(ds.rmsala){UI.sess.salas.splice(+ds.rmsala,1);render();return}
+  if(ds.cj){(UI.sess.compras[ds.cj]||={}).estado=ds.v;if(ds.v==='sim'&&!UI.sess.compras[ds.cj].usadas)UI.sess.compras[ds.cj].usadas=1;render();return}
+  if(ds.cu){const c=S.compras.find(x=>x.pid===ds.cu);const r=UI.sess.compras[ds.cu];r.usadas=Math.max(1,Math.min(c.ent-(c.usadas||0),(r.usadas||1)+parseInt(ds.v,10)));render();return}
+  if(ds.ca){UI.sess.compras[ds.ca].acabou=ds.v;render();return}
+});
+render();
+</script>
+</body>
+</html>
