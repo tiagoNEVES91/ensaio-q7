@@ -392,9 +392,11 @@ function calcSala(row){const s=S.salas.find(x=>x.id===row.id),fin=num(row.final)
   keep=r2(keep+pend);novoDev=r2(novoDev);const fd=isNaN(fin)?NaN:r2(fin-keep-novoDev);return {s,fin,keep,novoDev,finalDeal:fd,pl:isNaN(fd)?NaN:r2(fd-s.saldo),falta}}
 function sessaoErro(){const F=UI.sess;if(!F)return 'Falta preencher';if(S.sessoes.some(x=>x.dia===diaKey(diaSessao())))return 'Já existe uma sessão registada para esta data';
   if(!/^\d{2}:\d{2}$/.test(F.inicio)||!/^\d{2}:\d{2}$/.test(F.fim))return 'Hora de início e de fim são obrigatórias';
+  if([F.inicio,F.fim].some(h=>+h.slice(0,2)>23||+h.slice(3)>59))return 'Hora inválida (00:00 a 23:59)';
   if(new Set(F.salas.map(r=>r.id)).size!==F.salas.length)return 'A mesma sala aparece duas vezes';
   for(const row of F.salas){const k=calcSala(row);if(isNaN(k.fin))return String(row.final).trim()?`Saldo final inválido na ${k.s.nome}`:'Saldo final é obrigatório';if(k.falta.length)return 'Diz como correu a compra de ação';
-    for(const c of compraDaSala(k.s.id).filter(jaComecou)){const r=F.compras[c.pid];if(r&&r.estado==='sim'&&String(r.premio??'').trim()&&isNaN(num(r.premio)))return 'Prémio inválido: escreve só o número (ex.: 1.500,50)'}
+    for(const c of compraDaSala(k.s.id).filter(jaComecou)){const r=F.compras[c.pid];if(r&&r.estado==='sim'&&String(r.premio??'').trim()&&!(num(r.premio)>=0))return 'Prémio inválido: escreve só o número (ex.: 1.500,50)'}
+    if(k.fin<0)return `O saldo final da ${k.s.nome} não pode ser negativo`;
     if(k.finalDeal<0)return `O saldo final da ${k.s.nome} é menor do que o dinheiro da compra que ainda lá está (${money(k.keep+k.novoDev,k.s.moeda)})`}
   if(!(num(F.nt)>0))return 'N° de torneios é obrigatório';return ''}
 function pSessoes(){
