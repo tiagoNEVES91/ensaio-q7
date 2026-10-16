@@ -60,7 +60,10 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 const r2=v=>Math.round(v*100)/100;
 const grp=v=>{const [i,dd]=Math.abs(r2(v)).toFixed(2).split('.');return (v<0?'-':'')+i.replace(/\B(?=(\d{3})+(?!\d))/g,'.')+','+dd};
 const money=(v,c='USD')=>{const neg=v<0,s=grp(Math.abs(v)).replace(/,00$/,'');return (neg?'-':'')+(c==='EUR'?s+'€':'$'+s)};
-const num=s=>{const t=String(s??'').trim().replace(/\s/g,'').replace(',','.');return t===''?NaN:Number(t)};
+// aceita 21024 · 21.024 · 21 024 · 21.024,50 · 21024,5 · 21024.50 (escrita portuguesa: o ponto separa milhares)
+const num=s=>{let t=String(s??'').trim().replace(/[\s€$]/g,'');if(t==='')return NaN;
+  if(t.includes(','))t=t.replace(/\./g,'').replace(',','.');else if(/^-?\d{1,3}(\.\d{3})+$/.test(t))t=t.replace(/\./g,'');
+  return /^-?\d+(\.\d+)?$/.test(t)?Number(t):NaN};
 const pctTxt=p=>Math.round(p*100)+'%';
 const curto=n=>n.replace(/,\s*\$[\d.,]+[KM]?\s*GTD/i,'').replace(/\s+-\s+\$[\d,]+(,\d+)*\s*GTD/i,'').trim();
 const ic=(n,s=20,cls='')=>`<iconify-icon icon="lucide:${n}" width="${s}" height="${s}" class="${cls}"></iconify-icon>`;
@@ -106,6 +109,7 @@ const salaDaRede=r=>S.salas.find(s=>s.rede===r);
 function contas(t,pct,ent,rb,moeda,fx){const rbE=t.rake*rb*pct,porE=pct*(t.buyin+t.rake)-rbE,k=moeda==='EUR'?fx:1;
   return {rbE,porEntrada:r2(porE*k),valor:r2(ent*porE*k),usd:r2(ent*porE),parte:ent*pct*(t.buyin+t.rake),rbTotal:ent*rbE}}
 const ATIVOS=['revisao','aprovada','enviada','na_sala','aberta'];
+const ENVIADAS=['enviada','na_sala','aberta','a_devolver','devolucao_enviada','fechada'];
 const emAberto=()=>S.compras.filter(c=>ATIVOS.includes(c.estado)).reduce((a,c)=>a+c.usd,0);
 function avaliar(t,pct,usd){const M=S.matriz,iN=M.niveis.findIndex(x=>S.nivel<=x.max),bi=t.buyin+t.rake,iF=M.faixas.findIndex(x=>bi<=x.max),c=M.celulas[iN][iF],o=[];
   o.push(aberto(t)?['ok',`Dentro do prazo (até ${LIMITE_HORAS} h antes do início)`]:['err','Prazo fechado']);
@@ -117,7 +121,9 @@ const hist=(c,txt,quem,t)=>(c.hist||=[]).push({t:t??NOW(),txt,quem});
 const novaOp=o=>S.ops.push({...o,t:NOW()});
 function aplicarTempo(){for(const c of S.compras){
   if(c.estado==='revisao'&&NOW()>=ini(c)){c.estado='expirada';hist(c,'Sem decisão da gestão até ao início: o pedido ficou sem efeito','sistema',ini(c))}
-  if(c.estado==='aprovada'&&NOW()>=ini(c)&&!c.avNE){c.avNE=1;hist(c,'O torneio começou e o valor ainda não tinha sido enviado','sistema',ini(c))}}}
+  if(c.estado==='aprovada'&&NOW()>=ini(c)&&!c.avNE){c.avNE=1;hist(c,'O torneio começou e o valor ainda não tinha sido enviado','sistema',ini(c))}
+  if(c.estado==='aprovada'&&NOW()>=fimLR(c)){c.estado='expirada';c.semEnvio=1;hist(c,'O late reg fechou sem o valor ter sido enviado: a compra ficou sem efeito','sistema',fimLR(c))}
+  if(c.estado==='enviada'&&NOW()>=fimLR(c)){c.estado='a_devolver';c.origem='luxon';c.devolver=c.valor;c.devEntradas=c.valor;c.devPremio=0;c.tDev=fimLR(c);hist(c,'O late reg fechou e o dinheiro não foi posto na sala: devolve-se da Luxon','sistema',fimLR(c))}}}
 
 // ================= avisos =================
 function avisos(papel){const A=[],n=NOW(),add=(nv,tx,sub,ir)=>A.push({nv,tx,sub,ir});
@@ -127,9 +133,9 @@ function avisos(papel){const A=[],n=NOW(),add=(nv,tx,sub,ir)=>A.push({nv,tx,sub,
       if(c.estado==='aprovada')add('info',`Compra aprovada: ${nm}`,`A Polarize vai enviar ${money(c.valor,c.moeda)} para a tua Luxon`);
       if(c.estado==='enviada')n<ini(c)?add(n>ini(c)-H?'err':'warn',`Põe ${money(c.valor,c.moeda)} na ${c.salaNome}`,`Recebeste na Luxon. O torneio começa ${quando(ini(c))}`,['operacoes',c.pid]):add('err','O torneio começou e o dinheiro da compra não está na sala',`${nm}: põe-no já, ou avisa a gestão`,['operacoes',c.pid]);
       if(['na_sala','aberta'].includes(c.estado)&&n>=proxFim(c)){const a=Math.floor((n-proxFim(c))/(24*H));add(a>=1?'err':'warn',`Regista a sessão com a compra: ${nm}`,a>=1?`Acabou há ${a} ${a===1?'dia':'dias'}`:`Acabou (fim estimado ${hm(proxFim(c))})`,['sessao_nova',c.pid])}
-      if(c.estado==='a_devolver'){const a=Math.floor((n-c.tDev)/(24*H));add(a>=1?'err':'warn',`Devolve ${money(c.devolver,c.moeda)} à Polarize`,a>=1?`${nm}: em atraso há ${a} ${a===1?'dia':'dias'}`:`${nm}: levanta da sala e envia hoje`,['operacoes',c.pid])}
+      if(c.estado==='a_devolver'){const a=Math.floor((n-c.tDev)/(24*H));add(a>=1?'err':'warn',`Devolve ${money(c.devolver,c.moeda)} à Polarize`,a>=1?`${nm}: em atraso há ${a} ${a===1?'dia':'dias'}`:c.origem==='luxon'?`${nm}: ainda está na tua Luxon, envia hoje`:`${nm}: levanta da sala e envia hoje`,['operacoes',c.pid])}
       if(c.estado==='recusada'&&n-c.tFim<24*H)add('info',`Pedido recusado: ${nm}`,'Fora dos limites para o teu nível');
-      if(c.estado==='expirada'&&n-ini(c)<24*H)add('info',`Pedido sem efeito: ${nm}`,'A gestão não decidiu até ao início');
+      if(c.estado==='expirada'&&n-ini(c)<24*H)add('info',`${c.semEnvio?'Compra sem efeito':'Pedido sem efeito'}: ${nm}`,c.semEnvio?'O valor não foi enviado a tempo':'A gestão não decidiu até ao início');
     }else{
       if(c.estado==='revisao')add(n>ini(c)-2*H?'err':'warn',`Pedido por decidir: ${nm}`,`${S.jogador} · ${pctTxt(c.pct)} · ${money(c.valor,c.moeda)} · fecha às ${hm(ini(c))} (${diaNome(ini(c))})`,['compras',c.pid]);
       if(c.estado==='aprovada')add(n>=ini(c)-H?'err':'warn',`Enviar ${money(c.valor,c.moeda)} ao ${S.jogador}`,`${nm} · começa ${quando(ini(c))}${n>=ini(c)?' · já começou':''}`,['compras',c.pid]);
@@ -138,9 +144,9 @@ function avisos(papel){const A=[],n=NOW(),add=(nv,tx,sub,ir)=>A.push({nv,tx,sub,
       if(c.estado==='a_devolver'&&n-c.tDev>=48*H)add('err',`Devolução em atraso: ${money(c.devolver,c.moeda)}`,`${nm}: há ${Math.floor((n-c.tDev)/(24*H))} dias. Falar com o jogador`,['compras',c.pid]);
       if(c.estado==='devolucao_enviada')add('warn',`Confirmar receção de ${money(c.devolver,c.moeda)}`,`${nm} · print: ${c.print||'—'}`,['compras',c.pid]);
     }}
-  if(papel==='gestao')for(const m of [...new Set(S.compras.filter(c=>mesKey(ini(c))<mesKey(n)&&!S.extratos[mesKey(ini(c))]).map(c=>mesKey(ini(c))))])add('warn',`Enviar o extrato de ${mesNome(m)} ao ${S.jogador}`,'É o anexo do contrato do mês',['matriz']);
+  if(papel==='gestao')for(const m of [...new Set(S.compras.filter(c=>ENVIADAS.includes(c.estado)&&mesKey(ini(c))<mesKey(n)&&!S.extratos[mesKey(ini(c))]).map(c=>mesKey(ini(c))))])add('warn',`Enviar o extrato de ${mesNome(m)} ao ${S.jogador}`,'É o anexo do contrato do mês',['matriz']);
   const o={err:0,warn:1,info:2};return A.sort((a,b)=>o[a.nv]-o[b.nv])}
-function proximoEvento(){const n=NOW(),T=[];for(const c of S.compras){if(['revisao','aprovada','enviada'].includes(c.estado))T.push(ini(c));if(c.estado==='na_sala')T.push(fimDia1(c));if(c.estado==='aberta')T.push(inicioDia2(c),fimDia2(c));if(c.estado==='a_devolver')T.push(c.tDev+24*H,c.tDev+48*H)}
+function proximoEvento(){const n=NOW(),T=[];for(const c of S.compras){if(['revisao','aprovada','enviada'].includes(c.estado))T.push(ini(c));if(['aprovada','enviada'].includes(c.estado))T.push(fimLR(c));if(c.estado==='na_sala')T.push(fimDia1(c));if(c.estado==='aberta')T.push(inicioDia2(c),fimDia2(c));if(c.estado==='a_devolver')T.push(c.tDev+24*H,c.tDev+48*H)}
   return T.filter(t=>t>n+6e4).sort((a,b)=>a-b)[0]||null}
 
 // ================= componentes (classes do tracker) =================
@@ -211,8 +217,8 @@ function modal(){const m=UI.modal;if(!m)return '';const M=MOBILE();
   return `<div class="${M?'absolute':'fixed'} inset-0 bg-background/80 backdrop-blur-sm z-[80] flex items-center justify-center p-4"><div class="w-full max-w-lg bg-card border border-border rounded-lg shadow-xl overflow-hidden">
   <div class="px-4 pt-5 pb-4 sm:p-6 flex gap-4"><div class="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-none">${ic(m.icone||'file-signature',20)}</div><div class="min-w-0"><h3 class="text-base font-semibold">${m.titulo}</h3><div class="mt-2 text-sm text-muted-foreground">${m.corpo}</div></div></div>
   <div class="px-4 py-3 sm:px-6 bg-muted/20 flex flex-col-reverse sm:flex-row-reverse gap-2">${btn(m.ok,`data-act="${m.act}"`,'primary','px-4 py-2 text-sm')}${btn('Cancelar','data-act="fecharModal"','outline','px-4 py-2 text-sm')}</div></div></div>`}
-function toast(){if(!UI.toast)return '';const M=MOBILE();const t=UI.toast;setTimeout(()=>{if(UI.toast===t){UI.toast=null;render()}},4000);
-  return `<div class="${M?'absolute left-3 right-3 bottom-24':'fixed right-6 w-96 top-[60px]'} z-[90] rounded-lg border ${t.err?'bg-destructive text-white border-destructive':'bg-primary text-black border-primary'} shadow-lg p-4 text-sm font-medium flex items-center gap-2">${ic(t.err?'circle-x':'circle-check',18)}${esc(t.msg)}</div>`}
+function toast(){if(!UI.toast)return '';const M=MOBILE();const t=UI.toast;if(!t.timer)t.timer=setTimeout(()=>{if(UI.toast===t){UI.toast=null;document.getElementById('toast')?.remove()}},4000);
+  return `<div id="toast" class="${M?'absolute left-3 right-3 bottom-24':'fixed right-6 w-96 top-[60px]'} z-[90] pointer-events-none rounded-lg border ${t.err?'bg-destructive text-white border-destructive':'bg-primary text-black border-primary'} shadow-lg p-4 text-sm font-medium flex items-center gap-2">${ic(t.err?'circle-x':'circle-check',18)}${esc(t.msg)}</div>`}
 const avisar=(msg,err)=>{UI.toast={msg,err}};
 
 // ================= jogador: páginas =================
@@ -251,7 +257,7 @@ function minhasCompras(){
   const L=S.compras.slice().reverse();if(!L.length)return vazio('Ainda não pediste nenhuma compra.','hand-coins');
   if(MOBILE())return L.map(c=>`<button data-compra="${c.pid}" class="w-full text-left rounded-lg border border-border bg-card p-4 mb-2 space-y-2"><div class="flex justify-between gap-3"><span class="text-sm font-semibold">${esc(curto(c.nome))}</span><span class="text-sm font-semibold tabular-nums">${money(c.valor,c.moeda)}</span></div>
     <div class="text-xs text-muted-foreground">${esc(c.sala)} · ${quando(ini(c))} · ${pctTxt(c.pct)} · ${c.usadas||0}/${c.ent} ${c.ent===1?'entrada':'entradas'}</div><div class="flex items-center justify-between">${estadoDot(c,'jogador')}<span class="text-xs text-muted-foreground">${FASE[c.estado]}</span></div></button>`).join('');
-  return tabela(['Torneio','Início','%','Entradas','Recebido','Prémio','A devolver','Estado'],L.map(c=>({attrs:`data-compra="${c.pid}"`,cells:[`<span class="font-medium">${esc(curto(c.nome))}</span>`,quando(ini(c)),pctTxt(c.pct),`${c.usadas||0}/${c.ent}`,money(c.valor,c.moeda),c.premio?money(c.premio,c.moeda):'—',c.devolver&&['a_devolver','devolucao_enviada'].includes(c.estado)?money(c.devolver,c.moeda):'—',`${estadoDot(c,'jogador')} <span class="text-xs text-muted-foreground ml-1">${FASE[c.estado]}</span>`]})),true)}
+  return tabela(['Torneio','Início','%','Entradas','Recebido','Prémio','A devolver','Estado'],L.map(c=>({attrs:`data-compra="${c.pid}"`,cells:[`<div class="whitespace-normal min-w-[180px] max-w-[280px] font-medium">${esc(curto(c.nome))}</div>`,quando(ini(c)),pctTxt(c.pct),`${c.usadas||0}/${c.ent}`,ENVIADAS.includes(c.estado)?money(c.valor,c.moeda):'—',c.premio?money(c.premio,c.moeda):'—',c.devolver&&['a_devolver','devolucao_enviada'].includes(c.estado)?money(c.devolver,c.moeda):'—',`${estadoDot(c,'jogador')} <span class="text-xs text-muted-foreground ml-1">${FASE[c.estado]}</span>`]})),true)}
 function painelPedido(t){
   return ()=>{const sala=salaDaRede(t.sala),rb=num(UI.rb)/100,rbOk=UI.rb!==''&&rb>=0&&rb<=1,m=sala.moeda,c=contas(t,UI.pct,UI.ent,rbOk?rb:0,m,UI.fx);
   const pb=p=>`<button data-pct="${p}" class="h-10 rounded-md text-sm font-semibold ${UI.pct===p?'bg-primary text-primary-foreground':'border border-input bg-background hover:bg-accent'}">${pctTxt(p)}</button>`;
@@ -267,7 +273,7 @@ function painelPedido(t){
       <div class="flex justify-between"><span class="text-muted-foreground">Menos o rakeback da Polarize (${money(t.rake)} × ${String(r2(rb*100)).replace('.',',')}% × ${pctTxt(UI.pct)}${UI.ent>1?' × '+UI.ent:''})</span><span class="tabular-nums">-${money(c.rbTotal)}</span></div>
       <div class="flex justify-between border-t border-border pt-2 mt-2 font-semibold text-base"><span>Recebes na Luxon</span><span class="tabular-nums">${money(c.valor,m)}</span></div></div>
     <div class="rounded-lg border p-4 ${passa?'border-green-500/40 bg-green-500/5':'border-warning/40 bg-warning/5'}"><div class="font-semibold text-sm mb-2">${passa?'✓ A matriz aprova sozinha':'Vai para a gestão aprovar'}</div>${ck.map(([k,x])=>`<div class="text-xs flex gap-1.5 my-1 ${k==='ok'?'text-green-600 dark:text-green-400':k==='warn'?'text-amber-600 dark:text-amber-400':'text-red-500'}">${ic(k==='ok'?'check':k==='warn'?'triangle-alert':'x',14)}${esc(x)}</div>`).join('')}</div>`}
-  return {titulo:'Pedido de compra',sub:'Escolhe a %, as entradas e o teu rakeback.',corpo,rodape:btn('Cancelar','data-act="fecharPainel"','outline')+btn(!aberto(t)?'Prazo fechado':!rbOk?'Falta o teu rakeback':'Pedir compra · '+money(c.valor,m),`data-act="pedir" ${aberto(t)&&rbOk?'':'disabled'}`)}}}
+  return {titulo:'Pedido de compra',sub:'Escolhe a %, as entradas e o teu rakeback.',corpo,rodape:btn('Cancelar','data-act="fecharPainel"','outline')+btn(!aberto(t)?'Prazo fechado':!rbOk?(UI.rb===''?'Falta o teu rakeback':'O rakeback vai de 0 a 100%'):'Pedir compra · '+money(c.valor,m),`data-act="pedir" ${aberto(t)&&rbOk?'':'disabled'}`)}}}
 function painelCompra(pid,papel){
   return ()=>{const c=S.compras.find(x=>x.pid===pid);if(!c)return {titulo:'—',corpo:''};
   const linha=(k,v)=>`<div class="flex justify-between gap-3 text-sm py-1"><span class="text-muted-foreground">${k}</span><span class="tabular-nums text-right">${v}</span></div>`;
@@ -299,7 +305,7 @@ function pOperacoes(){
   const dot=o=>`<span class="inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full ${o.estado==='Finalizado'?'bg-positive':'bg-info'}"></span><span class="text-xs text-muted-foreground">${o.estado==='Finalizado'?'Finalizado':'A Decorrer'}</span></span>`;
   return h+(MOBILE()?opsF.slice().reverse().map(o=>`<div class="rounded-lg border border-border bg-card p-4 mb-2 space-y-2"><div class="flex justify-between">${chip('COMPRA DE AÇÃO','bg-teal-500')}<span class="font-semibold tabular-nums">${money(o.valor,o.moeda)}</span></div><div class="text-sm">${esc(o.tipo)}<div class="text-xs text-muted-foreground">${esc(o.desc)}</div></div><div class="flex justify-between items-center">${dot(o)}<span class="text-xs text-muted-foreground">${quando(o.t)}</span></div></div>`).join('')
     :tabela(['Data','Tipo','Descrição','Montante','Estado'],opsF.slice().reverse().map(o=>({cells:[quando(o.t),chip('COMPRA DE AÇÃO','bg-teal-500'),`${esc(o.tipo)}<div class="text-xs text-muted-foreground">${esc(o.desc)}</div>`,`<span class="tabular-nums">${money(o.valor,o.moeda)}</span>`,dot(o)]}))))}
-const bal=(t,i,bg,cor,v)=>`<div class="bg-card rounded-lg shadow-sm p-4 border border-border"><div class="flex items-center gap-3"><div class="p-2 rounded-lg ${bg}">${ic(i,24,cor)}</div><div class="min-w-0"><div class="text-sm font-medium text-muted-foreground truncate">${t}</div><div class="text-[18px] font-bold tabular-nums truncate">${v}</div></div></div></div>`;
+const bal=(t,i,bg,cor,v)=>{const M=MOBILE();return `<div class="bg-card rounded-lg shadow-sm ${M?'p-3':'p-4'} border border-border"><div class="flex items-center ${M?'gap-2':'gap-3'}"><div class="${M?'p-1.5':'p-2'} rounded-lg ${bg}">${ic(i,M?18:24,cor)}</div><div class="min-w-0"><div class="${M?'text-xs':'text-sm'} font-medium text-muted-foreground truncate">${t}</div><div class="${M?'text-[15px]':'text-[18px]'} font-bold tabular-nums truncate">${v}</div></div></div></div>`};
 function painelOp(tipo,pid){
   return ()=>{const L=S.compras.filter(c=>c.estado===(tipo==='por'?'enviada':'a_devolver'));const c=L.find(x=>x.pid===pid)||L[0];
   if(!c)return {titulo:tipo==='por'?'Compra de ação → sala':'Devolver compra de ação',corpo:vazio(tipo==='por'?'Não tens dinheiro de compras por pôr na sala.':'Não tens nada para devolver.','check-circle'),rodape:btn('Fechar','data-act="fecharPainel"','outline')};
@@ -307,17 +313,21 @@ function painelOp(tipo,pid){
   const sel=L.length>1?`<div>${label('Compra')}<select id="opSel" class="w-full px-3 py-2 text-sm border border-border rounded-md bg-background">${L.map(x=>`<option value="${x.pid}"${x.pid===c.pid?' selected':''}>${esc(curto(x.nome))}</option>`).join('')}</select></div>`:'';
   if(tipo==='por')return {titulo:'Compra de ação → sala',sub:'Põe na sala o dinheiro que a Polarize te enviou.',corpo:sel+`<div class="rounded-lg border border-border p-4 space-y-1.5 text-sm"><div class="flex justify-between"><span class="text-muted-foreground">Origem</span><span>Luxon Pay ${c.moeda}</span></div><div class="flex justify-between"><span class="text-muted-foreground">Destino</span><span>${esc(c.salaNome)}</span></div><div class="flex justify-between font-semibold text-base border-t border-border pt-2 mt-2"><span>Montante</span><span class="tabular-nums">${money(c.valor,c.moeda)}</span></div></div>
     <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-3 text-sm text-blue-800 dark:text-blue-300"><b>Não é uma Transferência para a banca.</b> O tracker guarda este valor à parte, como dinheiro da compra nesta sala. A tua banca do deal não muda.</div>`,rodape:btn('Cancelar','data-act="fecharPainel"','outline')+btn('Confirmar','data-act="confirmarPor"')};
-  return {titulo:'Devolver compra de ação',sub:'Levanta da sala o que é da Polarize e envia.',corpo:sel+`<div class="rounded-lg border border-border p-4 space-y-1.5 text-sm">${c.devPremio?`<div class="flex justify-between"><span class="text-muted-foreground">${pctTxt(c.pct)} do prémio de ${money(c.premio,c.moeda)}</span><span class="tabular-nums">${money(c.devPremio,c.moeda)}</span></div>`:''}${c.devEntradas?`<div class="flex justify-between"><span class="text-muted-foreground">${c.ent-(c.usadas||0)} ${c.ent-(c.usadas||0)===1?'entrada não usada':'entradas não usadas'}</span><span class="tabular-nums">${money(c.devEntradas,c.moeda)}</span></div>`:''}<div class="flex justify-between font-semibold text-base border-t border-border pt-2 mt-2"><span>A devolver</span><span class="tabular-nums">${money(c.devolver,c.moeda)}</span></div></div>
-    <ol class="list-decimal pl-5 text-sm space-y-1"><li>Levanta ${money(c.devolver,c.moeda)} da ${esc(c.salaNome)} para a tua Luxon Pay ${c.moeda}.</li><li>Envia para a Luxon da Polarize.</li><li>Junta o print do envio.</li></ol>
+  return {titulo:'Devolver compra de ação',sub:c.origem==='luxon'?'Envia da tua Luxon o que é da Polarize.':'Levanta da sala o que é da Polarize e envia.',corpo:sel+`<div class="rounded-lg border border-border p-4 space-y-1.5 text-sm">${c.devPremio?`<div class="flex justify-between"><span class="text-muted-foreground">${pctTxt(c.pct)} do prémio de ${money(c.premio,c.moeda)}</span><span class="tabular-nums">${money(c.devPremio,c.moeda)}</span></div>`:''}${c.devEntradas?`<div class="flex justify-between"><span class="text-muted-foreground">${c.origem==='luxon'?'Compra não usada (ficou na Luxon)':c.ent-(c.usadas||0)+' '+(c.ent-(c.usadas||0)===1?'entrada não usada':'entradas não usadas')}</span><span class="tabular-nums">${money(c.devEntradas,c.moeda)}</span></div>`:''}<div class="flex justify-between font-semibold text-base border-t border-border pt-2 mt-2"><span>A devolver</span><span class="tabular-nums">${money(c.devolver,c.moeda)}</span></div></div>
+    <ol class="list-decimal pl-5 text-sm space-y-1">${c.origem==='luxon'?`<li>O dinheiro ainda está na tua Luxon Pay ${c.moeda} (não chegou a ir para a sala).</li>`:`<li>Levanta ${money(c.devolver,c.moeda)} da ${esc(c.salaNome)} para a tua Luxon Pay ${c.moeda}.</li>`}<li>Envia para a Luxon da Polarize.</li><li>Junta o print do envio.</li></ol>
     <div>${label('Print do envio',1)}<label class="w-full flex items-center justify-center gap-2 px-3 py-2.5 text-sm border border-dashed border-border rounded-md cursor-pointer hover:bg-accent">${ic('paperclip',16)}${UI.print?esc(UI.print):'Escolher imagem'}<input type="file" accept="image/*" id="printDev" class="hidden"></label></div>`,
     rodape:btn('Cancelar','data-act="fecharPainel"','outline')+btn('Já enviei','data-act="confirmarDev" '+(UI.print?'':'disabled'))}}}
 // --- sessões do jogador
 const compraDaSala=id=>S.compras.filter(c=>c.salaId===id&&['na_sala','aberta'].includes(c.estado));
+// só se pergunta pelas compras cujo torneio já começou; as outras ficam na sala sem perguntas
+const jaComecou=c=>ini(c)<=NOW();
+const devNaSala=id=>S.compras.filter(c=>c.salaId===id&&c.estado==='a_devolver'&&c.origem!=='luxon');
 const naoJogouDeVez=c=>c.estado==='na_sala'&&NOW()>=fimLR(c);
-function novaSessao(){const com=S.salas.filter(s=>compraDaSala(s.id).length).map(s=>s.id);UI.sess={inicio:'',fim:'',nt:'',salas:(com.length?com:['gg']).map(id=>({id,final:''})),compras:{}}}
+function novaSessao(){const com=S.salas.filter(s=>compraDaSala(s.id).some(jaComecou)).map(s=>s.id);UI.sess={inicio:'',fim:'',nt:'',salas:(com.length?com:['gg']).map(id=>({id,final:''})),compras:{}}}
 function calcSala(row){const s=S.salas.find(x=>x.id===row.id),fin=num(row.final);let keep=0,novoDev=0;const falta=[];
-  const pend=r2(S.compras.filter(c=>c.salaId===s.id&&c.estado==='a_devolver').reduce((a,c)=>a+c.devolver,0));
+  const pend=r2(devNaSala(s.id).reduce((a,c)=>a+c.devolver,0));
   for(const c of compraDaSala(s.id)){const r=UI.sess.compras[c.pid];
+    if(!jaComecou(c)){keep+=c.naSala;continue}
     if(!r||!r.estado){falta.push(c);keep+=c.naSala;continue}
     if(r.estado==='nao'){naoJogouDeVez(c)?novoDev+=c.naSala:keep+=c.naSala;continue}
     const us=Math.min(c.ent,(c.usadas||0)+(r.usadas||(c.estado==='aberta'?0:1))),resto=r2((c.ent-us)*c.porEntrada),pI=r2((num(r.premio)||0)*c.pct+(c.devPremioAcum||0));
@@ -325,7 +335,10 @@ function calcSala(row){const s=S.salas.find(x=>x.id===row.id),fin=num(row.final)
   keep=r2(keep+pend);novoDev=r2(novoDev);const fd=isNaN(fin)?NaN:r2(fin-keep-novoDev);return {s,fin,keep,novoDev,finalDeal:fd,pl:isNaN(fd)?NaN:r2(fd-s.saldo),falta}}
 function sessaoErro(){const F=UI.sess;if(!F)return 'Falta preencher';if(S.sessoes.some(x=>x.dia===diaKey(diaSessao())))return 'Já existe uma sessão registada para esta data';
   if(!/^\d{2}:\d{2}$/.test(F.inicio)||!/^\d{2}:\d{2}$/.test(F.fim))return 'Hora de início é obrigatória';
-  for(const row of F.salas){const k=calcSala(row);if(isNaN(k.fin))return 'Saldo final é obrigatório';if(k.falta.length)return 'Diz como correu a compra de ação';if(k.finalDeal<0)return 'O saldo da sala não pode ser negativo'}
+  if(new Set(F.salas.map(r=>r.id)).size!==F.salas.length)return 'A mesma sala aparece duas vezes';
+  for(const row of F.salas){const k=calcSala(row);if(isNaN(k.fin))return String(row.final).trim()?`Saldo final inválido na ${k.s.nome}`:'Saldo final é obrigatório';if(k.falta.length)return 'Diz como correu a compra de ação';
+    for(const c of compraDaSala(k.s.id).filter(jaComecou)){const r=F.compras[c.pid];if(r&&r.estado==='sim'&&String(r.premio??'').trim()&&isNaN(num(r.premio)))return 'Prémio inválido: escreve só o número (ex.: 1.500,50)'}
+    if(k.finalDeal<0)return `O saldo final da ${k.s.nome} é menor do que o dinheiro da compra que ainda lá está (${money(k.keep+k.novoDev,k.s.moeda)})`}
   if(!(num(F.nt)>0))return 'N° de torneios é obrigatório';return ''}
 function pSessoes(){
   let h=pageHeader('Sessões','Histórico das tuas sessões',btn(ic('plus',16)+'Nova Sessão','data-nav="sessao_nova"'));
@@ -339,7 +352,7 @@ function pSessaoNova(){
   let form=`<div class="space-y-4"><div class="grid ${M?'grid-cols-2':'md:grid-cols-4'} gap-3"><div class="${M?'col-span-2':'md:col-span-2'}">${label('Data da Sessão',1)}${input(`value="${dataPT(diaSessao())}" disabled`)}<p class="mt-1 text-xs text-muted-foreground">${antes10?'A data da sessão foi alterada para ontem. ':''}Só pode haver uma sessão por dia</p></div>
     <div>${label('Hora de Início',1)}${input(`id="sIni" placeholder="HH:MM (24h)" value="${esc(F.inicio)}" inputmode="numeric"`)}</div><div>${label('Hora de Fim',1)}${input(`id="sFim" placeholder="HH:MM (24h)" value="${esc(F.fim)}" inputmode="numeric"`)}</div></div>
     <div><h3 class="text-base font-semibold mb-2">Salas onde jogaste</h3><div class="space-y-3">`;
-  F.salas.forEach((row,i)=>{const s=S.salas.find(x=>x.id===row.id),cs=compraDaSala(s.id),k=calcSala(row);
+  F.salas.forEach((row,i)=>{const s=S.salas.find(x=>x.id===row.id),cs=compraDaSala(s.id).filter(jaComecou),k=calcSala(row);
     form+=`${i?'<hr class="border-border">':''}<div class="space-y-2"><div class="flex flex-wrap gap-2 items-start"><div class="flex-1 min-w-[160px]"><select data-salarow="${i}" class="w-full px-3 py-2 border border-border rounded-lg bg-background text-sm">${S.salas.map(x=>`<option value="${x.id}"${x.id===s.id?' selected':''}>${esc(x.nome)}</option>`).join('')}</select>
       <p class="mt-1 text-xs text-muted-foreground">Saldo: ${money(s.saldo,s.moeda)}${!isNaN(k.pl)?` <span class="${k.pl>=0?'text-green-600 dark:text-green-400':'text-red-600 dark:text-red-400'}">(${k.pl>=0?'+':''}${money(k.pl,s.moeda)})</span>`:''}</p></div>
       <div class="w-40"><div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">${s.moeda==='EUR'?'€':'$'}</span><input data-final="${i}" value="${esc(row.final)}" inputmode="decimal" placeholder="Saldo Final" class="w-full pl-7 pr-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"></div></div>
@@ -374,14 +387,14 @@ function pSessaoNova(){
     <div class="grid grid-cols-1 ${M?'':'lg:grid-cols-[1fr_320px]'} gap-6"><div class="order-2 ${M?'':'lg:order-1'} bg-card rounded-lg shadow-sm border border-border p-4 sm:p-6">${form}</div><div class="order-1 ${M?'':'lg:order-2'}">${resumo}</div></div></div>`}
 function criarSessao(){const F=UI.sess,linhas=[];
   for(const row of F.salas){const k=calcSala(row),s=k.s;
-    for(const c of compraDaSala(s.id)){const r=F.compras[c.pid];if(!r)continue;
+    for(const c of compraDaSala(s.id).filter(jaComecou)){const r=F.compras[c.pid];if(!r)continue;
       if(r.estado==='nao'){if(naoJogouDeVez(c)){c.devEntradas=c.naSala;c.devPremio=0;c.devolver=c.naSala;c.naSala=0;c.estado='a_devolver';c.tDev=NOW();hist(c,`Sessão: não jogou. A devolver ${money(c.devolver,c.moeda)}`,'jogador')}else hist(c,'Sessão: não jogou nesse dia','jogador');continue}
       c.usadas=Math.min(c.ent,(c.usadas||0)+(r.usadas||(c.estado==='aberta'?0:1)));const pr=num(r.premio)||0;c.premio=r2((c.premio||0)+pr);
       const resto=r2((c.ent-c.usadas)*c.porEntrada),ac=r2((c.devPremioAcum||0)+pr*c.pct);
       if(c.varios_dias&&r.acabou==='nao'){c.devPremioAcum=ac;c.naSala=r2(resto+ac);c.estado='aberta';hist(c,`Sessão: passou ao Day 2 (${c.usadas} ${c.usadas===1?'entrada usada':'entradas usadas'})`,'jogador')}
       else{c.devPremio=ac;c.devEntradas=resto;c.devolver=r2(ac+resto);c.naSala=0;c.tDev=NOW();c.estado=c.devolver>0?'a_devolver':'fechada';if(c.estado==='fechada')c.tFim=NOW();
         hist(c,`Sessão: ${pr?'prémio '+money(pr,c.moeda):'sem prémio'}, ${c.usadas}/${c.ent} ${c.ent===1?'entrada':'entradas'}${c.devolver?'. A devolver '+money(c.devolver,c.moeda):'. Fechada'}`,'jogador')}}
-    s.compra=r2(compraDaSala(s.id).reduce((a,c)=>a+c.naSala,0)+S.compras.filter(c=>c.salaId===s.id&&c.estado==='a_devolver').reduce((a,c)=>a+c.devolver,0));
+    s.compra=r2(compraDaSala(s.id).reduce((a,c)=>a+c.naSala,0)+devNaSala(s.id).reduce((a,c)=>a+c.devolver,0));
     linhas.push({sala:s.nome,moeda:s.moeda,finalReal:k.fin,finalDeal:k.finalDeal,pl:k.pl});S.makeup[s.moeda]=r2(S.makeup[s.moeda]+k.pl);s.saldo=k.finalDeal}
   S.sessoes.push({dia:diaKey(diaSessao()),t:NOW(),linhas});UI.sess=null;UI.pJ='sessoes';avisar('Sessão criada com sucesso');render()}
 
@@ -393,12 +406,12 @@ function pPainel(){
   <div><h2 class="text-base font-semibold mb-2">Operações pendentes · o que pede ação</h2>${A.length?`<div class="space-y-2">${A.map(a=>alerta(a.nv,a.tx,a.sub,a.ir)).join('')}</div>`:vazio('Nada pendente.','check-circle')}</div></div>`}
 function pComprasG(){
   const f=c=>UI.tabG==='todas'||(UI.tabG==='acao'&&['revisao','aprovada','devolucao_enviada'].includes(c.estado))||(UI.tabG==='curso'&&['enviada','na_sala','aberta','a_devolver'].includes(c.estado))||(UI.tabG==='fechadas'&&['fechada','recusada','expirada','cancelada'].includes(c.estado));
-  const tot=S.compras.filter(c=>!['recusada','expirada','cancelada','revisao','aprovada'].includes(c.estado)),env=tot.reduce((a,c)=>a+c.usd,0),volt=S.compras.filter(c=>c.estado==='fechada').reduce((a,c)=>a+(c.moeda==='EUR'?(c.devolver||0)/UI.fx:(c.devolver||0)),0),porV=S.compras.filter(c=>['a_devolver','devolucao_enviada'].includes(c.estado)).reduce((a,c)=>a+(c.moeda==='EUR'?c.devolver/UI.fx:c.devolver),0);
+  const tot=S.compras.filter(c=>ENVIADAS.includes(c.estado)),env=tot.reduce((a,c)=>a+c.usd,0),volt=S.compras.filter(c=>c.estado==='fechada').reduce((a,c)=>a+(c.moeda==='EUR'?(c.devolver||0)/UI.fx:(c.devolver||0)),0),porV=S.compras.filter(c=>['a_devolver','devolucao_enviada'].includes(c.estado)).reduce((a,c)=>a+(c.moeda==='EUR'?c.devolver/UI.fx:c.devolver),0);
   let h=pageHeader('Compras de ação','Pedidos, envios, resultados e devoluções de todos os jogadores.');
-  h+=`<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">${tile('Compras','hand-coins','text-amber-500',tot.length,'enviadas este mês')}${tile('Enviado','send','text-blue-500',money(env),'US$ eq.')}${tile('Já devolvido','undo-2','text-green-500',money(volt))}${tile('Por devolver','alarm-clock','text-red-500',money(porV))}</div>`;
+  h+=`<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">${tile('Compras','hand-coins','text-amber-500',tot.length,'enviadas')}${tile('Enviado','send','text-blue-500',money(env),'US$ eq.')}${tile('Já devolvido','undo-2','text-green-500',money(volt))}${tile('Por devolver','alarm-clock','text-red-500',money(porV))}</div>`;
   h+=tabs([['todas','Todas',S.compras.length],['acao','Ação Necessária',S.compras.filter(c=>['revisao','aprovada','devolucao_enviada'].includes(c.estado)).length],['curso','A Decorrer'],['fechadas','Finalizadas']],UI.tabG,'tabg');
   const L=S.compras.filter(f).slice().reverse();if(!L.length)return h+vazio('Nenhuma compra neste filtro.','hand-coins');
-  return h+tabela(['Jogador','Torneio','Início','%','Ent.','Enviado','Prémio','A devolver','Estado'],L.map(c=>({attrs:`data-compra="${c.pid}"`,cells:[`<div class="flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-primary text-primary-foreground text-[11px] font-bold flex items-center justify-center">JA</div>${esc(S.jogador)}</div>`,`<span class="font-medium">${esc(curto(c.nome))}</span><div class="text-xs text-muted-foreground">${esc(c.sala)}</div>`,quando(ini(c)),pctTxt(c.pct),`${c.usadas||0}/${c.ent}`,['revisao','aprovada'].includes(c.estado)?'—':money(c.valor,c.moeda),c.premio?money(c.premio,c.moeda):'—',c.devolver&&['a_devolver','devolucao_enviada'].includes(c.estado)?money(c.devolver,c.moeda):'—',`${estadoDot(c,'gestao')}<div class="text-[11px] text-muted-foreground">${FASE[c.estado]}</div>`]})),true)}
+  return h+tabela(['Jogador','Torneio','Início','%','Ent.','Enviado','Prémio','A devolver','Estado'],L.map(c=>({attrs:`data-compra="${c.pid}"`,cells:[`<div class="flex items-center gap-2"><div class="w-7 h-7 rounded-full bg-primary text-primary-foreground text-[11px] font-bold flex items-center justify-center">JA</div>${esc(S.jogador)}</div>`,`<div class="whitespace-normal min-w-[180px] max-w-[260px]"><span class="font-medium">${esc(curto(c.nome))}</span><div class="text-xs text-muted-foreground">${esc(c.sala)}</div></div>`,quando(ini(c)),pctTxt(c.pct),`${c.usadas||0}/${c.ent}`,ENVIADAS.includes(c.estado)?money(c.valor,c.moeda):'—',c.premio?money(c.premio,c.moeda):'—',c.devolver&&['a_devolver','devolucao_enviada'].includes(c.estado)?money(c.devolver,c.moeda):'—',`${estadoDot(c,'gestao')}<div class="text-[11px] text-muted-foreground">${FASE[c.estado]}</div>`]})),true)}
 function pJogadorG(){
   let h=pageHeader('Utilizadores · '+esc(S.jogador),'Banca do deal por sala, dinheiro das compras à parte, e sessões.');
   h+=tabela(['Sala','Moeda','Banca do deal','Dinheiro de compras na sala'],S.salas.map(s=>({cells:[esc(s.nome),s.moeda,`<span class="tabular-nums font-medium">${money(s.saldo,s.moeda)}</span>`,s.compra?`<span class="tabular-nums text-amber-600 dark:text-amber-400">${money(s.compra,s.moeda)}</span>`:'—']})));
@@ -412,12 +425,12 @@ function pMatriz(){
   h+=`</tbody></table></div></div><div class="grid sm:grid-cols-3 gap-4 mt-4"><div>${label('Garantido mínimo (× buy-in)')}${input(`data-mxg="gtdMult" inputmode="numeric" value="${M.gtdMult}"`)}</div><div>${label('Máximo em aberto por jogador ($)')}${input(`data-mxg="abertoMax" inputmode="numeric" value="${M.abertoMax}"`)}</div>
   <div>${label('Nível do '+esc(S.jogador)+' (para testar)')}<select id="nivel" class="w-full px-3 py-2 text-sm border border-border rounded-md bg-background">${[5.5,6,6.5,7,7.5].map(n=>`<option value="${n}"${S.nivel===n?' selected':''}>${String(n).replace('.',',')}</option>`).join('')}</select></div></div>
   <p class="text-xs text-muted-foreground mt-2">Valores de exemplo. Também passa por: pedido até ${LIMITE_HORAS} h antes do início.</p>`;
-  const meses=[...new Set(S.compras.map(c=>mesKey(ini(c))))].sort();
+  const meses=[...new Set(S.compras.filter(c=>ENVIADAS.includes(c.estado)).map(c=>mesKey(ini(c))))].sort();
   h+=`<div class="mt-8">${pageHeader('Extratos mensais','O anexo do contrato do mês de cada jogador.')}</div>`;
   if(!meses.length)return h+vazio('Ainda sem compras.','file-text');
-  for(const m of meses){const cs=S.compras.filter(c=>mesKey(ini(c))===m&&!['recusada','expirada','cancelada','revisao'].includes(c.estado)),acabou=mesKey(NOW())>m;
+  for(const m of meses){const cs=S.compras.filter(c=>mesKey(ini(c))===m&&ENVIADAS.includes(c.estado)),acabou=mesKey(NOW())>m;
     h+=`<div class="flex items-center justify-between mb-2"><div class="text-sm"><b class="capitalize">${mesNome(m)}</b> · ${esc(S.jogador)} · contrato ${S.contratos[m]?'<span class="text-green-600 dark:text-green-400">aceite</span>':'<span class="text-amber-500">por aceitar</span>'} · ${S.extratos[m]?'enviado '+quando(S.extratos[m]):acabou?'<span class="text-amber-500">por enviar</span>':'o mês ainda não acabou'}</div>${acabou&&!S.extratos[m]?btn(ic('send',14)+'Enviar extrato',`data-extrato="${m}"`,'primary','px-3 py-1.5 text-xs'):''}</div>`;
-    h+=tabela(['Torneio','%','Entradas','Enviado','Prémio','Devolvido','Estado'],cs.map(c=>({cells:[esc(curto(c.nome)),pctTxt(c.pct),`${c.usadas||0}/${c.ent}`,money(c.valor,c.moeda),c.premio?money(c.premio,c.moeda):'—',c.estado==='fechada'&&c.devolver?money(c.devolver,c.moeda):['a_devolver','devolucao_enviada'].includes(c.estado)?'por receber':'—',estadoDot(c,'gestao')]})))+'<div class="h-6"></div>'}
+    h+=tabela(['Torneio','%','Entradas','Enviado','Prémio','Devolvido','Estado'],cs.map(c=>({cells:[esc(curto(c.nome)),pctTxt(c.pct),`${c.usadas||0}/${c.ent}`,ENVIADAS.includes(c.estado)?money(c.valor,c.moeda):'—',c.premio?money(c.premio,c.moeda):'—',c.estado==='fechada'&&c.devolver?money(c.devolver,c.moeda):['a_devolver','devolucao_enviada'].includes(c.estado)?'por receber':'—',estadoDot(c,'gestao')]})))+'<div class="h-6"></div>'}
   return h}
 
 // ================= render =================
@@ -428,6 +441,7 @@ function simBar(){const n=NOW(),J=S.papel==='jogador';
   ${J?`<span class="sep"></span><button data-vista="telemovel" class="${S.vista==='telemovel'?'on':''}">📱 Telemóvel</button><button data-vista="computador" class="${S.vista==='computador'?'on':''}">🖥 Computador</button>`:''}
   <span class="sep"></span><button data-act="reset">↺ Recomeçar</button>`}
 function render(){
+  const ae=document.activeElement,fid=ae&&ae.id&&/^(INPUT|SELECT)$/.test(ae.tagName)?ae.id:null,fpos=fid&&ae.tagName==='INPUT'?ae.selectionStart:null;
   aplicarTempo();document.documentElement.classList.toggle('dark',S.tema==='dark');
   const mainEl=document.getElementById('main'),scroll=mainEl?mainEl.scrollTop:0;
   $('#sim').innerHTML=simBar();UI.barra='';
@@ -436,7 +450,8 @@ function render(){
     {home:pHome,notificacoes:()=>pNotificacoes('jogador'),compras:pCompras,operacoes:pOperacoes,sessoes:pSessoes,sessao_nova:pSessaoNova}[p]();
   $('#app').innerHTML=shell(conteudo+(UI.barra||''));
   const m2=document.getElementById('main');if(m2&&UI.keepScroll)m2.scrollTop=scroll;UI.keepScroll=false;
-  ligar();guardar()}
+  ligar();guardar();
+  if(fid){const n=document.getElementById(fid);if(n&&document.activeElement!==n){n.focus({preventScroll:true});try{if(fpos!=null)n.setSelectionRange(fpos,fpos)}catch(x){}}}}
 function ligar(){
   const keep=(id,fn)=>{const el=document.getElementById(id);if(el)el.oninput=e=>{fn(e.target.value);const pos=e.target.selectionStart;UI.keepScroll=true;render();const n=document.getElementById(id);if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(x){}}}};
   const fh=v=>{const t=v.replace(/\D/g,'').slice(0,4);return t.length===4?t.slice(0,2)+':'+t.slice(2):t};
@@ -500,12 +515,12 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act],[data
   if(a==='reset'){const v=S.vista,t=S.tema;S=NOVO();S.vista=v;S.tema=t;UI.pJ='home';UI.pG='painel';UI.panel=null;UI.modal=null;UI.sess=null;render();return}
   if(a==='confirmarPor'){const c=S.compras.find(x=>x.pid===UI.opPid);S.luxon[c.moeda]=r2(S.luxon[c.moeda]-c.valor);c.estado='na_sala';c.naSala=c.valor;const s=S.salas.find(x=>x.id===c.salaId);s.compra=r2(s.compra+c.valor);hist(c,`Posto na ${c.salaNome}`,'jogador');
     novaOp({tipo:'Compra de ação → sala',desc:`${curto(c.nome)} · Luxon Pay ${c.moeda} → ${c.salaNome} (fora da banca)`,valor:c.valor,moeda:c.moeda,estado:'Finalizado'});UI.panel=null;avisar('Dinheiro da compra registado na sala. A banca do deal não mudou.');render();return}
-  if(a==='confirmarDev'){const c=S.compras.find(x=>x.pid===UI.opPid);c.estado='devolucao_enviada';c.print=UI.print;const s=S.salas.find(x=>x.id===c.salaId);s.compra=r2(Math.max(0,s.compra-c.devolver));hist(c,`Devolução enviada (${money(c.devolver,c.moeda)}), com print`,'jogador');
-    novaOp({tipo:'Devolução de compra de ação',desc:`${curto(c.nome)} · ${c.salaNome} → Luxon → Polarize`,valor:c.devolver,moeda:c.moeda,estado:'Pendente',pid:c.pid});UI.panel=null;avisar('Devolução enviada. A gestão confirma a receção.');render();return}
+  if(a==='confirmarDev'){const c=S.compras.find(x=>x.pid===UI.opPid);c.estado='devolucao_enviada';c.print=UI.print;const s=S.salas.find(x=>x.id===c.salaId);if(c.origem==='luxon')S.luxon[c.moeda]=r2(S.luxon[c.moeda]-c.devolver);else s.compra=r2(Math.max(0,s.compra-c.devolver));hist(c,`Devolução enviada (${money(c.devolver,c.moeda)}), com print`,'jogador');
+    novaOp({tipo:'Devolução de compra de ação',desc:`${curto(c.nome)} · ${c.origem==='luxon'?'Luxon':c.salaNome+' → Luxon'} → Polarize`,valor:c.devolver,moeda:c.moeda,estado:'Pendente',pid:c.pid});UI.panel=null;avisar('Devolução enviada. A gestão confirma a receção.');render();return}
   if(a==='criarSessao'){if(!sessaoErro())criarSessao();return}
   if(a==='novaSala'){const l=S.salas.find(s=>!UI.sess.salas.some(r=>r.id===s.id));if(l){UI.sess.salas.push({id:l.id,final:''});UI.keepScroll=true;render()}return}
 });
-window.addEventListener('resize',()=>render());
+let ultEstreito=estreito();window.addEventListener('resize',()=>{if(estreito()!==ultEstreito){ultEstreito=estreito();render()}});
 render();
 </script>
 </body>
