@@ -550,9 +550,10 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act],[data
   if(ds.pct){UI.pct=parseFloat(ds.pct);render();return}
   if(ds.ent){UI.ent=Math.max(1,Math.min(20,UI.ent+parseInt(ds.ent,10)));render();return}
   if(ds.op){UI.menuOp=false;UI.print=null;UI.panel={tipo:ds.op,render:painelOp(ds.op,ds.pid)};render();return}
-  if(ds.cancelar){const c=S.compras.find(x=>x.pid===ds.cancelar);c.estado='cancelada';hist(c,'Cancelada pelo jogador antes do prazo','jogador');UI.panel=null;avisar('Compra cancelada');render();return}
+  if(ds.cancelar){const c=S.compras.find(x=>x.pid===ds.cancelar);if(!c||!['revisao','aprovada'].includes(c.estado)||!aberto(c)){avisar('Já não dá para cancelar: '+(c?faseTxt(c):''),1);UI.panel=null;render();return}c.estado='cancelada';hist(c,'Cancelada pelo jogador antes do prazo','jogador');UI.panel=null;avisar('Compra cancelada');render();return}
   if(ds.extrato){S.extratos[ds.extrato]=NOW();avisar('Extrato enviado ao jogador');render();return}
-  if(ds.g){const c=S.compras.find(x=>x.pid===ds.pid);
+  if(ds.g){const c=S.compras.find(x=>x.pid===ds.pid);const PODE={aprovar:'revisao',recusar:'revisao',enviar:'aprovada'};
+    if(!c||(PODE[ds.g]&&c.estado!==PODE[ds.g])||(ds.g==='receber'&&devsDe(c)[+ds.dev]?.estado!=='enviada')){avisar('Esta compra mudou entretanto: '+(c?faseTxt(c):'já não existe'),1);render();return}
     if(ds.g==='aprovar'){c.estado='aprovada';c.aprov='gestao';hist(c,'Aprovado pela gestão','gestão');avisar('Compra aprovada')}
     if(ds.g==='recusar'){c.estado='recusada';c.tFim=NOW();hist(c,'Recusado pela gestão','gestão');avisar('Compra recusada')}
     if(ds.g==='enviar'){c.estado='enviada';S.luxon[c.moeda]=r2(S.luxon[c.moeda]+c.valor);hist(c,`Enviado ${money(c.valor,c.moeda)} para a Luxon do jogador`,'gestão');novaOp({tipo:'Compra de ação recebida',desc:`${curto(c.nome)} · ${pctTxt(c.pct)} · Polarize → Luxon Pay ${c.moeda}`,valor:c.valor,moeda:c.moeda,estado:'Finalizado'});avisar('Envio registado')}
@@ -575,9 +576,9 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act],[data
   if(a==='aceitarContrato'){S.contratos[mesKey(NOW())]=NOW();UI.modal=null;pedir();return}
   if(a==='segundo'){window.open(location.pathname+'?papel='+(JAN.papel==='jogador'?'gestao':'jogador'),'_blank','width=1280,height=900');return}
   if(a==='reset'){const t=S.tema;S=NOVO();S.tema=t;UI.pJ='home';UI.pG='painel';UI.panel=null;UI.modal=null;UI.sess=null;render();return}
-  if(a==='confirmarPor'){const c=S.compras.find(x=>x.pid===UI.opKey);S.luxon[c.moeda]=r2(S.luxon[c.moeda]-c.valor);c.estado='na_sala';c.naSala=c.valor;const s=S.salas.find(x=>x.id===c.salaId);s.compra=r2(s.compra+c.valor);hist(c,`Posto na ${c.salaNome}`,'jogador');
+  if(a==='confirmarPor'){const c=S.compras.find(x=>x.pid===UI.opKey);if(!c||c.estado!=='enviada'){avisar('Esta compra mudou entretanto',1);UI.panel=null;render();return}S.luxon[c.moeda]=r2(S.luxon[c.moeda]-c.valor);c.estado='na_sala';c.naSala=c.valor;const s=S.salas.find(x=>x.id===c.salaId);s.compra=r2(s.compra+c.valor);hist(c,`Posto na ${c.salaNome}`,'jogador');
     novaOp({tipo:'Compra de ação → sala',desc:`${curto(c.nome)} · Luxon Pay ${c.moeda} → ${c.salaNome} (fora da banca)`,valor:c.valor,moeda:c.moeda,estado:'Finalizado'});UI.panel=null;avisar('Dinheiro da compra registado na sala. A banca do deal não mudou.');render();return}
-  if(a==='confirmarDev'){const [pid,i]=UI.opKey.split(':'),c=S.compras.find(x=>x.pid===pid),x=devsDe(c)[+i];x.estado='enviada';x.print=UI.print;x.tEnv=NOW();const s=S.salas.find(y=>y.id===c.salaId);
+  if(a==='confirmarDev'){const [pid,i]=UI.opKey.split(':'),c=S.compras.find(x=>x.pid===pid),x=c&&devsDe(c)[+i];if(!x||x.estado!=='a_devolver'){avisar('Esta devolução mudou entretanto',1);UI.panel=null;render();return}x.estado='enviada';x.print=UI.print;x.tEnv=NOW();const s=S.salas.find(y=>y.id===c.salaId);
     if(x.tipo==='luxon')S.luxon[c.moeda]=r2(S.luxon[c.moeda]-x.valor);else s.compra=r2(Math.max(0,s.compra-x.valor));fecharSeAcabou(c);hist(c,`Devolução enviada: ${money(x.valor,c.moeda)} (${TIPO_DEV[x.tipo]}), com print`,'jogador');
     novaOp({tipo:'Devolução de compra de ação',desc:`${curto(c.nome)} · ${TIPO_DEV[x.tipo]} · ${x.tipo==='luxon'?'Luxon':c.salaNome+' → Luxon'} → Polarize`,valor:x.valor,moeda:c.moeda,estado:'Pendente',dev:pid+':'+i});UI.panel=null;avisar('Devolução enviada. A gestão confirma a receção.');render();return}
   if(a==='criarSessao'){if(!sessaoErro())criarSessao();return}
