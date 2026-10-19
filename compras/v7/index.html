@@ -72,7 +72,7 @@ const curto=n=>n.replace(/,\s*\$[\d.,]+[KM]?\s*GTD/i,'').replace(/\s+-\s+\$[\d,]
 const ic=(n,s=20,cls='')=>`<iconify-icon icon="lucide:${n}" width="${s}" height="${s}" class="${cls}"></iconify-icon>`;
 
 // ================= estado =================
-const NOVO=()=>({agora:inicioSim(),tema:'dark',
+const NOVO=()=>({agora:inicioSim(),tema:'dark',geracao:Math.random().toString(36).slice(2),
   jogador:'Jogador A',nick:'JogadorA',nivel:6.5,contratos:{},extratos:{},rbSala:{},
   salas:[{id:'gg',nome:'GGPoker.com USD',rede:'GGPoker',moeda:'USD',saldo:25150,compra:0},
          {id:'ps',nome:'PokerStars.com EUR',rede:'PokerStars',moeda:'EUR',saldo:8000,compra:0},
@@ -597,9 +597,16 @@ const estadoNuvem=e=>{if(NUVEM.estado!==e){NUVEM.estado=e;const b=document.getEl
 function empurrar(){if(!NUVEM||NUVEM.estado==='a ligar')return;if(NUVEM.aEnviar){NUVEM.pendente=true;return}const j=JSON.stringify(S);if(j===NUVEM.sync)return;NUVEM.aEnviar=true;
   rpc('ce_teste_gravar',{p_codigo:NUVEM.c,p_sala:NUVEM.sala,p_estado:S,p_versao:NUVEM.versao}).then(r=>{NUVEM.falhas=0;
     if(r.ok){NUVEM.versao=r.versao;NUVEM.sync=j;estadoNuvem('ligado')}
-    else if(r.estado){NUVEM.versao=r.versao;NUVEM.sync=JSON.stringify(r.estado);S=r.estado;aplicarTempo();if(JSON.stringify(S)!==j)avisar('As duas janelas mexeram ao mesmo tempo: ficou o que a outra gravou. Confirma a tua última ação.',1);UI.keepScroll=true;render()}
+    else if(r.estado){let base=null;try{base=JSON.parse(NUVEM.sync)}catch(x){}const f=base&&fundir(base,JSON.parse(j),r.estado);NUVEM.versao=r.versao;NUVEM.sync=JSON.stringify(r.estado);
+      if(f){S=f}else{S=r.estado;aplicarTempo();if(JSON.stringify(S)!==j)avisar('As duas janelas mexeram na mesma coisa ao mesmo tempo: ficou o que a outra gravou. Confirma a tua última ação.',1)}UI.keepScroll=true;render()}
     else{NUVEM.versao=r.versao;NUVEM.pendente=true}})
   .catch(e=>{NUVEM.falhas++;estadoNuvem('sem ligação');NUVEM.pendente=true}).finally(()=>{NUVEM.aEnviar=false;if(NUVEM.pendente){NUVEM.pendente=false;setTimeout(empurrar,NUVEM.falhas?3000:0)}})}
+const canon=x=>JSON.stringify(x,(k,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.keys(v).sort().reduce((o,kk)=>(o[kk]=v[kk],o),{}):v);
+function fundir(b,l,r){if(l.geracao!==b.geracao)return l;if(r.geracao!==b.geracao)return r;const out={...r},J=canon;for(const k of new Set([...Object.keys(l),...Object.keys(r)])){const sb=J(b[k]),sl=J(l[k]),sr=J(r[k]);if(sl===sb||sl===sr)continue;if(sr===sb){out[k]=l[k];continue}
+    if(k==='compras'){const id=c=>c.pid,mb=new Map((b[k]||[]).map(c=>[id(c),J(c)])),ml=new Map((l[k]||[]).map(c=>[id(c),c])),res=[];for(const c of r[k]||[]){const x=ml.get(id(c));if(!x||J(x)===mb.get(id(c))||J(x)===J(c)){res.push(c);continue}if(J(c)===mb.get(id(c))){res.push(x);continue}return null}
+      for(const [p,x] of ml)if(!(r[k]||[]).some(c=>id(c)===p)){if(mb.has(p))return null;res.push(x)}out[k]=res;continue}
+    if(k==='ops'||k==='sessoes'){const sbs=new Set((b[k]||[]).map(J)),srs=new Set((r[k]||[]).map(J)),novos=(l[k]||[]).filter(x=>!sbs.has(J(x))&&!srs.has(J(x)));if(k==='sessoes'&&novos.some(x=>(r[k]||[]).some(y=>y.dia===x.dia)))return null;out[k]=[...(r[k]||[]),...novos];continue}
+    return null}return out}
 async function puxar(){if(!NUVEM||NUVEM.aEnviar)return;try{const r=await rpc('ce_teste_ler',{p_codigo:NUVEM.c,p_sala:NUVEM.sala,p_desde:NUVEM.versao});NUVEM.falhas=0;
     if(NUVEM.estado==='a ligar'){if(r.estado){NUVEM.versao=r.versao;NUVEM.sync=JSON.stringify(r.estado);estadoNuvem('ligado');S=r.estado;render()}else{const t=S.tema;S=NOVO();S.tema=t;NUVEM.versao=0;estadoNuvem('ligado');render()}return}
     estadoNuvem('ligado');if(r.estado&&r.versao>NUVEM.versao&&!NUVEM.aEnviar&&JSON.stringify(S)===NUVEM.sync){NUVEM.versao=r.versao;NUVEM.sync=JSON.stringify(r.estado);aplicarEstado(r.estado)}}
