@@ -114,7 +114,7 @@ const fimDia1=c=>fimLR(c)+5*H,inicioDia2=c=>c.dia2?d(c.dia2).getTime():ultFlight
 const proxFim=c=>c.estado==='aberta'?fimDia2(c):fimDia1(c);
 const diaSessao=()=>{const n=NOW();return horasLx(n)<10?n-24*H:n};
 // catálogo → eventos: os flights ([Day 1], [Day 1A]…, [Flight B]) do mesmo torneio juntam-se; o [Day 2] dá a data do Day 2
-const TAG=/\s*\[(Day ?1[A-Z]?|1[A-Z]|Flight(?: ?[A-Z0-9]+)?|Last Chance)\]/i,D2=/\s*\[(Day ?[2-9]|MAIN|Final Day)\]/i;
+const TAG=/\s*\[(Day ?1[A-Z]?|1[A-Z]|(?:Final )?Flight(?: ?[A-Z0-9]+)?|Last Chance)\]/i,D2=/\s*\[(Day ?[2-9]|MAIN|Final Day)\]/i;
 // chave do evento: sala + buy-in + garantido (a WPN dá nomes de skins diferentes ao mesmo torneio); sem garantido, o nome-base
 const baseDe=n=>n.replace(TAG,'').replace(D2,'').replace(/\s+LAST$/i,'').trim(),chaveEv=(t,base)=>t.garantido?`fl|${t.sala}|${t.buyin}|${t.rake}|${t.garantido}`:`fl|${t.sala}|${base}|${t.buyin}|${t.rake}`;
 // torneios semanais com flights (Turbo Tuesday da WPN): cada semana tem o seu Day 2 — o flight pertence ao evento do Day 2 seguinte
