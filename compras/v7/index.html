@@ -380,6 +380,7 @@ const compraDaSala=id=>S.compras.filter(c=>c.salaId===id&&['na_sala','aberta'].i
 const jaComecou=c=>ini(c)<=NOW();
 const compraDet=s=>[...compraDaSala(s.id).filter(c=>c.naSala>0.004).flatMap(c=>{const ac=Math.min(c.devPremioAcum||0,c.naSala),en=r2(c.naSala-ac),L=[];if(en>0.004)L.push({v:en,c,txt:c.estado==='aberta'?'entradas, em jogo (dia seguinte)':'entradas por usar'});if(ac>0.004)L.push({v:r2(ac),c,txt:'parte da Polarize nos prémios · volta no fim do torneio'});return L}),...devNaSala(s.id).map(x=>({v:x.valor,c:S.compras.find(c=>devsDe(c).includes(x)),txt:TIPO_DEV[x.tipo]+' · por devolver'}))];
 const detLinha=d=>`<div class="text-[11px] text-muted-foreground">${money(d.v,d.c.moeda)} · ${esc(curto(d.c.nome))} · ${dataPT(ini(d.c))} · ${d.txt}</div>`;
+const d2Hoje=c=>!!c.dia2&&diaKey(inicioDia2(c))===diaKey(diaSessao());
 const devNaSala=id=>S.compras.filter(c=>c.salaId===id).flatMap(c=>devPend(c).filter(x=>x.tipo!=='luxon'));
 const temFlights=c=>(c.flights||[]).length>1;
 const restantes=c=>c.ent-(c.usadas||0)-(c.entDev||0);
@@ -399,7 +400,10 @@ function efeito(c,r){const pe=c.valor/c.ent,ac0=c.devPremioAcum||0,rest0=restant
   const txtE=`${o.usadas}/${c.ent} ${c.ent===1?'entrada usada':'entradas usadas'}`;
   if(c.varios_dias&&r.acabou==='nao'){o.qual=1;
     if(r.mais==='sim'&&rest>0&&!lrF){o.estado='na_sala';o.keep=r2(rest*pe+ac);o.txt=`qualificou (${txtE}); ainda vai jogar outro flight`}
-    else{ent(rest);o.estado='aberta';o.keep=ac;o.txt=`passou ao Day 2 (${txtE})`}
+    else{ent(rest);o.estado='aberta';o.keep=ac;o.txt=`passou ao Day 2 (${txtE})`;
+      if(r.d2==='sim'&&d2Hoje(c)){const p2=num(r.premio2)||0,ac2=r2(ac+p2*c.pct);o.premio=r2(p+p2);
+        if(r.a2==='nao'){o.acum=ac2;o.keep=ac2;o.txt+='; jogou o Day 2 no mesmo dia e passou ao dia seguinte'}
+        else{o.keep=0;fim(0,ac2,`passou ao Day 2 (${txtE}) e acabou no mesmo dia${p2?' com prémio '+money(p2,c.moeda):' sem prémio'}`)}}}
     return o}
   if(temFlights(c)&&rest>0&&!lrF){o.estado='na_sala';o.keep=r2(rest*pe+ac);o.txt=`não passou neste flight (${txtE}); faltam flights`;return o}
   if(o.qual){ent(rest);o.estado='aberta';o.keep=ac;o.txt=`não melhorou noutro flight (${txtE}); segue para o Day 2 com o stack que já tinha`;return o}
@@ -414,7 +418,7 @@ function sessaoErro(){const F=UI.sess;if(!F)return 'Falta preencher';if(S.sessoe
   if([hi,hf].some(h=>+h.slice(0,2)>23||+h.slice(3)>59))return 'Hora inválida (00:00 a 23:59)';
   if(new Set(F.salas.map(r=>r.id)).size!==F.salas.length)return 'A mesma sala aparece duas vezes';
   for(const row of F.salas){const k=calcSala(row);if(isNaN(k.fin))return String(row.final).trim()?`Saldo final inválido na ${k.s.nome}`:'Saldo final é obrigatório';if(k.falta.length)return 'Diz como correu a compra de ação';
-    for(const c of compraDaSala(k.s.id).filter(jaComecou)){const r=F.compras[c.pid];if(r&&r.estado==='sim'&&String(r.premio??'').trim()&&!(num(r.premio)>=0))return 'Prémio inválido: escreve só o número (ex.: 1.500,50)'}
+    for(const c of compraDaSala(k.s.id).filter(jaComecou)){const r=F.compras[c.pid];if(r&&r.estado==='sim'&&r.d2==='sim'&&String(r.premio2??'').trim()&&!(num(r.premio2)>=0))return 'Prémio do Day 2 inválido: escreve só o número';if(r&&r.estado==='sim'&&String(r.premio??'').trim()&&!(num(r.premio)>=0))return 'Prémio inválido: escreve só o número (ex.: 1.500,50)'}
     if(k.fin<0)return `O saldo final da ${k.s.nome} não pode ser negativo`;
     if(k.finalDeal<0)return `O saldo final da ${k.s.nome} é menor do que o dinheiro da compra que ainda lá está (${money(k.keep+k.novoDev,k.s.moeda)})`}
   if(!(num(F.nt)>0))return 'N° de torneios é obrigatório';return ''}
@@ -444,6 +448,9 @@ function pSessaoNova(){
       if(r.estado==='sim'){if(!d2)form+=`<div>${label(fl?'Entradas usadas hoje':'Entradas usadas')}<div class="flex items-center gap-2">${btn(ic('minus',16),`data-cu="${c.pid}" data-v="-1"`,'outline','h-9 w-9')}<div class="w-12 text-center font-semibold tabular-nums">${r.usadas||1}</div>${btn(ic('plus',16),`data-cu="${c.pid}" data-v="1"`,'outline','h-9 w-9')}<span class="text-xs text-muted-foreground">de ${rest} por usar</span></div></div>`;
         form+=`<div>${label(`Prémio${fl?' deste flight':''}, com bounties (${c.moeda==='EUR'?'€, como entrou na sala':'$'})`)}<input data-cp="${c.pid}" value="${esc(r.premio??'')}" inputmode="decimal" placeholder="0 se não houve prémio" class="w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"><p class="mt-1 text-xs text-muted-foreground">O total do ecrã de eliminação (prémio + bounties). Não somes as colunas Prize e Bounty da lista do lobby.</p></div>`;
         if(c.varios_dias)form+=`<div>${label(d2?'O torneio acabou para ti?':fl?'Como correu este flight?':'O torneio acabou para ti?')}<div class="flex gap-2">${seg('data-ca','sim',d2?'Acabou':fl?'Não passei':'Acabou',r.acabou!=='nao')}${seg('data-ca','nao',d2?'Passei ao dia seguinte':'Passei ao Day 2',r.acabou==='nao')}</div></div>`;
+        if(fl&&r.acabou==='nao'&&d2Hoje(c)){form+=`<div class="rounded-md border border-border bg-background/60 p-3 space-y-3"><div class="text-sm font-medium">O Day 2 foi hoje, às ${hm(inicioDia2(c))}. Jogaste-o?</div><div class="flex gap-2">${seg('data-cd','nao','Não',r.d2!=='sim')}${seg('data-cd','sim','Sim, joguei o Day 2',r.d2==='sim')}</div>`;
+          if(r.d2==='sim')form+=`<div>${label(`Prémio do Day 2, com bounties (${c.moeda==='EUR'?'€':'$'})`)}<input data-cp2="${c.pid}" value="${esc(r.premio2??'')}" inputmode="decimal" placeholder="0 se não houve prémio" class="w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary"></div><div>${label('O torneio acabou para ti?')}<div class="flex gap-2">${seg('data-ca2','sim','Acabou',r.a2!=='nao')}${seg('data-ca2','nao','Passei ao dia seguinte',r.a2==='nao')}</div></div>`;
+          form+='</div>'}
         if(fl&&r.acabou==='nao'&&rest-(r.usadas||1)>0&&NOW()<fimLR(c))form+=`<div>${label('Vais usar as entradas que sobram noutro flight?')}<div class="flex gap-2">${seg('data-cm','nao','Não, devolvo já',r.mais!=='sim')}${seg('data-cm','sim','Sim, vou tentar outro flight',r.mais==='sim')}</div></div>`}
       if(r.estado){const dv=e.devs.reduce((a,x)=>a+x.valor,0);form+=`<p class="text-xs ${dv?'text-amber-600 dark:text-amber-400':'text-muted-foreground'}">${dv?`Volta à Polarize: ${e.devs.map(x=>money(x.valor,c.moeda)+' ('+TIPO_DEV[x.tipo]+')').join(' + ')}. `:''}${e.keep?`Fica na sala para a compra: ${money(e.keep,c.moeda)}.`:''}${!dv&&!e.keep?'A compra fecha sem nada a devolver.':''}</p>`}
       form+='</div>'}
@@ -543,6 +550,7 @@ function ligar(){
   keep('sIni',v=>UI.sess.inicio=fh(v));keep('sFim',v=>UI.sess.fim=fh(v));keep('sNt',v=>UI.sess.nt=v.replace(/\D/g,''));
   document.querySelectorAll('[data-final]').forEach(el=>{el.id='fin'+el.dataset.final;keep(el.id,v=>UI.sess.salas[+el.dataset.final].final=v)});
   document.querySelectorAll('[data-cp]').forEach(el=>{el.id='cp'+el.dataset.cp;keep(el.id,v=>{(UI.sess.compras[el.dataset.cp]||={}).premio=v})});
+  document.querySelectorAll('[data-cp2]').forEach(el=>{el.id='cq'+el.dataset.cp2;keep(el.id,v=>{(UI.sess.compras[el.dataset.cp2]||={}).premio2=v})});
   document.querySelectorAll('[data-salarow]').forEach(el=>el.onchange=e=>{UI.sess.salas[+el.dataset.salarow].id=e.target.value;UI.keepScroll=true;render()});
   document.querySelectorAll('[data-mx]').forEach(el=>el.onchange=e=>{const [i,j]=el.dataset.mx.split(',').map(Number),c=S.matriz.celulas[i][j];c.p=parseFloat(e.target.value);if(c.p&&!c.v)c.v=5000;UI.keepScroll=true;render()});
   document.querySelectorAll('[data-mxv]').forEach(el=>el.onchange=e=>{const [i,j]=el.dataset.mxv.split(',').map(Number),v=num(e.target.value);if(v>0)S.matriz.celulas[i][j].v=v;UI.keepScroll=true;render()});
@@ -561,7 +569,7 @@ function pedir(){const t=UI.panel.t,sala=salaDaRede(t.sala),rb=num(UI.rb)/100,m=
   hist(cp,passa?'Aprovado pela matriz':'Fora da matriz: vai para a gestão','sistema');
   S.compras.push(cp);S.rbSala[t.sala]=UI.rb;UI.panel=null;UI.tabC='minhas';avisar(passa?'Pedido aprovado pela matriz':'Pedido enviado para a gestão aprovar');render()}
 function irPara(p){if(JAN.papel==='gestao')UI.pG=p;else UI.pJ=p;UI.drawer=false;UI.menuOp=false;UI.panel=null;const m=document.getElementById('main');if(m)m.scrollTop=0}
-document.addEventListener('click',e=>{const b=e.target.closest('[data-act],[data-nav],[data-tempo],[data-papel],[data-vista],[data-ir],[data-tabc],[data-tabo],[data-tabg],[data-sala],[data-dia],[data-torneio],[data-compra],[data-pct],[data-ent],[data-op],[data-g],[data-cancelar],[data-extrato],[data-cj],[data-cu],[data-ca],[data-cm],[data-rmsala]');if(!b)return;const ds=b.dataset;
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act],[data-nav],[data-tempo],[data-papel],[data-vista],[data-ir],[data-tabc],[data-tabo],[data-tabg],[data-sala],[data-dia],[data-torneio],[data-compra],[data-pct],[data-ent],[data-op],[data-g],[data-cancelar],[data-extrato],[data-cj],[data-cu],[data-ca],[data-cm],[data-cd],[data-ca2],[data-rmsala]');if(!b)return;const ds=b.dataset;
   if(b.disabled)return;
   if(ds.tempo){const n=NOW();if(ds.tempo==='dia'){const k=diaKey(n+24*H);let t=Date.parse(k+'T08:00:00Z');if(horasLx(t)===8)t+=H;S.agora=t}else if(ds.tempo==='evento'){const p=proximoEvento();if(p)S.agora=p+6e4;else avisar('Nada marcado à frente: avança um dia ou pede uma compra.')}else S.agora=n+Number(ds.tempo)*H;UI.sess=null;render();return}
   if(ds.papel){JAN.papel=ds.papel;guardarJanela();UI.panel=null;UI.drawer=false;render();return}
@@ -591,6 +599,8 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act],[data
   if(ds.cu){const c=S.compras.find(x=>x.pid===ds.cu),r=UI.sess.compras[ds.cu];r.usadas=Math.max(1,Math.min(restantes(c),(r.usadas||1)+parseInt(ds.v,10)));UI.keepScroll=true;render();return}
   if(ds.cm){UI.sess.compras[ds.cm].mais=ds.v;UI.keepScroll=true;render();return}
   if(ds.ca){UI.sess.compras[ds.ca].acabou=ds.v;UI.keepScroll=true;render();return}
+  if(ds.cd){UI.sess.compras[ds.cd].d2=ds.v;UI.keepScroll=true;render();return}
+  if(ds.ca2){UI.sess.compras[ds.ca2].a2=ds.v;UI.keepScroll=true;render();return}
   if(ds.rmsala){UI.sess.salas.splice(+ds.rmsala,1);UI.keepScroll=true;render();return}
   const a=ds.act;
   if(a==='drawer'){UI.drawer=!UI.drawer;render();return}
