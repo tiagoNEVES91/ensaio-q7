@@ -378,7 +378,7 @@ function painelOp(tipo,key){
 const compraDaSala=id=>S.compras.filter(c=>c.salaId===id&&['na_sala','aberta'].includes(c.estado));
 // só se pergunta pelas compras cujo torneio (1.º flight) já começou; as outras ficam na sala sem perguntas
 const jaComecou=c=>ini(c)<=NOW();
-const compraDet=s=>[...compraDaSala(s.id).filter(c=>c.naSala>0.004).map(c=>({v:c.naSala,c,txt:c.estado==='aberta'?'em jogo (dia seguinte)':'por usar'})),...devNaSala(s.id).map(x=>({v:x.valor,c:S.compras.find(c=>devsDe(c).includes(x)),txt:TIPO_DEV[x.tipo]+' · por devolver'}))];
+const compraDet=s=>[...compraDaSala(s.id).filter(c=>c.naSala>0.004).flatMap(c=>{const ac=Math.min(c.devPremioAcum||0,c.naSala),en=r2(c.naSala-ac),L=[];if(en>0.004)L.push({v:en,c,txt:c.estado==='aberta'?'entradas, em jogo (dia seguinte)':'entradas por usar'});if(ac>0.004)L.push({v:r2(ac),c,txt:'parte da Polarize nos prémios · volta no fim do torneio'});return L}),...devNaSala(s.id).map(x=>({v:x.valor,c:S.compras.find(c=>devsDe(c).includes(x)),txt:TIPO_DEV[x.tipo]+' · por devolver'}))];
 const detLinha=d=>`<div class="text-[11px] text-muted-foreground">${money(d.v,d.c.moeda)} · ${esc(curto(d.c.nome))} · ${dataPT(ini(d.c))} · ${d.txt}</div>`;
 const devNaSala=id=>S.compras.filter(c=>c.salaId===id).flatMap(c=>devPend(c).filter(x=>x.tipo!=='luxon'));
 const temFlights=c=>(c.flights||[]).length>1;
