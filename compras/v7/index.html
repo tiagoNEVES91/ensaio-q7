@@ -437,25 +437,27 @@ function novaSessao(){const com=S.salas.filter(s=>compraDaSala(s.id).some(jaCome
 function efeito(c,r){const pe=c.valor/c.ent,ac0=c.devPremioAcum||0,rest0=restantes(c),lrF=NOW()>=fimLR(c);
   const o={keep:0,devs:[],estado:c.estado,usadas:c.usadas||0,acum:ac0,premio:0,qual:c.qualificado||0,fim:false,txt:''};
   const ent=(n)=>{if(n>0)o.devs.push({tipo:'entradas',valor:r2(n*pe),n})},fim=(n,ac,txt)=>{ent(n);if(ac>0)o.devs.push({tipo:'itm',valor:r2(ac)});o.fim=true;o.acum=0;o.txt=txt};
+  const hoje=v=>{v=r2(v);if(v>0)o.devs.push({tipo:'itm',valor:v})};
   if(!r||!r.estado){o.keep=c.naSala;o.falta=true;return o}
   if(r.estado==='nao'){
     if(c.estado==='na_sala'&&lrF){if(c.qualificado){ent(rest0);o.estado='aberta';o.keep=r2(ac0);o.txt='não jogou mais flights; segue para o Day 2'}else fim(rest0,ac0,'não jogou e o late reg fechou')}
     else{o.keep=c.naSala;o.txt=c.estado==='aberta'?'não jogou o Day 2 nesse dia':'não jogou'}
     return o}
-  const p=num(r.premio)||0,pP=r2(p*c.pct);o.premio=p;
-  if(c.estado==='aberta'){const ac=r2(ac0+pP);if(r.acabou==='nao'){o.acum=ac;o.keep=r2(rest0*pe+ac);o.txt='passou ao dia seguinte'}else fim(rest0,ac,`acabou${p?' com prémio '+money(p,c.moeda):' sem prémio'}`);return o}
-  const u=Math.max(1,Math.min(rest0,r.usadas||1)),rest=rest0-u,ac=r2(ac0+pP);o.usadas=(c.usadas||0)+u;o.acum=ac;
+  const p=num(r.premio)||0,pP=r2(p*c.pct);o.premio=p;const jaVolta=pP?'; a parte do prémio de hoje volta já':'';
+  if(c.estado==='aberta'){if(r.acabou==='nao'){hoje(pP);o.keep=r2(rest0*pe+ac0);o.txt='passou ao dia seguinte'+jaVolta}else fim(rest0,r2(ac0+pP),`acabou${p?' com prémio '+money(p,c.moeda):' sem prémio'}`);return o}
+  const u=Math.max(1,Math.min(rest0,r.usadas||1)),rest=rest0-u;o.usadas=(c.usadas||0)+u;
   const txtE=`${o.usadas}/${c.ent} ${c.ent===1?'entrada usada':'entradas usadas'}`;
   if(c.varios_dias&&r.acabou==='nao'){o.qual=1;
-    if(r.mais==='sim'&&rest>0&&!lrF){o.estado='na_sala';o.keep=r2(rest*pe+ac);o.txt=`qualificou (${txtE}); ainda vai jogar outro flight`}
-    else{ent(rest);o.estado='aberta';o.keep=ac;o.txt=`passou ao Day 2 (${txtE})`;
-      if(r.d2==='sim'&&d2Hoje(c)){const p2=num(r.premio2)||0,ac2=r2(ac+p2*c.pct);o.premio=r2(p+p2);
-        if(r.a2==='nao'){o.acum=ac2;o.keep=ac2;o.txt+='; jogou o Day 2 no mesmo dia e passou ao dia seguinte'}
-        else{o.keep=0;fim(0,ac2,`passou ao Day 2 (${txtE}) e acabou no mesmo dia${p2?' com prémio '+money(p2,c.moeda):' sem prémio'}`)}}}
+    if(r.mais==='sim'&&rest>0&&!lrF){hoje(pP);o.estado='na_sala';o.keep=r2(rest*pe+ac0);o.txt=`qualificou (${txtE}); ainda vai jogar outro flight`+jaVolta}
+    else{ent(rest);o.estado='aberta';
+      if(r.d2==='sim'&&d2Hoje(c)){const p2=num(r.premio2)||0,s2=r2(p2*c.pct);o.premio=r2(p+p2);
+        if(r.a2==='nao'){hoje(pP+s2);o.keep=r2(ac0);o.txt=`passou ao Day 2 (${txtE}); jogou o Day 2 no mesmo dia e passou ao dia seguinte`+(pP+s2?'; a parte do prémio de hoje volta já':'')}
+        else{o.keep=0;fim(0,r2(ac0+pP+s2),`passou ao Day 2 (${txtE}) e acabou no mesmo dia${p2?' com prémio '+money(p2,c.moeda):' sem prémio'}`)}}
+      else{hoje(pP);o.keep=r2(ac0);o.txt=`passou ao Day 2 (${txtE})`+jaVolta}}
     return o}
-  if(temFlights(c)&&rest>0&&!lrF){o.estado='na_sala';o.keep=r2(rest*pe+ac);o.txt=`não passou neste flight (${txtE}); faltam flights`;return o}
-  if(o.qual){ent(rest);o.estado='aberta';o.keep=ac;o.txt=`não melhorou noutro flight (${txtE}); segue para o Day 2 com o stack que já tinha`;return o}
-  fim(rest,ac,`${p?'prémio '+money(p,c.moeda):'sem prémio'}, ${txtE}`);return o}
+  if(temFlights(c)&&rest>0&&!lrF){hoje(pP);o.estado='na_sala';o.keep=r2(rest*pe+ac0);o.txt=`não passou neste flight (${txtE}); faltam flights`+jaVolta;return o}
+  if(o.qual){ent(rest);hoje(pP);o.estado='aberta';o.keep=r2(ac0);o.txt=`não melhorou noutro flight (${txtE}); segue para o Day 2 com o stack que já tinha`+jaVolta;return o}
+  fim(rest,r2(ac0+pP),`${p?'prémio '+money(p,c.moeda):'sem prémio'}, ${txtE}`);return o}
 function calcSala(row){const s=S.salas.find(x=>x.id===row.id),fin=num(row.final);let keep=0,novoDev=0;const falta=[];
   const pend=r2(devNaSala(s.id).reduce((a,x)=>a+x.valor,0));
   for(const c of compraDaSala(s.id)){if(!jaComecou(c)){keep+=c.naSala;continue}const e=efeito(c,UI.sess.compras[c.pid]);if(e.falta)falta.push(c);keep+=e.keep;novoDev+=e.devs.reduce((a,x)=>a+x.valor,0)}
