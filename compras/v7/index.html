@@ -252,7 +252,7 @@ function shell(conteudo){
     <div class="flex-1 flex flex-col min-w-0">${header()}<main class="flex-1 overflow-y-auto overflow-x-hidden ${JAN.papel==='jogador'&&!M&&UI.balOpen?'mr-[420px]':''}" id="main"><div class="${M?'p-4 pb-28':'p-6'}">${conteudo}</div></main></div>
     ${JAN.papel==='jogador'&&!M&&!UI.balOpen?`<aside class="flex w-12 bg-card border-l border-border flex-col items-center py-4 gap-3 flex-shrink-0"><button data-act="bal" class="p-2 rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground" title="Abrir tabela de balanços">${ic('wallet',20)}</button></aside>`:''}
     ${JAN.papel==='jogador'?painelBal(M):''}${painelLateral()}${modal()}${toast()}</div>`;
-  return M&&!estreito()?`<div class="frame bg-background">${corpo}</div>`:corpo}
+  return M&&!estreito()?`<div class="frame bg-background">${corpo.replace(/(^|[\s"'`])(?:sm|md|lg|xl|2xl):[^\s"'`<>]+/g,'$1')}</div>`:corpo}
 
 // ================= Tabela Balanços (jogador) =================
 function painelBal(M){
@@ -404,7 +404,7 @@ function pOperacoes(){
   const dot=o=>`<span class="inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full ${o.estado==='Finalizado'?'bg-positive':'bg-info'}"></span><span class="text-xs text-muted-foreground">${o.estado==='Finalizado'?'Finalizado':'A Decorrer'}</span></span>`;
   return h+(MOBILE()?opsF.slice().reverse().map(o=>`<div class="rounded-lg border border-border bg-card p-4 mb-2 space-y-2"><div class="flex justify-between">${chip('COMPRA DE AÇÃO','bg-teal-500')}<span class="font-semibold tabular-nums">${money(o.valor,o.moeda)}</span></div><div class="text-sm">${esc(o.tipo)}<div class="text-xs text-muted-foreground">${esc(o.desc)}</div></div><div class="flex justify-between items-center">${dot(o)}<span class="text-xs text-muted-foreground">${quando(o.t)}</span></div></div>`).join('')
     :tabela(['Data','Tipo','Descrição','Montante','Estado'],opsF.slice().reverse().map(o=>({cells:[quando(o.t),chip('COMPRA DE AÇÃO','bg-teal-500'),`${esc(o.tipo)}<div class="text-xs text-muted-foreground">${esc(o.desc)}</div>`,`<span class="tabular-nums">${money(o.valor,o.moeda)}</span>`,dot(o)]}))))}
-const bal=(t,i,bg,cor,v)=>{const M=MOBILE();return `<div class="bg-card rounded-lg shadow-sm ${M?'p-3':'p-4'} border border-border"><div class="flex items-center ${M?'gap-2':'gap-3'}"><div class="${M?'p-1.5':'p-2'} rounded-lg ${bg}">${ic(i,M?18:24,cor)}</div><div class="min-w-0"><div class="${M?'text-xs':'text-sm'} font-medium text-muted-foreground truncate">${t}</div><div class="${M?'text-[15px]':'text-[18px]'} font-bold tabular-nums truncate">${v}</div></div></div></div>`};
+const bal=(t,i,bg,cor,v)=>{const M=MOBILE();return `<div class="bg-card rounded-lg shadow-sm ${M?'p-3':'p-4'} border border-border"><div class="flex items-center ${M?'gap-2':'gap-3'}"><div class="${M?'p-1.5':'p-2'} rounded-lg ${bg}">${ic(i,M?18:24,cor)}</div><div class="min-w-0"><div class="${M?'text-xs':'text-sm'} font-medium text-muted-foreground truncate">${t}</div><div class="${M?'text-[14px]':'text-[18px]'} font-bold tabular-nums leading-tight">${String(v).split(' · ').map(x=>`<span class="whitespace-nowrap">${x}</span>`).join(' · ')}</div></div></div></div>`};
 function painelOp(tipo,key){
   return ()=>{
   if(tipo==='por'){const L=S.compras.filter(c=>c.estado==='enviada'),c=L.find(x=>x.pid===key)||L[0];
