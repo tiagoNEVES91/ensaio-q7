@@ -73,7 +73,7 @@ const ic=(n,s=20,cls='')=>`<iconify-icon icon="lucide:${n}" width="${s}" height=
 
 // ================= estado =================
 const NOVO=()=>({agora:inicioSim(),tema:'dark',geracao:Math.random().toString(36).slice(2),
-  jogador:'Jogador A',nick:'JogadorA',nivel:6.5,contratos:{},extratos:{},rbSala:{},
+  jogador:'Jogador A',nick:'JogadorA',nivel:6.5,contratos:{},extratos:{},extratosConf:{},rbSala:{},
   salas:[{id:'gg',nome:'GGPoker.com USD',rede:'GGPoker',moeda:'USD',saldo:25150,compra:0},
          {id:'ps',nome:'PokerStars.com EUR',rede:'PokerStars',moeda:'EUR',saldo:8000,compra:0},
          {id:'wpn',nome:'WPN',rede:'WPN',moeda:'USD',saldo:6000,compra:0},
@@ -146,6 +146,24 @@ const emAberto=()=>S.compras.filter(c=>ATIVOS.includes(c.estado)).reduce((a,c)=>
 const devsDe=c=>c.devs||(c.devs=[]);
 const devPend=c=>devsDe(c).filter(x=>x.estado==='a_devolver'),devEnv=c=>devsDe(c).filter(x=>x.estado==='enviada');
 const somaDev=(c,est)=>r2(devsDe(c).filter(x=>!est||est.includes(x.estado)).reduce((a,x)=>a+x.valor,0));
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1),mesAno=m=>mesNome(m)+' de '+m.slice(0,4);
+const mesC=c=>mesKey((c.hist&&c.hist[0]&&c.hist[0].t)||ini(c));
+const rbEnt=c=>r2(c.rake*c.rb*c.pct);
+const tAprov=c=>((c.hist||[]).find(x=>/^Aprovado/.test(x.txt))||{}).t;
+const noSched=c=>!!tAprov(c)&&!['recusada','cancelada','expirada'].includes(c.estado);
+const dataHora=t=>new Date(t).toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',timeZone:'Europe/Lisbon'})+' '+hm(t);
+const prop=t=>`<span class="text-amber-600 dark:text-amber-400">[${t}]</span>`;
+function contratoTexto(m){const J=esc(S.jogador);return `<div class="space-y-3 text-[13px] leading-relaxed text-foreground">
+<p class="text-xs text-amber-600 dark:text-amber-400">Rascunho para validar com o David. Segue o aditamento em uso; o que está entre [ ] são propostas novas. O schedule deixa de estar escrito aqui: passa a ser o conjunto dos pedidos aprovados no tracker.</p>
+<p><b>Contrato-quadro de compras de ação · ${cap(mesAno(m))}</b><br>Aditamento ao Acordo de Parceria de Poker Staking e Coaching entre a Polarize Poker Limited (Sociedade) e ${J} (Jogador).</p>
+<p><b>1. Modelo.</b> Em cada evento acordado, uma % do buy-in é investida pelo modelo de Staking 50-50 do Acordo e outra % pelo modelo Compra de Ação. Na Compra de Ação a Sociedade investe o montante dessa %, o Jogador partilha os ganhos na mesma % e não há make-up em caso de perdas. As cláusulas do Acordo aplicam-se em tudo o que não for incompatível.</p>
+<p><b>2. Schedule.</b> O schedule deste mês são os pedidos que o Jogador faz no tracker e que a Sociedade aprova antes do início de cada evento. Cada pedido aprovado fixa o evento, o buy-in e o rake, o número máximo de entradas, a % de cada modelo e o rakeback da parte da Sociedade. O acordo de cada evento fica feito no momento da aprovação.</p>
+<p><b>3. Envio e inscrição.</b> A Sociedade transfere o valor para a Luxon Pay do Jogador, ${prop('já líquido do rakeback da parte dela; o aditamento atual manda o Jogador devolvê-lo depois')}. O Jogador põe o valor na sala e faz a inscrição. Esse dinheiro só serve para esse evento.</p>
+<p><b>4. Resultado e prova.</b> O Jogador regista no tracker, na sessão de cada dia de jogo, as entradas usadas e o prémio, no máximo 48 h depois, ${prop('com print do resultado no registo da sessão')}. Se não reportar um prémio em 48 h, a Sociedade pode rescindir com justa causa e o Jogador paga um valor igual ao prémio, além do próprio prémio. Sem prova da participação, a penalização é de uma vez o buy-in (em perdas) ou uma vez o prémio (em ganhos).</p>
+<p><b>5. Devoluções.</b> As entradas não usadas e a % da Sociedade nos prémios (bounties incluídos) devolvem-se no dia em que o dinheiro entra na sala, com print do envio no tracker.</p>
+<p><b>6. Extrato.</b> ${prop('No fim do mês a Sociedade envia o extrato de todos os eventos do schedule: valores enviados, prémios, devoluções e o que falta receber. O Jogador confirma-o no tracker. O extrato faz parte deste contrato.')}</p>
+<p><b>7. Disposições finais.</b> O Jogador joga os eventos com total empenho e presença. Ausentar-se das mesas sem motivo de força maior implica uma penalização de 10% do buy-in por cada mão em sit out.</p>
+<p class="text-xs text-muted-foreground">Aceite no tracker pelo Jogador; vale para os pedidos de ${mesAno(m)}.</p></div>`}
 const TIPO_DEV={entradas:'entradas não usadas',itm:'parte do prémio',luxon:'compra não usada (ficou na Luxon)'};
 const emUSD=(v,m)=>m==='EUR'?v/UI.fx:v;
 function addDev(c,tipo,valor,extra={}){valor=r2(valor);if(valor<=0.004)return null;const x={i:devsDe(c).length,tipo,valor,estado:'a_devolver',t:NOW(),...extra};c.devs.push(x);return x}
@@ -181,7 +199,7 @@ function avisos(papel){const A=[],n=NOW(),add=(nv,tx,sub,ir)=>A.push({nv,tx,sub,
       if(c.estado==='na_sala'&&c.flights&&c.flights.length>1&&n<fimLR(c)){const f=c.flights.find(f=>diaKey(ini(f))===diaKey(n));if(f)add('info',`Hoje há flight: ${nm}`,`${hm(ini(f))} · tens ${restantes(c)} de ${c.ent} entradas por usar`)}
       if(['na_sala','aberta'].includes(c.estado)&&n>=proxFim(c)){const a=Math.floor((n-proxFim(c))/(24*H));add(a>=1?'err':'warn',`Regista a sessão com a compra: ${nm}`,a>=1?`Acabou há ${a} ${a===1?'dia':'dias'}`:`Acabou (fim estimado ${hm(proxFim(c))})`,['sessao_nova',c.pid])}
       for(const x of devPend(c)){const a=Math.floor((n-x.t)/(24*H));add(a>=1?'err':'warn',`Devolve ${money(x.valor,c.moeda)} à Polarize`,`${nm} · ${TIPO_DEV[x.tipo]}: `+(a>=1?`em atraso há ${a} ${a===1?'dia':'dias'}`:x.tipo==='luxon'?'ainda está na tua Luxon, envia hoje':'levanta da sala e envia hoje'),['operacoes',c.pid+':'+x.i])}
-      if(c.estado==='recusada'&&n-c.tFim<24*H)add('info',`Pedido recusado: ${nm}`,'Fora dos limites para o teu nível');
+      if(c.estado==='recusada'&&n-c.tFim<24*H)add('info',`Pedido recusado: ${nm}`,c.motivoRecusa||'Fora dos limites para o teu nível');
       if(c.estado==='expirada'&&n-ini(c)<24*H)add('info',`${c.semEnvio?'Compra sem efeito':'Pedido sem efeito'}: ${nm}`,c.semEnvio?'O valor não foi enviado a tempo':'A gestão não decidiu até ao início');
     }else{
       if(c.estado==='revisao')add(n>ini(c)-2*H?'err':'warn',`Pedido por decidir: ${nm}`,`${S.jogador} · ${pctTxt(c.pct)} · ${money(c.valor,c.moeda)} · fecha às ${hm(ini(c))} (${diaNome(ini(c))})`,['compras',c.pid]);
@@ -191,7 +209,8 @@ function avisos(papel){const A=[],n=NOW(),add=(nv,tx,sub,ir)=>A.push({nv,tx,sub,
       for(const x of devPend(c))if(n-x.t>=48*H)add('err',`Devolução em atraso: ${money(x.valor,c.moeda)}`,`${nm} · ${TIPO_DEV[x.tipo]}: há ${Math.floor((n-x.t)/(24*H))} dias. Falar com o jogador`,['compras',c.pid]);
       for(const x of devEnv(c))add('warn',`Confirmar receção de ${money(x.valor,c.moeda)}`,`${nm} · ${TIPO_DEV[x.tipo]} · print: ${x.print||'—'}`,['compras',c.pid]);
     }}
-  if(papel==='gestao')for(const m of [...new Set(S.compras.filter(c=>ENVIADAS.includes(c.estado)&&mesKey(ini(c))<mesKey(n)&&!S.extratos[mesKey(ini(c))]).map(c=>mesKey(ini(c))))])add('warn',`Enviar o extrato de ${mesNome(m)} ao ${S.jogador}`,'É o anexo do contrato do mês',['matriz']);
+  if(papel==='gestao')for(const m of [...new Set(S.compras.filter(c=>ENVIADAS.includes(c.estado)&&mesC(c)<mesKey(n)&&!S.extratos[mesC(c)]).map(mesC))])add('warn',`Enviar o extrato de ${mesNome(m)} ao ${S.jogador}`,'Fecha as contas do contrato do mês',['contratos']);
+  if(papel==='jogador')for(const m in S.extratos||{})if(!(S.extratosConf||{})[m])add('warn',`Confirma o extrato de ${mesNome(m)}`,'Fecha as contas das compras do mês. Se algo não bate, fala com a gestão',['compras','@contrato']);
   const o={err:0,warn:1,info:2};return A.sort((a,b)=>o[a.nv]-o[b.nv])}
 function proximoEvento(){const n=NOW(),T=[];for(const c of S.compras){if(['revisao','aprovada','enviada'].includes(c.estado))T.push(ini(c));if(['aprovada','enviada'].includes(c.estado))T.push(fimLR(c));if(c.estado==='na_sala'){T.push(fimDia1(c));for(const f of c.flights||[])T.push(ini(f))}if(c.estado==='aberta')T.push(inicioDia2(c),fimDia2(c));for(const x of devPend(c))T.push(x.t+24*H,x.t+48*H)}
   return T.filter(t=>t>n+6e4).sort((a,b)=>a-b)[0]||null}
@@ -226,7 +245,7 @@ const NAV_J=[['Principal',[['home','home','Home'],['notificacoes','bell','Notifi
   ['Ferramentas',[['relat','clipboard-list','Relatórios',1],['faq','help-circle','FAQ',1]]]];
 const NAV_G=[['Principal',[['painel','home','Home'],['notificacoes','bell','Notificações'],['sessoesG','clock','Sessões',1]]],
   ['Financeiro',[['operacoesG','dollar-sign','Operações',1],['compras','hand-coins','Compras de ação','novo'],['makeupd','calendar-range','Makeup Diário',1]]],
-  ['Gestão',[['jogador','users','Utilizadores'],['matriz','table-2','Matriz de aprovação','novo'],['niveis','layers','Níveis',1],['bancaMTT','shield-alert','Gestão de Banca MTT',1]]]];
+  ['Gestão',[['jogador','users','Utilizadores'],['matriz','table-2','Matriz de aprovação','novo'],['contratos','file-signature','Contratos e extratos','novo'],['niveis','layers','Níveis',1],['bancaMTT','shield-alert','Gestão de Banca MTT',1]]]];
 function sidebar(){
   const G=JAN.papel==='gestao',nav=G?NAV_G:NAV_J,pag=G?UI.pG:UI.pJ;
   const badge=k=>{const n=k==='notificacoes'?avisos(G?'gestao':'jogador').filter(a=>a.nv!=='info').length:k==='compras'?(G?S.compras.filter(acaoG).length:0):k==='operacoes'?S.compras.filter(c=>c.estado==='enviada').length+S.compras.reduce((a,c)=>a+devPend(c).length,0):0;return n?`<span class="ml-auto h-5 min-w-[20px] rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground flex items-center justify-center">${n}</span>`:''};
@@ -287,9 +306,9 @@ function painelLateral(){const P=UI.panel;if(!P)return '';const M=MOBILE(),x=P.r
     <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">${x.corpo}</div>
     ${x.rodape?`<div class="p-4 sm:p-6 border-t border-border bg-accent/20 flex gap-2 justify-end">${x.rodape}</div>`:''}</div>`}
 function modal(){const m=UI.modal;if(!m)return '';const M=MOBILE();
-  return `<div class="${M?'absolute':'fixed'} inset-0 bg-background/80 backdrop-blur-sm z-[80] flex items-center justify-center p-4"><div class="w-full max-w-lg bg-card border border-border rounded-lg shadow-xl overflow-hidden">
-  <div class="px-4 pt-5 pb-4 sm:p-6 flex gap-4"><div class="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center flex-none">${ic(m.icone||'file-signature',20)}</div><div class="min-w-0"><h3 class="text-base font-semibold">${m.titulo}</h3><div class="mt-2 text-sm text-muted-foreground">${m.corpo}</div></div></div>
-  <div class="px-4 py-3 sm:px-6 bg-muted/20 flex flex-col-reverse sm:flex-row-reverse gap-2">${btn(m.ok,`data-act="${m.act}"`,'primary','px-4 py-2 text-sm')}${btn('Cancelar','data-act="fecharModal"','outline','px-4 py-2 text-sm')}</div></div></div>`}
+  return `<div class="${M?'absolute':'fixed'} inset-0 bg-background/80 backdrop-blur-sm z-[80] flex items-center justify-center p-4"><div class="w-full ${m.largo?'max-w-2xl':'max-w-lg'} bg-card border border-border rounded-lg shadow-xl overflow-hidden">
+  <div class="px-4 pt-5 pb-4 sm:p-6 flex gap-4"><div class="h-10 w-10 rounded-full bg-primary/10 text-primary items-center justify-center flex-none ${m.largo&&MOBILE()?'hidden':'flex'}">${ic(m.icone||'file-signature',20)}</div><div class="min-w-0"><h3 class="text-base font-semibold">${m.titulo}</h3><div class="mt-2 text-sm text-muted-foreground ${m.largo?'max-h-[60vh] overflow-y-auto pr-1':''}">${m.corpo}</div></div></div>
+  <div class="px-4 py-3 sm:px-6 bg-muted/20 flex flex-col-reverse sm:flex-row-reverse gap-2">${m.ok?btn(m.ok,`data-act="${m.act}"`,'primary','px-4 py-2 text-sm'):''}${btn(m.ok?'Cancelar':'Fechar','data-act="fecharModal"','outline','px-4 py-2 text-sm')}</div></div></div>`}
 function toast(){if(!UI.toast)return '';const M=MOBILE();const t=UI.toast;if(!t.timer)t.timer=setTimeout(()=>{if(UI.toast===t){UI.toast=null;document.getElementById('toast')?.remove()}},4000);
   return `<div id="toast" class="${M?'absolute left-3 right-3 bottom-24':'fixed right-6 w-96 top-[60px]'} z-[90] pointer-events-none rounded-lg border ${t.err?'bg-destructive text-white border-destructive':'bg-primary text-black border-primary'} shadow-lg p-4 text-sm font-medium flex items-center gap-2">${ic(t.err?'circle-x':'circle-check',18)}${esc(t.msg)}</div>`}
 const avisar=(msg,err)=>{UI.toast={msg,err}};
@@ -329,9 +348,9 @@ function pNotificacoes(papel){const A=avisos(papel);return pageHeader('Notifica�
 // --- compras do jogador
 function pCompras(){
   const nM=S.compras.filter(c=>ATIVOS.includes(c.estado)||['a_devolver','devolucao_enviada'].includes(c.estado)).length;
-  let h=pageHeader('Compras de ação','Vende uma % da tua ação num torneio. Pedes da lista; a matriz aprova na hora.');
-  h+=tabs([['vender','Vender ação'],['minhas','As minhas compras',nM]],UI.tabC,'tabc');
-  return h+(UI.tabC==='vender'?listaTorneios():minhasCompras());
+  let h=pageHeader('Compras de ação',matrizLigada()?'Vende uma % da tua ação num torneio. Pedes da lista; a matriz aprova na hora.':'Vende uma % da tua ação num torneio. Pedes da lista e a gestão aprova.');
+  h+=tabs([['vender','Vender ação'],['minhas','As minhas compras',nM],['contrato','Contrato']],UI.tabC,'tabc');
+  return h+(UI.tabC==='vender'?listaTorneios():UI.tabC==='contrato'?pContratos('jogador'):minhasCompras());
 }
 function listaTorneios(){
   const aberto=t=>NOW()<prazo(t)&&!soReforco(t);
@@ -376,11 +395,14 @@ function painelCompra(pid,papel){
   const linha=(k,v)=>`<div class="flex justify-between gap-3 text-sm py-1"><span class="text-muted-foreground">${k}</span><span class="tabular-nums text-right">${v}</span></div>`;
   let corpo=`<div class="flex items-center justify-between">${estadoDot(c,papel)}<span class="text-xs text-muted-foreground">${faseTxt(c)}</span></div>
   <div class="rounded-lg border border-border p-4">${papel==='gestao'?linha('Jogador',`${esc(S.jogador)} · nível ${String(S.nivel).replace('.',',')}`):''}${linha('Sala',esc(c.salaNome))}${linha('Início',quando(ini(c)))}${(c.flights||[]).length>1?linha('Flights',fmtFlights(c)):''}${c.varios_dias?linha('Day 2',quando(inicioDia2(c))+(c.dia2?'':' (estimado)')):''}${linha('Buy-in',`${money(c.buyin)} + ${money(c.rake)}`)}${linha('% vendida · entradas',`${pctTxt(c.pct)} · ${c.usadas||0}/${c.ent} usadas`)}${linha('RB do jogador',String(r2(c.rb*100)).replace('.',',')+'%')}${linha(ENVIADAS.includes(c.estado)?(papel==='gestao'?'Enviado':'Recebido'):['revisao','aprovada'].includes(c.estado)?(papel==='gestao'?'A enviar':'A receber'):'Valor',money(c.valor,c.moeda))}${c.premio?linha('Prémio',money(c.premio,c.moeda)):''}${c.naSala?linha('Ainda na sala',money(c.naSala,c.moeda)):''}${c.aprov?linha('Aprovação',c.aprov==='matriz'?'matriz':'gestão'):''}${papel==='gestao'&&c.aprov!=='matriz'&&c.matrizDiria!==undefined?linha('A matriz',c.matrizDiria?'<span class="text-green-600 dark:text-green-400">aprovaria</span>':'<span class="text-amber-600 dark:text-amber-400">não aprovaria</span>'):''}</div>`;
+  if(!['cancelada','expirada'].includes(c.estado))corpo+=schedLinha(c);
+  if(c.estado==='recusada'&&c.motivoRecusa)corpo+=`<div class="rounded-lg border border-red-500/30 bg-red-500/5 p-4 text-sm"><b>Recusado pela gestão.</b> ${esc(c.motivoRecusa)}</div>`;
   if(papel==='gestao'){const doJ=S.compras.filter(x=>x.pid!==c.pid&&!['fechada','recusada','expirada','cancelada'].includes(x.estado)),e=expo();corpo+=`<div class="rounded-lg border border-border p-4"><div class="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-2">Este jogador agora</div><div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm"><span class="text-muted-foreground">Outras compras em curso</span><span class="text-right tabular-nums">${doJ.length}</span><span class="text-muted-foreground">Dinheiro da Polarize com ele</span><span class="text-right tabular-nums">${money(r2(e.luxon+e.salas))}</span><span class="text-muted-foreground">Por devolver</span><span class="text-right tabular-nums">${money(e.devolver)}</span><span class="text-muted-foreground">A caminho da Polarize</span><span class="text-right tabular-nums">${money(e.caminho)}</span><span class="text-muted-foreground">Em atraso</span><span class="text-right tabular-nums ${e.atraso?'text-red-500 font-semibold':''}">${money(e.atraso)}</span><span class="text-muted-foreground">Makeup</span><span class="text-right tabular-nums ${S.makeup.EUR+toEUR(S.makeup.USD,'USD')<0?'text-red-500':''}">${fmtCur(S.makeup.EUR+toEUR(S.makeup.USD,'USD'),'EUR')}</span></div></div>`}
   if(c.motivos?.length&&papel==='gestao')corpo+=`<div class="rounded-lg border border-warning/40 bg-warning/5 p-4"><div class="text-sm font-semibold mb-1">Fora da matriz</div>${c.motivos.map(m=>`<div class="text-xs text-amber-600 dark:text-amber-400 my-1">! ${esc(m)}</div>`).join('')}</div>`;
   const D=devsDe(c);
   if(D.length){const est={a_devolver:'por devolver',enviada:'enviada · por confirmar',recebida:'recebida'};
     corpo+=`<div><div class="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-2">Devoluções</div><div class="rounded-lg border border-border divide-y divide-border">${D.map(x=>`<div class="p-3 flex items-center gap-3 text-sm"><div class="flex-1"><div class="font-medium">${money(x.valor,c.moeda)} · ${TIPO_DEV[x.tipo]}</div><div class="text-xs text-muted-foreground">${est[x.estado]} · ${x.estado==='enviada'&&x.tEnv?'enviada '+quando(x.tEnv):x.estado==='recebida'&&x.tRec?'recebida '+quando(x.tRec):'desde '+quando(x.t)}${x.print?' · print '+esc(x.print):''}</div></div>${papel==='gestao'&&x.estado==='enviada'?`<input data-rv="${x.i}" value="${grp(x.confDif??x.valor)}" inputmode="decimal" title="Valor que entrou na Luxon" class="w-28 px-2 py-1.5 text-sm border border-border rounded-md bg-background tabular-nums">`+btn('Confirmar Receção',`data-g="receber" data-pid="${pid}" data-dev="${x.i}"`,'primary','px-3 py-1.5 text-xs'):''}${x.recebido!=null&&Math.abs(x.recebido-x.valor)>0.004?`<span class="text-xs text-amber-500">entrou ${money(x.recebido,c.moeda)}</span>`:''}${papel!=='gestao'&&x.estado==='a_devolver'?btn('Devolver',`data-op="dev" data-pid="${pid}:${x.i}"`,'primary','px-3 py-1.5 text-xs'):''}</div>`).join('')}</div></div>`}
+  if(papel==='gestao'&&c.estado==='revisao')corpo+=`<div>${label('Motivo, se recusares (o jogador vê)')}${input(`id="motRec" value="${esc(UI.motRec||'')}" placeholder="ex.: % acima do limite do teu nível para este buy-in" autocomplete="off"`)}</div>`;
   corpo+=`<div><div class="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-2">Linha do tempo</div><div class="tl">${(c.hist||[]).map(x=>`<div class="tl-item text-sm">${esc(x.txt)}<div class="text-xs text-muted-foreground">${quando(x.t)} · ${esc(x.quem)}</div></div>`).join('')}</div></div>`;
   let rod='';
   if(papel==='gestao'){if(c.estado==='revisao')rod=btn('Recusar',`data-g="recusar" data-pid="${pid}"`,'destructive')+btn('Aprovar',`data-g="aprovar" data-pid="${pid}"`);
@@ -601,6 +623,24 @@ function pJogadorG(){
       ...[{nome:'Luxon Pay EUR',moeda:'EUR',saldo:S.luxon.EUR},{nome:'Luxon Pay USD',moeda:'USD',saldo:S.luxon.USD},...(S.carteiras||[])].map(w=>({cells:[`<div class="font-medium">${esc(w.nome)}</div><div class="text-xs text-muted-foreground">carteira</div>`,w.moeda,`<span class="tabular-nums font-semibold">${money(w.saldo,w.moeda)}</span>`,'—','—']}))])}</div></div>`;
   h+=`<h2 class="text-base font-semibold mt-8 mb-2">Sessões</h2>`+(S.sessoes.length?tabela(['Data','Sala','Saldo final (real)','Saldo do deal','P&L'],S.sessoes.slice().reverse().flatMap(x=>x.linhas.map(l=>({cells:[dataPT(Date.parse(x.dia+'T12:00:00Z')),esc(l.sala),money(l.finalReal,l.moeda),money(l.finalDeal,l.moeda),`<span class="${l.pl>=0?'text-green-600 dark:text-green-400':'text-red-600 dark:text-red-400'}">${l.pl>=0?'+':''}${money(l.pl,l.moeda)}</span>`]})))):vazio('Ainda sem sessões nesta simulação.','clock'));
   return h}
+function schedLinha(c){const ta=tAprov(c),ok=!!ta&&c.estado!=='recusada',mk=mesC(c),L=(k,v)=>`<div class="flex justify-between gap-3 text-sm py-1"><span class="text-muted-foreground">${k}</span><span class="tabular-nums text-right">${v}</span></div>`;
+  return `<div class="rounded-lg border ${ok?'border-green-500/30':'border-border'} p-4"><div class="flex items-center justify-between gap-2 mb-1"><div class="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Linha do schedule</div><span class="text-xs text-right ${ok?'text-green-600 dark:text-green-400':'text-muted-foreground'}">${ok?'acordada '+quando(ta):c.estado==='recusada'?'não entrou: recusada':'fica acordada quando a gestão aprovar'}</span></div>
+  ${L('Evento',esc(curto(c.nome)))}${L('Buy-in + rake',`${money(c.buyin)} + ${money(c.rake)}`)}${L('Máximo de entradas',c.ent)}${L('Investimento',`${pctTxt(c.pct)} compra de ação · ${pctTxt(1-c.pct)} staking 50-50`)}${L('Rakeback da parte da Polarize',`${money(rbEnt(c))} por entrada · descontado no envio`)}${L('Contrato',`${cap(mesAno(mk))} · ${S.contratos[mk]?'aceite':'<span class="text-amber-500">por aceitar</span>'}`)}</div>`}
+function blocoExtrato(m,papel){const G=papel==='gestao',cs=S.compras.filter(c=>mesC(c)===m&&noSched(c)).sort((a,b)=>ini(a)-ini(b)),acabou=mesKey(NOW())>m,env=S.extratos[m],conf=(S.extratosConf||{})[m];
+  const est=env?(conf?`<span class="text-green-600 dark:text-green-400">extrato confirmado pelo jogador ${quando(conf)}</span>`:`extrato enviado ${quando(env)} · <span class="text-amber-500">por confirmar${G?' pelo jogador':''}</span>`):acabou?(cs.length?'<span class="text-amber-500">extrato por enviar</span>':'sem eventos'):'mês em curso: o extrato fecha no fim do mês';
+  const fim=c=>c.estado==='fechada'||!!c.terminou,volta=c=>somaDev(c),porR=c=>somaDev(c,['a_devolver','enviada']);
+  let h=`<div class="bg-card rounded-lg border border-border shadow-sm p-4 mb-3 mt-2"><div class="flex flex-col sm:flex-row sm:items-center gap-3"><div class="flex-1 min-w-0"><div class="font-semibold">${cap(mesAno(m))}${G?' · '+esc(S.jogador):''}</div><div class="text-xs text-muted-foreground mt-0.5">contrato ${S.contratos[m]?'aceite '+quando(S.contratos[m]):'<span class="text-amber-500">por aceitar</span>'} · ${cs.length} ${cs.length===1?'evento':'eventos'} no schedule · ${est}</div></div><div class="flex gap-2 flex-wrap">${btn(ic('file-text',14)+'Ver contrato',`data-vercontrato="${m}"`,'outline','px-3 py-1.5 text-xs')}${G&&acabou&&!env&&cs.length?btn(ic('send',14)+'Enviar extrato',`data-extrato="${m}"`,'primary','px-3 py-1.5 text-xs'):''}${!G&&env&&!conf?btn(ic('check',14)+'Confirmo o extrato',`data-confext="${m}"`,'primary','px-3 py-1.5 text-xs'):''}</div></div></div>`;
+  if(!cs.length)return h+'<div class="h-4"></div>';
+  h+=tabela(['Início','Evento','Buy-in','Compra · staking','Entradas','RB/entrada','Enviado','Prémio','Volta à Polarize','Resultado da Polarize','Estado'],cs.map(c=>{const r=r2(volta(c)-c.valor);return {attrs:`data-compra="${c.pid}"`,cells:[`<span class="tabular-nums">${dataHora(ini(c))}</span>`,`<span class="font-medium">${esc(curto(c.nome))}</span>`,`${money(c.buyin)} + ${money(c.rake)}`,`${pctTxt(c.pct)} · ${pctTxt(1-c.pct)}`,`${c.usadas||0}/${c.ent}`,money(rbEnt(c)),ENVIADAS.includes(c.estado)?money(c.valor,c.moeda):'<span class="text-xs text-muted-foreground">por enviar</span>',c.premio?money(c.premio,c.moeda):'—',volta(c)?money(volta(c),c.moeda)+(porR(c)?`<div class="text-[11px] text-amber-500">${money(porR(c),c.moeda)} por receber</div>`:''):'—',fim(c)?`<span class="font-semibold ${r>=0?'text-green-600 dark:text-green-400':'text-red-500'}">${r>=0?'+':''}${money(r,c.moeda)}</span>`:'<span class="text-xs text-muted-foreground">em jogo</span>',estadoDot(c,papel)]}}),true);
+  const T={};for(const c of cs){const t=T[c.moeda]||(T[c.moeda]={env:0,volta:0,rec:0,porR:0,res:0,abertas:0});if(ENVIADAS.includes(c.estado))t.env+=c.valor;t.volta+=volta(c);t.porR+=porR(c);t.rec+=devsDe(c).filter(x=>x.estado==='recebida').reduce((a,x)=>a+(x.recebido??x.valor),0);if(fim(c))t.res+=volta(c)-c.valor;else t.abertas++}
+  const nM=Object.keys(T).length;
+  h+=`<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-3 mb-8">${Object.entries(T).map(([mo,t])=>[['Enviado',money(r2(t.env),mo)],['Volta à Polarize',money(r2(t.volta),mo)+(t.porR?` <span class="text-xs text-amber-500">(${money(r2(t.porR),mo)} por receber)</span>`:'')],['Já recebido',money(r2(t.rec),mo)],['Resultado da Polarize',`<span class="${t.res>=0?'text-green-600 dark:text-green-400':'text-red-500'}">${t.res>=0?'+':''}${money(r2(t.res),mo)}</span>${t.abertas?` <span class="text-xs text-muted-foreground">· ${t.abertas} em jogo</span>`:''}`]].map(([k,v])=>`<div class="rounded-lg border border-border bg-card p-3"><div class="text-xs text-muted-foreground">${k}${nM>1?' · '+mo:''}</div><div class="font-semibold tabular-nums mt-0.5">${v}</div></div>`).join('')).join('')}</div>`;
+  return h}
+function pContratos(papel){const G=papel==='gestao';
+  const ms=[...new Set([...Object.keys(S.contratos||{}),...S.compras.filter(noSched).map(mesC)])].sort().reverse();
+  const h=G?pageHeader('Contratos e extratos','Um contrato-quadro por jogador e mês. Cada pedido aprovado é uma linha do schedule; o extrato fecha as contas do mês.'):`<p class="text-sm text-muted-foreground mb-2">Aceitas o contrato uma vez por mês, no 1.º pedido. Cada pedido aprovado é uma linha do schedule, e no fim do mês recebes o extrato para confirmar.</p>`;
+  if(!ms.length)return h+vazio(G?'Ainda sem contratos.':'Ainda não aceitaste nenhum contrato: aparece no teu 1.º pedido do mês.','file-signature');
+  return h+ms.map(m=>blocoExtrato(m,papel)).join('')}
 function pMatriz(){
   const M=S.matriz;let h=pageHeader('Matriz de aprovação','A % máxima (e o valor máximo) que passa sozinha, por nível do jogador e buy-in. Fora disto o pedido vem para a gestão.');
   {const on=matrizLigada(),dec=S.compras.filter(c=>c.matrizDiria!==undefined&&(c.aprov==='gestao'||c.estado==='recusada')),conc=dec.filter(c=>c.matrizDiria===(c.aprov==='gestao')).length;
@@ -610,12 +650,6 @@ function pMatriz(){
   h+=`</tbody></table></div></div><div class="grid sm:grid-cols-3 gap-4 mt-4"><div>${label('Garantido mínimo (× buy-in)')}${input(`data-mxg="gtdMult" inputmode="numeric" value="${M.gtdMult}"`)}</div><div>${label('Máximo em aberto por jogador ($)')}${input(`data-mxg="abertoMax" inputmode="numeric" value="${M.abertoMax}"`)}</div>
   <div>${label('Nível do '+esc(S.jogador)+' (para testar)')}<select id="nivel" class="w-full px-3 py-2 text-sm border border-border rounded-md bg-background">${[5.5,6,6.5,7,7.5].map(n=>`<option value="${n}"${S.nivel===n?' selected':''}>${String(n).replace('.',',')}</option>`).join('')}</select></div></div>
   <p class="text-xs text-muted-foreground mt-2">Valores de exemplo. Também passa por: pedido até ${LIMITE_HORAS} h antes do início.</p>`;
-  const meses=[...new Set(S.compras.filter(c=>ENVIADAS.includes(c.estado)).map(c=>mesKey(ini(c))))].sort();
-  h+=`<div class="mt-8">${pageHeader('Extratos mensais','O anexo do contrato do mês de cada jogador.')}</div>`;
-  if(!meses.length)return h+vazio('Ainda sem compras.','file-text');
-  for(const m of meses){const cs=S.compras.filter(c=>mesKey(ini(c))===m&&ENVIADAS.includes(c.estado)),acabou=mesKey(NOW())>m;
-    h+=`<div class="flex items-center justify-between mb-2"><div class="text-sm"><b class="capitalize">${mesNome(m)}</b> · ${esc(S.jogador)} · contrato ${S.contratos[m]?'<span class="text-green-600 dark:text-green-400">aceite</span>':'<span class="text-amber-500">por aceitar</span>'} · ${S.extratos[m]?'enviado '+quando(S.extratos[m]):acabou?'<span class="text-amber-500">por enviar</span>':'o mês ainda não acabou'}</div>${acabou&&!S.extratos[m]?btn(ic('send',14)+'Enviar extrato',`data-extrato="${m}"`,'primary','px-3 py-1.5 text-xs'):''}</div>`;
-    h+=tabela(['Torneio','%','Entradas','Enviado','Prémio','Devolvido','Estado'],cs.map(c=>({cells:[esc(curto(c.nome)),pctTxt(c.pct),`${c.usadas||0}/${c.ent}`,ENVIADAS.includes(c.estado)?money(c.valor,c.moeda):'—',c.premio?money(c.premio,c.moeda):'—',(somaDev(c,['recebida'])?money(somaDev(c,['recebida']),c.moeda):'')+(somaDev(c,['a_devolver','enviada'])?(somaDev(c,['recebida'])?' + ':'')+money(somaDev(c,['a_devolver','enviada']),c.moeda)+' por receber':'')||'—',estadoDot(c,'gestao')]})))+'<div class="h-6"></div>'}
   return h}
 
 // ================= render =================
@@ -631,7 +665,7 @@ function render(){
   const mainEl=document.getElementById('main'),scroll=mainEl?mainEl.scrollTop:0;
   $('#sim').innerHTML=simBar();UI.barra='';
   const G=JAN.papel==='gestao',p=G?UI.pG:UI.pJ;
-  const conteudo=G?{painel:pPainel,notificacoes:()=>pNotificacoes('gestao'),compras:pComprasG,jogador:pJogadorG,matriz:pMatriz}[p]():
+  const conteudo=G?{painel:pPainel,notificacoes:()=>pNotificacoes('gestao'),compras:pComprasG,jogador:pJogadorG,matriz:pMatriz,contratos:()=>pContratos('gestao')}[p]():
     {home:pHome,notificacoes:()=>pNotificacoes('jogador'),compras:pCompras,operacoes:pOperacoes,sessoes:pSessoes,sessao_nova:pSessaoNova}[p]();
   $('#app').innerHTML=shell(conteudo+(UI.barra||''));
   const m2=document.getElementById('main');if(m2&&UI.keepScroll)m2.scrollTop=scroll;UI.keepScroll=false;
@@ -644,7 +678,7 @@ function ligar(){
   keep('sIni',v=>UI.sess.inicio=fh(v));keep('sFim',v=>UI.sess.fim=fh(v));keep('sNt',v=>UI.sess.nt=v.replace(/\D/g,''));
   document.querySelectorAll('[data-final]').forEach(el=>{el.id='fin'+el.dataset.final;keep(el.id,v=>UI.sess.salas[+el.dataset.final].final=v)});
   document.querySelectorAll('[data-cp]').forEach(el=>{el.id='cp'+el.dataset.cp;keep(el.id,v=>{(UI.sess.compras[el.dataset.cp]||={}).premio=v})});
-  keep('sNotas',v=>UI.sess.notas=v);
+  keep('sNotas',v=>UI.sess.notas=v);keep('motRec',v=>UI.motRec=v);
   for(const [at,campo] of [['data-tk','tk'],['data-gemas','gemas'],['data-cs','cs']])document.querySelectorAll(`[${at}]`).forEach(el=>{const i=+el.getAttribute(at);el.id=campo+i;keep(el.id,v=>UI.sess.salas[i][campo]=campo==='cs'?v.replace(/[^0-9.]/g,''):v.replace(/[^0-9]/g,''))});
   document.querySelectorAll('[data-cp2]').forEach(el=>{el.id='cq'+el.dataset.cp2;keep(el.id,v=>{(UI.sess.compras[el.dataset.cp2]||={}).premio2=v})});
   document.querySelectorAll('[data-salarow]').forEach(el=>el.onchange=e=>{UI.sess.salas[+el.dataset.salarow].id=e.target.value;UI.keepScroll=true;render()});
@@ -656,8 +690,7 @@ function ligar(){
   const pf=document.getElementById('printDev');if(pf)pf.onchange=e=>{const f=e.target.files&&e.target.files[0];if(f){UI.print=f.name;render()}};
 }
 function pedir(){const t=UI.panel.t,sala=salaDaRede(t.sala),rb=num(UI.rb)/100,m=mesKey(NOW());
-  if(!S.contratos[m]){UI.modal={titulo:`Contrato de compras de ação · ${mesNome(m)}`,icone:'file-signature',ok:`Aceito o contrato de ${mesNome(m)}`,act:'aceitarContrato',
-    corpo:`<p>Aceitas uma vez por mês e cobre todas as compras de ${mesNome(m)}. Não ficas à espera de assinar cada uma.</p><ol class="list-decimal pl-5 mt-2 space-y-1"><li>A Polarize compra a % que escolheres de cada torneio, pelo valor calculado (buy-in + rake, menos a parte dela no rakeback).</li><li>O dinheiro da compra fica na sala fora da banca do deal e só serve para esse torneio.</li><li>Entradas não usadas e a % da Polarize no prémio (bounties incluídos) devolvem-se no dia em que registas a sessão.</li><li>Depois do início, a compra é firme.</li><li>No fim do mês recebes o extrato das compras, que faz parte deste contrato.</li></ol><p class="mt-2 text-xs">Texto de exemplo; o contrato real é definido com o David.</p>`};render();return}
+  if(!S.contratos[m]){UI.modal={titulo:`Contrato de compras de ação · ${mesAno(m)}`,icone:'file-signature',largo:true,ok:`Aceito o contrato de ${mesNome(m)}`,act:'aceitarContrato',corpo:`<p class="mb-3">Aceitas uma vez por mês e cobre todos os pedidos de ${mesNome(m)}: cada pedido aprovado passa a ser uma linha do schedule. Não há contrato por torneio.</p>`+contratoTexto(m)};render();return}
   const c=contas(t,UI.pct,UI.ent,rb,sala.moeda,UI.fx),ck=avaliar(t,UI.pct,c.usd),diria=ck.every(x=>x[0]==='ok'),passa=diria&&matrizLigada();
   const cp={pid:Date.now().toString(36)+Math.random().toString(36).slice(2,5),id:t.id,nome:t.nome+(UI.reforco?' · reforço':''),reforcoDe:UI.reforco||null,sala:t.sala,salaId:sala.id,salaNome:sala.nome,inicio:t.inicio,fim_late_reg:t.fim_late_reg,varios_dias:t.varios_dias,flights:t.flights.map(f=>({id:f.id,inicio:f.inicio,fim_late_reg:f.fim_late_reg})),dia2:t.dia2||null,chave:t.chave,devs:[],buyin:t.buyin,rake:t.rake,
     pct:UI.pct,ent:UI.ent,rb,moeda:sala.moeda,valor:c.valor,usd:c.usd,porEntrada:c.porEntrada,estado:passa?'aprovada':'revisao',aprov:passa?'matriz':null,matrizDiria:diria,motivos:ck.filter(x=>x[0]!=='ok').map(x=>x[1]),usadas:0,naSala:0,premio:0,hist:[]};
@@ -665,27 +698,29 @@ function pedir(){const t=UI.panel.t,sala=salaDaRede(t.sala),rb=num(UI.rb)/100,m=
   hist(cp,passa?'Aprovado pela matriz':!matrizLigada()?`Aprovação automática desligada: vai para a gestão (a matriz ${diria?'aprovaria':'não aprovaria'})`:'Fora da matriz: vai para a gestão','sistema');
   S.compras.push(cp);S.rbSala[t.sala]=UI.rb;UI.panel=null;UI.tabC='minhas';avisar(passa?'Pedido aprovado pela matriz':'Pedido enviado para a gestão aprovar');render()}
 function irPara(p){if(JAN.papel==='gestao')UI.pG=p;else UI.pJ=p;UI.drawer=false;UI.menuOp=false;UI.panel=null;const m=document.getElementById('main');if(m)m.scrollTop=0}
-document.addEventListener('click',e=>{const b=e.target.closest('[data-act],[data-nav],[data-tempo],[data-papel],[data-vista],[data-ir],[data-tabc],[data-tabo],[data-tabg],[data-sala],[data-dia],[data-torneio],[data-compra],[data-pct],[data-ent],[data-op],[data-g],[data-cancelar],[data-extrato],[data-cj],[data-cu],[data-ca],[data-cm],[data-cd],[data-ca2],[data-prep],[data-rmsala]');if(!b)return;const ds=b.dataset;
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act],[data-nav],[data-tempo],[data-papel],[data-vista],[data-ir],[data-tabc],[data-tabo],[data-tabg],[data-sala],[data-dia],[data-torneio],[data-compra],[data-pct],[data-ent],[data-op],[data-g],[data-cancelar],[data-extrato],[data-vercontrato],[data-confext],[data-cj],[data-cu],[data-ca],[data-cm],[data-cd],[data-ca2],[data-prep],[data-rmsala]');if(!b)return;const ds=b.dataset;
   if(b.disabled)return;
   if(ds.tempo){const n=NOW();if(ds.tempo==='dia'){const k=diaKey(n+24*H);let t=Date.parse(k+'T08:00:00Z');if(horasLx(t)===8)t+=H;S.agora=t}else if(ds.tempo==='evento'){const p=proximoEvento();if(p)S.agora=p+6e4;else avisar('Nada marcado à frente: avança um dia ou pede uma compra.')}else S.agora=n+Number(ds.tempo)*H;UI.sess=null;render();return}
   if(ds.papel){JAN.papel=ds.papel;guardarJanela();UI.panel=null;UI.drawer=false;render();return}
   if(ds.vista){JAN.vista=ds.vista;guardarJanela();UI.drawer=false;render();return}
   if(ds.nav){irPara(ds.nav);render();return}
-  if(ds.ir){const p=ds.ir;irPara(p);if(ds.pid&&p==='compras')UI.panel={render:painelCompra(ds.pid,JAN.papel)};if(p==='operacoes'&&ds.pid){const t=ds.pid.includes(':')?'dev':'por';UI.print=null;UI.panel={tipo:t,render:painelOp(t,ds.pid)}}render();return}
+  if(ds.ir){const p=ds.ir;irPara(p);if(ds.pid==='@contrato')UI.tabC='contrato';else if(ds.pid&&p==='compras')UI.panel={render:painelCompra(ds.pid,JAN.papel)};if(p==='operacoes'&&ds.pid){const t=ds.pid.includes(':')?'dev':'por';UI.print=null;UI.panel={tipo:t,render:painelOp(t,ds.pid)}}render();return}
   if(ds.tabc){UI.tabC=ds.tabc;render();return}if(ds.tabo){UI.tabO=ds.tabo;render();return}if(ds.tabg){UI.tabG=ds.tabg;render();return}
   if(ds.sala){UI.sala=ds.sala;UI.keepScroll=true;render();return}if(ds.dia){UI.dia=ds.dia;UI.keepScroll=true;render();return}
   if(ds.torneio){const t=eventosVisiveis().find(x=>x.id===ds.torneio);if(!t||!aberto(t))return;if(soReforco(t)){avisar('Este torneio já começou: só se reforça uma compra feita antes do 1.º flight.',1);render();return}const ex=S.compras.find(c=>c.id===t.id&&ATIVOS.includes(c.estado)&&!c.reforcoDe);if(ex&&!(t.flights.length>1&&!ex.qualificado&&['aprovada','enviada','na_sala'].includes(ex.estado))){avisar('Já tens uma compra deste torneio.',1);render();return}UI.reforco=ex?ex.pid:null;
     UI.pct=.5;UI.ent=1;UI.rb=S.rbSala[t.sala]||'';UI.panel={t,render:painelPedido(t)};render();return}
-  if(ds.compra){UI.panel={render:painelCompra(ds.compra,JAN.papel)};render();return}
+  if(ds.compra){UI.motRec='';UI.panel={render:painelCompra(ds.compra,JAN.papel)};render();return}
   if(ds.pct){UI.pct=parseFloat(ds.pct);render();return}
   if(ds.ent){UI.ent=Math.max(1,Math.min(20,UI.ent+parseInt(ds.ent,10)));render();return}
   if(ds.op){UI.menuOp=false;UI.print=null;UI.panel={tipo:ds.op,render:painelOp(ds.op,ds.pid)};render();return}
   if(ds.cancelar){const c=S.compras.find(x=>x.pid===ds.cancelar);if(!c||!['revisao','aprovada'].includes(c.estado)||!aberto(c)){avisar('Já não dá para cancelar: '+(c?faseTxt(c):''),1);UI.panel=null;render();return}c.estado='cancelada';hist(c,'Cancelada pelo jogador antes do prazo','jogador');UI.panel=null;avisar('Compra cancelada');render();return}
   if(ds.extrato){S.extratos[ds.extrato]=NOW();avisar('Extrato enviado ao jogador');render();return}
+  if(ds.vercontrato){const m=ds.vercontrato;UI.modal={titulo:`Contrato de compras de ação · ${mesAno(m)}`,icone:'file-signature',largo:true,corpo:contratoTexto(m)+(S.contratos[m]?`<p class="mt-3 text-xs">Aceite por ${esc(S.jogador)} em ${quando(S.contratos[m])}.</p>`:'')};render();return}
+  if(ds.confext){(S.extratosConf||(S.extratosConf={}))[ds.confext]=NOW();avisar('Extrato confirmado');render();return}
   if(ds.g){const c=S.compras.find(x=>x.pid===ds.pid);const PODE={aprovar:'revisao',recusar:'revisao',enviar:'aprovada'};
     if(!c||(PODE[ds.g]&&c.estado!==PODE[ds.g])||(ds.g==='receber'&&devsDe(c)[+ds.dev]?.estado!=='enviada')){avisar('Esta compra mudou entretanto: '+(c?faseTxt(c):'já não existe'),1);render();return}
     if(ds.g==='aprovar'){c.estado='aprovada';c.aprov='gestao';hist(c,'Aprovado pela gestão','gestão');avisar('Compra aprovada')}
-    if(ds.g==='recusar'){c.estado='recusada';c.tFim=NOW();hist(c,'Recusado pela gestão','gestão');avisar('Compra recusada')}
+    if(ds.g==='recusar'){const mot=(UI.motRec||'').trim();if(!mot){avisar('Escreve o motivo da recusa: o jogador vai vê-lo.',1);render();return}c.motivoRecusa=mot;UI.motRec='';c.estado='recusada';c.tFim=NOW();hist(c,'Recusado pela gestão: '+mot,'gestão');avisar('Compra recusada')}
     if(ds.g==='enviar'){c.estado='enviada';S.luxon[c.moeda]=r2(S.luxon[c.moeda]+c.valor);hist(c,`Enviado ${money(c.valor,c.moeda)} para a Luxon do jogador`,'gestão');novaOp({tipo:'Compra de ação recebida',desc:`${curto(c.nome)} · ${pctTxt(c.pct)} · Polarize → Luxon Pay ${c.moeda}`,valor:c.valor,moeda:c.moeda,estado:'Finalizado'});avisar('Envio registado')}
     if(ds.g==='receber'){const x=devsDe(c)[+ds.dev],inp=document.querySelector(`[data-rv="${ds.dev}"]`),v=num(inp?inp.value:x.valor);if(isNaN(v)){avisar('Valor recebido inválido',1);render();return}
       const dif=Math.abs(v-x.valor)/x.valor;if(dif>0.005&&x.confDif!==v){x.confDif=v;avisar(`Entrou ${money(v,c.moeda)} e esperava-se ${money(x.valor,c.moeda)} (${String((dif*100).toFixed(2)).replace('.',',')}%). Fala com o jogador; carrega outra vez para confirmar assim.`,1);render();return}
