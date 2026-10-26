@@ -180,7 +180,10 @@ const hmLx=t=>new Date(t).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-d
 // mais N dias à mesma hora de Lisboa (24 h não chegam no dia da mudança de hora)
 const maisDias=(t,n)=>zMs(addDiaK(diaKey(t),n),hmLx(t),'Europe/Lisbon');
 // prazo de uma devolução: fim do dia seguinte ao dia de jogo; se a sessão foi registada dentro das 48 h do contrato, nunca menos de 24 h depois do registo
-const vencDev=x=>x.tReg&&x.tReg<=maisDias(x.t,2)?Math.max(maisDias(x.t,1),maisDias(x.tReg,1)):maisDias(x.t,1);
+const vencDev0=x=>x.tReg&&x.tReg<=maisDias(x.t,2)?Math.max(maisDias(x.t,1),maisDias(x.tReg,1)):maisDias(x.t,1);
+const vencDev=x=>x.vfim?Math.max(vencDev0(x),x.vfim):vencDev0(x);
+// fim da série + 3 dias, às 23:59 da cidade da série
+const fimSerie3=sid=>{const L=LIVE_EV.filter(e=>e.serie===sid);if(!L.length)return 0;const tz=L[0].tz,ult=Math.max(...L.flatMap(e=>[...e.flights.map(f=>Date.parse(f.inicio)),...(e.dias||[]).map(x=>Date.parse(x))]));return zMs(addDiaK(kTz(ult,tz),3),'23:59',tz)};
 const maxEnt=t=>/freezeout/i.test(t.nome||'')?1:/1 re-?entry/i.test(t.nome||'')?2:20;
 const rbChave=t=>mesKey(NOW())+'|'+t.sala;
 const rbProvaOk=t=>!!t.live||!!UI.reforco||!!(S.rbProva||{})[rbChave(t)]||!!UI.rbPrint||!!window.RB_PRINT_OPCIONAL;
@@ -818,7 +821,7 @@ function criarSessao(){const F=UI.sess,linhas=[];delete S.usoCompra;
   for(const row of F.salas){const k=calcSala(row),s=k.s;
     for(const c of compraDaSala(s.id).filter(naSessao)){const r=F.compras[c.pid];if(!r)continue;const e=efeito(c,r),dj0=diaJogo(c),dS=diaKey(diaSessao()),eraD2=c.estado==='aberta';
       c.usadas=e.usadas;c.tUlt=NOW();c.premio=r2((c.premio||0)+e.premio);c.devPremioAcum=e.acum;c.naSala=e.fim?0:e.keep;c.qualificado=e.qual;
-      for(const x of e.devs){addDev(c,x.tipo,x.valor,{...(x.n?{n:x.n}:{}),...(x.deLuxon?{deLuxon:1}:{}),tReg:NOW(),t:Math.min(NOW(),fimDiaLx(dj0<dS?dj0:dS))});if(x.tipo==='entradas')c.entDev=(c.entDev||0)+x.n}
+      for(const x of e.devs){addDev(c,x.tipo,x.valor,{...(x.n?{n:x.n}:{}),...(x.deLuxon?{deLuxon:1}:{}),...(c.live&&!x.deLuxon&&c.salaId&&S.salas.find(s=>s.id===c.salaId&&s.live)?{vfim:fimSerie3(c.serie)}:{}),tReg:NOW(),t:Math.min(NOW(),fimDiaLx(dj0<dS?dj0:dS))});if(x.tipo==='entradas')c.entDev=(c.entDev||0)+x.n}
       const eraAberta=c.estado==='aberta';if(e.fim){c.terminou=1;fecharSeAcabou(c)}else{c.estado=e.estado;if(e.estado==='aberta'&&(eraAberta||d2Hoje(c)&&r.d2==='sim')){const nx=(c.dias||[]).map(x=>d(x).getTime()).find(t=>diaEv(c,t)>diaKey(diaSessao())),k=nx?diaEv(c,nx):diaKey(diaSessao()+24*H);c.proxIni=nx||Date.parse(k+'T12:00:00Z');c.proxT=nx?nx+10*H:fimDiaLx(k);c.proxOk=nx?1:0}}
       if(r.hh&&r.hh.length&&!c.live){c.hh=[...(c.hh||[]),...r.hh];hist(c,`Hand history: ${r.hh.join(', ')}`,'jogador')}
       if(c.live)liveRegistar(c,r,e,eraD2);
