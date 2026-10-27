@@ -185,7 +185,7 @@ const vencDev0=x=>x.tReg&&x.tReg<=maisDias(x.t,2)?Math.max(maisDias(x.t,1),maisD
 const vencDev=x=>x.banco?maisDias(x.tReg||x.t,10):x.vfim?Math.max(vencDev0(x),x.vfim):vencDev0(x);
 // fim da série + 3 dias, às 23:59 da cidade da série
 const fimSerie3=sid=>{const L=LIVE_EV.filter(e=>e.serie===sid);if(!L.length)return 0;const tz=L[0].tz,ult=Math.max(...L.flatMap(e=>[...e.flights.map(f=>Date.parse(f.inicio)),...(e.dias||[]).map(x=>Date.parse(x))]));return zMs(addDiaK(kTz(ult,tz),3),'23:59',tz)};
-const maxEnt=t=>/freezeout/i.test(t.nome||'')?1:/1 re-?entry/i.test(t.nome||'')?2:20;
+const maxEnt=t=>/freezeout/i.test(t.nome||'')?1:/double re-?entry|(^|[^0-9])2 re-?entr/i.test(t.nome||'')?3:/(^|[^0-9])1 re-?entry|single re-?entry/i.test(t.nome||'')?2:20;
 const rbChave=t=>mesKey(NOW())+'|'+t.sala;
 const rbProvaOk=t=>!!t.live||!!UI.reforco||!!(S.rbProva||{})[rbChave(t)]||!!UI.rbPrint||!!window.RB_PRINT_OPCIONAL;
 const prazoPac=t=>window.PRAZO_8H?prazo(t):Math.min(prazo(t),maisDias(ini(t),-PRAZO_PACOTE_D));
